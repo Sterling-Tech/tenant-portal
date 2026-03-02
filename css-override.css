@@ -1,0 +1,9 @@
+/**
+ * Alias for css-overrides.css (fixes "Can't resolve './css-override.css'" if import had a typo).
+ * Prefer importing './css-overrides.css' in index.tsx.
+ */
+html {
+  -webkit-text-size-adjust: none;
+  -moz-text-size-adjust: none;
+  text-size-adjust: none;
+}

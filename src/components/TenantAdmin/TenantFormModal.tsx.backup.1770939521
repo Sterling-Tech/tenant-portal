@@ -1,0 +1,1474 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+    Alert,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    Grid,
+    TextField,
+    FormControlLabel,
+    Switch,
+    Typography,
+    Stack,
+    InputAdornment,
+    IconButton,
+    Tooltip,
+    CircularProgress,
+    Box,
+    Divider,
+    Tabs,
+    Tab,
+    Checkbox,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Paper,
+    Stepper,
+    Step,
+    StepLabel,
+    Chip,
+    Avatar,
+    Card,
+    CardContent,
+} from '@mui/material';
+import {
+    Visibility,
+    VisibilityOff,
+    Domain,
+    Link as LinkIcon,
+    Info,
+    CheckCircle,
+    Error as ErrorIcon,
+    Business,
+    Person,
+    AccountBalance,
+    Description,
+    Gavel,
+    NavigateNext,
+    NavigateBefore,
+    CloudUpload,
+    Phone,
+    Email,
+    Home,
+    Language,
+    Badge,
+    CalendarMonth,
+    Flag,
+    CreditCard,
+} from '@mui/icons-material';
+import { useForm, Controller } from 'react-hook-form';
+
+// Industry options
+const INDUSTRY_OPTIONS = [
+    'Technology',
+    'Finance & Banking',
+    'Healthcare',
+    'Retail & E-commerce',
+    'Manufacturing',
+    'Education',
+    'Transportation & Logistics',
+    'Hospitality',
+    'Real Estate',
+    'Telecommunications',
+    'Energy & Utilities',
+    'Agriculture',
+    'Entertainment & Media',
+    'Professional Services',
+    'Government',
+    'Non-Profit',
+    'Other',
+];
+
+// Category options
+const CATEGORY_OPTIONS = [
+    'Small Business',
+    'Medium Enterprise',
+    'Large Corporation',
+    'Startup',
+    'Franchise',
+    'Cooperative',
+    'Partnership',
+    'Sole Proprietorship',
+];
+
+// Nationality options
+const NATIONALITY_OPTIONS = [
+    'Nigerian',
+    'Ghanaian',
+    'Kenyan',
+    'South African',
+    'Ugandan',
+    'Tanzanian',
+    'Rwandan',
+    'Ethiopian',
+    'Egyptian',
+    'Moroccan',
+    'Other African',
+    'British',
+    'American',
+    'Canadian',
+    'Indian',
+    'Chinese',
+    'Other',
+];
+
+// ID Document types
+const ID_DOCUMENT_TYPES = [
+    'National ID Card',
+    'International Passport',
+    "Driver's License",
+    "Voter's Card",
+    'Residence Permit',
+    'Other Government ID',
+];
+
+// Bank options
+const BANK_OPTIONS = [
+    'Access Bank',
+    'First Bank of Nigeria',
+    'Guaranty Trust Bank (GTBank)',
+    'United Bank for Africa (UBA)',
+    'Zenith Bank',
+    'Ecobank',
+    'Fidelity Bank',
+    'First City Monument Bank (FCMB)',
+    'Polaris Bank',
+    'Stanbic IBTC Bank',
+    'Standard Chartered Bank',
+    'Sterling Bank',
+    'Union Bank',
+    'Unity Bank',
+    'Wema Bank',
+    'Keystone Bank',
+    'Heritage Bank',
+    'Providus Bank',
+    'Titan Trust Bank',
+    'Globus Bank',
+    'SunTrust Bank',
+    'TAJBank',
+    'Jaiz Bank',
+    'Lotus Bank',
+    'Other',
+];
+
+export type TenantFormValues = {
+    // Basic Info
+    name: string;
+    slug?: string;
+    domain: string;
+    subdomain?: string;
+    isTrial: boolean;
+    trialEndsAt?: string | null;
+    isActive: boolean;
+    adminEmail?: string;
+    adminPassword?: string;
+    
+    // Profile
+    tradingName?: string;
+    description?: string;
+    industry?: string;
+    category?: string;
+    businessRegistration?: string;
+    businessAddress?: string;
+    website?: string;
+    
+    // Contact Person
+    contactName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    
+    // Accounts
+    settlementBankName?: string;
+    settlementAccountNumber?: string;
+    settlementAccountName?: string;
+    
+    // Ownership
+    ownerName?: string;
+    ownerDateOfBirth?: string;
+    ownerNationality?: string;
+    ownerIdType?: string;
+    ownerIdNumber?: string;
+    ownerHomeAddress?: string;
+    ownerProofOfAddress?: string;
+    ownerBankName?: string;
+    ownerAccountNumber?: string;
+    ownerAccountName?: string;
+    
+    // Service Agreement
+    contractingEntity?: string;
+    companyAddress?: string;
+    agreementWebsite?: string;
+    agreementFullName?: string;
+    agreementPhone?: string;
+    agreementEmail?: string;
+    agreementAccepted?: boolean;
+};
+
+interface TenantFormModalProps {
+    open: boolean;
+    mode: 'create' | 'edit';
+    loading?: boolean;
+    initialValues?: Partial<TenantFormValues>;
+    submitDisabled?: boolean;
+    submitDisabledMessage?: string;
+    onClose: () => void;
+    onSubmit: (values: TenantFormValues) => Promise<void>;
+}
+
+const defaultValues: TenantFormValues = {
+    // Basic Info
+    name: '',
+    slug: '',
+    domain: '',
+    subdomain: '',
+    isTrial: true,
+    trialEndsAt: '',
+    isActive: true,
+    adminEmail: '',
+    adminPassword: '',
+    
+    // Profile
+    tradingName: '',
+    description: '',
+    industry: '',
+    category: '',
+    businessRegistration: '',
+    businessAddress: '',
+    website: '',
+    
+    // Contact Person
+    contactName: '',
+    contactEmail: '',
+    contactPhone: '',
+    
+    // Accounts
+    settlementBankName: '',
+    settlementAccountNumber: '',
+    settlementAccountName: '',
+    
+    // Ownership
+    ownerName: '',
+    ownerDateOfBirth: '',
+    ownerNationality: '',
+    ownerIdType: '',
+    ownerIdNumber: '',
+    ownerHomeAddress: '',
+    ownerProofOfAddress: '',
+    ownerBankName: '',
+    ownerAccountNumber: '',
+    ownerAccountName: '',
+    
+    // Service Agreement
+    contractingEntity: '',
+    companyAddress: '',
+    agreementWebsite: '',
+    agreementFullName: '',
+    agreementPhone: '',
+    agreementEmail: '',
+    agreementAccepted: false,
+};
+
+interface TabPanelProps {
+    children?: React.ReactNode;
+    index: number;
+    value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+    const { children, value, index, ...other } = props;
+    return (
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`tenant-tabpanel-${index}`}
+            aria-labelledby={`tenant-tab-${index}`}
+            {...other}
+        >
+            {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+        </div>
+    );
+}
+
+const TAB_LABELS = [
+    { label: 'Basic Info', icon: <Domain /> },
+    { label: 'Profile', icon: <Business /> },
+    { label: 'Contact', icon: <Person /> },
+    { label: 'Accounts', icon: <AccountBalance /> },
+    { label: 'Ownership', icon: <Badge /> },
+    { label: 'Agreement', icon: <Gavel /> },
+];
+
+const TenantFormModal: React.FC<TenantFormModalProps> = ({
+    open,
+    mode,
+    loading = false,
+    initialValues,
+    submitDisabled = false,
+    submitDisabledMessage,
+    onClose,
+    onSubmit,
+}) => {
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [autoGenerateSlug, setAutoGenerateSlug] = useState(true);
+    const [autoGenerateDomain, setAutoGenerateDomain] = useState(true);
+    const [activeTab, setActiveTab] = useState(0);
+
+    const {
+        register,
+        handleSubmit,
+        watch,
+        setValue,
+        reset,
+        control,
+        formState: { errors, isSubmitting, touchedFields },
+    } = useForm<TenantFormValues>({
+        defaultValues,
+        mode: 'onChange',
+    });
+
+    const watchedName = watch('name');
+    const watchedDomain = watch('domain');
+    const watchedSlug = watch('slug');
+    const watchedAdminEmail = watch('adminEmail');
+    const isTrial = watch('isTrial');
+    const agreementAccepted = watch('agreementAccepted');
+
+    // Auto-generate slug from name
+    useEffect(() => {
+        if (open && mode === 'create' && autoGenerateSlug && watchedName) {
+            const generatedSlug = watchedName
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+            if (generatedSlug && (!watchedSlug || watchedSlug === '')) {
+                setValue('slug', generatedSlug, { shouldValidate: false });
+            }
+        }
+    }, [watchedName, autoGenerateSlug, open, mode, watchedSlug, setValue]);
+
+    // Auto-generate domain from name
+    useEffect(() => {
+        if (open && mode === 'create' && autoGenerateDomain && watchedName) {
+            const generatedDomain = watchedName
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '')
+                .replace(/-+/g, '')
+                + '.quickcash.local';
+            if (generatedDomain && (!watchedDomain || watchedDomain === '')) {
+                setValue('domain', generatedDomain, { shouldValidate: false });
+            }
+        }
+    }, [watchedName, autoGenerateDomain, open, mode, watchedDomain, setValue]);
+
+    useEffect(() => {
+        if (open) {
+            setSubmitError(null);
+            setShowPassword(false);
+            setAutoGenerateSlug(mode === 'create');
+            setAutoGenerateDomain(mode === 'create');
+            setActiveTab(0);
+            reset({
+                ...defaultValues,
+                ...initialValues,
+                isTrial: initialValues?.isTrial ?? true,
+                isActive: initialValues?.isActive ?? true,
+                trialEndsAt: initialValues?.trialEndsAt ?? '',
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, initialValues, mode]);
+
+    const handleFormSubmit = async (values: TenantFormValues) => {
+        setSubmitError(null);
+
+        // Validate agreement acceptance
+        if (!values.agreementAccepted) {
+            setSubmitError('You must accept the service agreement to create a tenant.');
+            setActiveTab(5); // Switch to agreement tab
+            return;
+        }
+
+        const payload: TenantFormValues = {
+            ...values,
+            name: values.name.trim(),
+            domain: values.domain.trim().toLowerCase(),
+            slug: values.slug?.trim() || values.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+            subdomain: values.subdomain?.trim() || undefined,
+            adminEmail: values.adminEmail?.trim() || undefined,
+            adminPassword: values.adminPassword || undefined,
+        };
+
+        // Validate slug format
+        if (payload.slug) {
+            const slugRegex = /^[a-z0-9-]+$/;
+            if (!slugRegex.test(payload.slug)) {
+                setSubmitError('Slug can only contain lowercase letters, numbers, and hyphens.');
+                setActiveTab(0);
+                return;
+            }
+        }
+
+        // Validate domain format
+        const domainRegex = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
+        if (!domainRegex.test(payload.domain)) {
+            setSubmitError('Please enter a valid domain name.');
+            setActiveTab(0);
+            return;
+        }
+
+        // Validate admin credentials if provided
+        if (payload.adminEmail && !payload.adminPassword) {
+            setSubmitError('Password is required when admin email is provided.');
+            setActiveTab(0);
+            return;
+        }
+
+        if (!payload.isTrial) {
+            payload.trialEndsAt = null;
+        }
+
+        try {
+            console.log('[TenantFormModal] Submitting form with payload:', payload);
+            await onSubmit(payload);
+            console.log('[TenantFormModal] Form submitted successfully');
+            setSubmitError(null);
+        } catch (error: any) {
+            console.error('[TenantFormModal] Form submission failed:', error);
+            let message = 'Unable to save tenant. Please try again.';
+
+            if (typeof error === 'string') {
+                message = error;
+            } finally {
+            setIsSubmitting(false);
+        } else if (error?.message) {
+                message = error.message;
+            } else if (error?.detail) {
+                message = error.detail;
+            } else if (error?.response?.data) {
+                const data = error.response.data;
+                if (typeof data === 'string') {
+                    message = data;
+                } else if (data.detail) {
+                    message = data.detail;
+                } else if (data.message) {
+                    message = data.message;
+                } else if (data.non_field_errors) {
+                    message = Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors;
+                } else {
+                    const firstError = Object.values(data)[0];
+                    if (Array.isArray(firstError)) {
+                        message = firstError[0];
+                    } else if (typeof firstError === 'string') {
+                        message = firstError;
+                    }
+                }
+            }
+
+            setSubmitError(message);
+        }
+    };
+
+    // Validation helpers
+    const isValidSlug = useMemo(() => {
+        if (!watchedSlug) return true;
+        return /^[a-z0-9-]+$/.test(watchedSlug);
+    }, [watchedSlug]);
+
+    const isValidDomain = useMemo(() => {
+        if (!watchedDomain) return true;
+        return /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i.test(watchedDomain);
+    }, [watchedDomain]);
+
+    const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+        setActiveTab(newValue);
+    };
+
+    const handleNext = () => {
+        if (activeTab < TAB_LABELS.length - 1) {
+            setActiveTab(activeTab + 1);
+        }
+    };
+
+    const handleBack = () => {
+        if (activeTab > 0) {
+            setActiveTab(activeTab - 1);
+        }
+    };
+
+    // Calculate completion percentage for each tab
+    const getTabCompletion = (tabIndex: number): number => {
+        const values = watch();
+        switch (tabIndex) {
+            case 0: // Basic Info
+                const basicFields = [values.name, values.domain];
+                return (basicFields.filter(Boolean).length / basicFields.length) * 100;
+            case 1: // Profile
+                const profileFields = [values.tradingName, values.industry, values.category];
+                return (profileFields.filter(Boolean).length / profileFields.length) * 100;
+            case 2: // Contact
+                const contactFields = [values.contactName, values.contactEmail, values.contactPhone];
+                return (contactFields.filter(Boolean).length / contactFields.length) * 100;
+            case 3: // Accounts
+                const accountFields = [values.settlementBankName, values.settlementAccountNumber, values.settlementAccountName];
+                return (accountFields.filter(Boolean).length / accountFields.length) * 100;
+            case 4: // Ownership
+                const ownerFields = [values.ownerName, values.ownerNationality, values.ownerIdType];
+                return (ownerFields.filter(Boolean).length / ownerFields.length) * 100;
+            case 5: // Agreement
+                return values.agreementAccepted ? 100 : 0;
+            default:
+                return 0;
+        }
+    };
+
+    return (
+        <Dialog
+            open={open}
+            onClose={onClose}
+            maxWidth="lg"
+            fullWidth
+            PaperProps={{
+                sx: { 
+                    minHeight: '80vh',
+                    maxHeight: '90vh',
+                }
+            }}
+        >
+            <DialogTitle sx={{ pb: 0 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack direction="row" spacing={1} alignItems="center">
+                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                            <Domain />
+                        </Avatar>
+                        <Box>
+                            <Typography variant="h5" fontWeight="bold">
+                                {mode === 'create' ? 'Create New Tenant' : 'Edit Tenant'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Complete all sections to register a new tenant
+                            </Typography>
+                        </Box>
+                    </Stack>
+                    <Chip 
+                        label={`Step ${activeTab + 1} of ${TAB_LABELS.length}`}
+                        color="primary"
+                        variant="outlined"
+                    />
+                </Stack>
+            </DialogTitle>
+            
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}>
+                <Tabs 
+                    value={activeTab} 
+                    onChange={handleTabChange}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    sx={{ 
+                        '& .MuiTab-root': { 
+                            minHeight: 64,
+                            textTransform: 'none',
+                        }
+                    }}
+                >
+                    {TAB_LABELS.map((tab, index) => (
+                        <Tab
+                            key={index}
+                            icon={
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    {tab.icon}
+                                    {getTabCompletion(index) === 100 && (
+                                        <CheckCircle color="success" fontSize="small" />
+                                    )}
+                                </Stack>
+                            }
+                            label={tab.label}
+                            iconPosition="start"
+                        />
+                    ))}
+                </Tabs>
+            </Box>
+
+            <DialogContent sx={{ py: 0 }}>
+                <form id="tenant-form-modal" onSubmit={handleSubmit(handleFormSubmit)}>
+                    {submitDisabled && submitDisabledMessage && (
+                        <Alert severity="info" icon={<Info />} sx={{ mt: 2 }}>
+                            {submitDisabledMessage}
+                        </Alert>
+                    )}
+                    {submitError && (
+                        <Alert severity="error" icon={<ErrorIcon />} onClose={() => setSubmitError(null)} sx={{ mt: 2 }}>
+                            {submitError}
+                        </Alert>
+                    )}
+
+                    {/* Tab 0: Basic Info */}
+                    <TabPanel value={activeTab} index={0}>
+                        <Stack spacing={3}>
+                            <Typography variant="h6" color="primary" gutterBottom>
+                                <Domain sx={{ mr: 1, verticalAlign: 'middle' }} />
+                                Basic Tenant Information
+                            </Typography>
+                            
+                            <TextField
+                                label="Tenant Name"
+                                fullWidth
+                                required
+                                {...register('name', {
+                                    required: 'Tenant name is required.',
+                                    minLength: { value: 2, message: 'Tenant name must be at least 2 characters.' },
+                                    maxLength: { value: 255, message: 'Tenant name must not exceed 255 characters.' }
+                                })}
+                                error={Boolean(errors.name)}
+                                helperText={errors.name?.message || 'Enter a unique name for this tenant'}
+                                autoFocus
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Domain color="action" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} md={8}>
+                                    <TextField
+                                        label="Domain"
+                                        fullWidth
+                                        required
+                                        {...register('domain', {
+                                            required: 'Domain is required.',
+                                            pattern: {
+                                                value: /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i,
+                                                message: 'Please enter a valid domain name'
+                                            }
+                                        })}
+                                        error={Boolean(errors.domain) || (touchedFields.domain && !isValidDomain)}
+                                        helperText={errors.domain?.message || 'Unique domain for this tenant'}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <LinkIcon color="action" />
+                                                </InputAdornment>
+                                            ),
+                                            endAdornment: autoGenerateDomain && mode === 'create' && (
+                                                <InputAdornment position="end">
+                                                    <Tooltip title="Auto-generated from tenant name">
+                                                        <CheckCircle color="success" fontSize="small" />
+                                                    </Tooltip>
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                    <TextField
+                                        label="Subdomain"
+                                        fullWidth
+                                        {...register('subdomain')}
+                                        helperText="Optional subdomain identifier"
+                                    />
+                                </Grid>
+                            </Grid>
+
+                            <TextField
+                                label="Slug"
+                                fullWidth
+                                {...register('slug', {
+                                    pattern: {
+                                        value: /^[a-z0-9-]+$/,
+                                        message: 'Slug can only contain lowercase letters, numbers, and hyphens'
+                                    }
+                                })}
+                                error={Boolean(errors.slug) || (touchedFields.slug && !isValidSlug)}
+                                helperText={errors.slug?.message || 'URL-friendly identifier (auto-generated if left blank)'}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <LinkIcon color="action" />
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: autoGenerateSlug && mode === 'create' && watchedSlug && (
+                                        <InputAdornment position="end">
+                                            <Tooltip title="Auto-generated from tenant name">
+                                                <CheckCircle color="success" fontSize="small" />
+                                            </Tooltip>
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+
+                            <Divider />
+
+                            <Stack spacing={1}>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                    Tenant Status
+                                </Typography>
+                                <Grid container spacing={2}>
+                                    <Grid item xs={12} md={6}>
+                                        <FormControlLabel
+                                            control={
+                                                <Switch
+                                                    color="primary"
+                                                    checked={watch('isActive')}
+                                                    onChange={(event) => setValue('isActive', event.target.checked)}
+                                                />
+                                            }
+                                            label="Active Tenant"
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                        <FormControlLabel
+                                            control={
+                                                <Switch
+                                                    color="primary"
+                                                    checked={isTrial}
+                                                    onChange={(event) => setValue('isTrial', event.target.checked)}
+                                                />
+                                            }
+                                            label="Trial Tenant"
+                                        />
+                                    </Grid>
+                                </Grid>
+                            </Stack>
+
+                            {isTrial && (
+                                <TextField
+                                    label="Trial Ends"
+                                    type="datetime-local"
+                                    fullWidth
+                                    {...register('trialEndsAt')}
+                                    InputLabelProps={{ shrink: true }}
+                                    helperText="Choose when the trial expires"
+                                />
+                            )}
+
+                            {mode === 'create' && (
+                                <>
+                                    <Divider />
+                                    <Typography variant="subtitle2" color="text.secondary">
+                                        Optional: Create Tenant Admin User
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField
+                                                label="Admin Email"
+                                                type="email"
+                                                fullWidth
+                                                {...register('adminEmail')}
+                                                InputProps={{
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Email color="action" />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                                helperText="Email for tenant admin user"
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField
+                                                label="Admin Password"
+                                                type={showPassword ? 'text' : 'password'}
+                                                fullWidth
+                                                {...register('adminPassword')}
+                                                helperText={watchedAdminEmail ? 'Required: Minimum 8 characters' : 'Required if admin email is provided'}
+                                                InputProps={{
+                                                    endAdornment: (
+                                                        <InputAdornment position="end">
+                                                            <IconButton
+                                                                onClick={() => setShowPassword(!showPassword)}
+                                                                edge="end"
+                                                            >
+                                                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                                                            </IconButton>
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </>
+                            )}
+                        </Stack>
+                    </TabPanel>
+
+                    {/* Tab 1: Profile */}
+                    <TabPanel value={activeTab} index={1}>
+                        <Stack spacing={3}>
+                            <Typography variant="h6" color="primary" gutterBottom>
+                                <Business sx={{ mr: 1, verticalAlign: 'middle' }} />
+                                Business Profile
+                            </Typography>
+
+                            <TextField
+                                label="Trading Name"
+                                fullWidth
+                                {...register('tradingName')}
+                                helperText="The name under which the business operates"
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Business color="action" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+
+                            <TextField
+                                label="Business Description"
+                                fullWidth
+                                multiline
+                                rows={3}
+                                {...register('description')}
+                                helperText="Brief description of the business and its services"
+                            />
+
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} md={6}>
+                                    <Controller
+                                        name="industry"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <FormControl fullWidth>
+                                                <InputLabel>Industry</InputLabel>
+                                                <Select {...field} label="Industry">
+                                                    {INDUSTRY_OPTIONS.map((option) => (
+                                                        <MenuItem key={option} value={option}>
+                                                            {option}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        )}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <Controller
+                                        name="category"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <FormControl fullWidth>
+                                                <InputLabel>Category</InputLabel>
+                                                <Select {...field} label="Category">
+                                                    {CATEGORY_OPTIONS.map((option) => (
+                                                        <MenuItem key={option} value={option}>
+                                                            {option}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        )}
+                                    />
+                                </Grid>
+                            </Grid>
+
+                            <TextField
+                                label="Business Registration Number"
+                                fullWidth
+                                {...register('businessRegistration')}
+                                helperText="CAC registration number or equivalent"
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Badge color="action" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+
+                            <TextField
+                                label="Business Address"
+                                fullWidth
+                                multiline
+                                rows={2}
+                                {...register('businessAddress')}
+                                helperText="Full registered business address"
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Home color="action" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+
+                            <TextField
+                                label="Website"
+                                fullWidth
+                                {...register('website')}
+                                placeholder="https://www.example.com"
+                                helperText="Company website URL"
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Language color="action" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+                        </Stack>
+                    </TabPanel>
+
+                    {/* Tab 2: Contact Person */}
+                    <TabPanel value={activeTab} index={2}>
+                        <Stack spacing={3}>
+                            <Typography variant="h6" color="primary" gutterBottom>
+                                <Person sx={{ mr: 1, verticalAlign: 'middle' }} />
+                                Primary Contact Person
+                            </Typography>
+
+                            <Card variant="outlined">
+                                <CardContent>
+                                    <Stack spacing={3}>
+                                        <TextField
+                                            label="Full Name"
+                                            fullWidth
+                                            {...register('contactName')}
+                                            helperText="Full name of the primary contact person"
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <Person color="action" />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+
+                                        <TextField
+                                            label="Business Email"
+                                            type="email"
+                                            fullWidth
+                                            {...register('contactEmail')}
+                                            helperText="Official business email address"
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <Email color="action" />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+
+                                        <TextField
+                                            label="Phone Number"
+                                            fullWidth
+                                            {...register('contactPhone')}
+                                            placeholder="+234 XXX XXX XXXX"
+                                            helperText="Contact phone number with country code"
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <Phone color="action" />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+                        </Stack>
+                    </TabPanel>
+
+                    {/* Tab 3: Accounts */}
+                    <TabPanel value={activeTab} index={3}>
+                        <Stack spacing={3}>
+                            <Typography variant="h6" color="primary" gutterBottom>
+                                <AccountBalance sx={{ mr: 1, verticalAlign: 'middle' }} />
+                                Settlement Account Details
+                            </Typography>
+
+                            <Alert severity="info" icon={<Info />}>
+                                This account will be used for all financial settlements and payouts.
+                            </Alert>
+
+                            <Card variant="outlined">
+                                <CardContent>
+                                    <Stack spacing={3}>
+                                        <Controller
+                                            name="settlementBankName"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <FormControl fullWidth>
+                                                    <InputLabel>Bank Name</InputLabel>
+                                                    <Select {...field} label="Bank Name">
+                                                        {BANK_OPTIONS.map((bank) => (
+                                                            <MenuItem key={bank} value={bank}>
+                                                                {bank}
+                                                            </MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                </FormControl>
+                                            )}
+                                        />
+
+                                        <TextField
+                                            label="Account Number"
+                                            fullWidth
+                                            {...register('settlementAccountNumber')}
+                                            placeholder="0123456789"
+                                            helperText="10-digit NUBAN account number"
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <CreditCard color="action" />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+
+                                        <TextField
+                                            label="Account Name"
+                                            fullWidth
+                                            {...register('settlementAccountName')}
+                                            helperText="Name on the bank account"
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <Person color="action" />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+                        </Stack>
+                    </TabPanel>
+
+                    {/* Tab 4: Ownership */}
+                    <TabPanel value={activeTab} index={4}>
+                        <Stack spacing={3}>
+                            <Typography variant="h6" color="primary" gutterBottom>
+                                <Badge sx={{ mr: 1, verticalAlign: 'middle' }} />
+                                Ownership Information
+                            </Typography>
+
+                            <Alert severity="info" icon={<Info />}>
+                                KYC/AML compliance requires verification of business ownership details.
+                            </Alert>
+
+                            {/* Personal Details */}
+                            <Card variant="outlined">
+                                <CardContent>
+                                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                        Personal Details
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField
+                                                label="Owner Full Name"
+                                                fullWidth
+                                                {...register('ownerName')}
+                                                InputProps={{
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Person color="action" />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField
+                                                label="Date of Birth"
+                                                type="date"
+                                                fullWidth
+                                                {...register('ownerDateOfBirth')}
+                                                InputLabelProps={{ shrink: true }}
+                                                InputProps={{
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <CalendarMonth color="action" />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <Controller
+                                                name="ownerNationality"
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <FormControl fullWidth>
+                                                        <InputLabel>Nationality</InputLabel>
+                                                        <Select {...field} label="Nationality">
+                                                            {NATIONALITY_OPTIONS.map((nation) => (
+                                                                <MenuItem key={nation} value={nation}>
+                                                                    {nation}
+                                                                </MenuItem>
+                                                            ))}
+                                                        </Select>
+                                                    </FormControl>
+                                                )}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <Controller
+                                                name="ownerIdType"
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <FormControl fullWidth>
+                                                        <InputLabel>ID Document Type</InputLabel>
+                                                        <Select {...field} label="ID Document Type">
+                                                            {ID_DOCUMENT_TYPES.map((type) => (
+                                                                <MenuItem key={type} value={type}>
+                                                                    {type}
+                                                                </MenuItem>
+                                                            ))}
+                                                        </Select>
+                                                    </FormControl>
+                                                )}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <TextField
+                                                label="ID Number"
+                                                fullWidth
+                                                {...register('ownerIdNumber')}
+                                                helperText="ID document number"
+                                                InputProps={{
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Badge color="action" />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </CardContent>
+                            </Card>
+
+                            {/* Address */}
+                            <Card variant="outlined">
+                                <CardContent>
+                                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                        Address Information
+                                    </Typography>
+                                    <Stack spacing={2}>
+                                        <TextField
+                                            label="Home Address"
+                                            fullWidth
+                                            multiline
+                                            rows={2}
+                                            {...register('ownerHomeAddress')}
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <Home color="action" />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                        <TextField
+                                            label="Proof of Address Document"
+                                            fullWidth
+                                            {...register('ownerProofOfAddress')}
+                                            placeholder="e.g., Utility bill, Bank statement"
+                                            helperText="Type of document used to verify address"
+                                        />
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+
+                            {/* Personal Bank Account */}
+                            <Card variant="outlined">
+                                <CardContent>
+                                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                        Personal Bank Account
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} md={4}>
+                                            <Controller
+                                                name="ownerBankName"
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <FormControl fullWidth>
+                                                        <InputLabel>Bank Name</InputLabel>
+                                                        <Select {...field} label="Bank Name">
+                                                            {BANK_OPTIONS.map((bank) => (
+                                                                <MenuItem key={bank} value={bank}>
+                                                                    {bank}
+                                                                </MenuItem>
+                                                            ))}
+                                                        </Select>
+                                                    </FormControl>
+                                                )}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} md={4}>
+                                            <TextField
+                                                label="Account Number"
+                                                fullWidth
+                                                {...register('ownerAccountNumber')}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} md={4}>
+                                            <TextField
+                                                label="Account Name"
+                                                fullWidth
+                                                {...register('ownerAccountName')}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </CardContent>
+                            </Card>
+                        </Stack>
+                    </TabPanel>
+
+                    {/* Tab 5: Service Agreement */}
+                    <TabPanel value={activeTab} index={5}>
+                        <Stack spacing={3}>
+                            <Typography variant="h6" color="primary" gutterBottom>
+                                <Gavel sx={{ mr: 1, verticalAlign: 'middle' }} />
+                                Service Agreement
+                            </Typography>
+
+                            <Alert severity="warning" icon={<Info />}>
+                                Please review and accept the service agreement to complete tenant registration.
+                            </Alert>
+
+                            {/* Agreement Terms */}
+                            <Card variant="outlined">
+                                <CardContent>
+                                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                        QuickCash Platform Service Agreement
+                                    </Typography>
+                                    <Paper 
+                                        variant="outlined" 
+                                        sx={{ 
+                                            p: 2, 
+                                            maxHeight: 200, 
+                                            overflow: 'auto',
+                                            bgcolor: 'grey.50',
+                                            mb: 2
+                                        }}
+                                    >
+                                        <Typography variant="body2" component="div">
+                                            <strong>TERMS AND CONDITIONS</strong>
+                                            <br /><br />
+                                            1. <strong>Agreement:</strong> By accepting these terms, you agree to be bound by the QuickCash Platform Service Agreement.
+                                            <br /><br />
+                                            2. <strong>Services:</strong> QuickCash provides payment processing, wallet management, and financial services infrastructure.
+                                            <br /><br />
+                                            3. <strong>Compliance:</strong> You agree to comply with all applicable laws, regulations, and industry standards including but not limited to CBN regulations, AML/CFT requirements, and data protection laws.
+                                            <br /><br />
+                                            4. <strong>Fees:</strong> Service fees and charges will be as agreed in the commercial terms and may be updated with prior notice.
+                                            <br /><br />
+                                            5. <strong>Data Protection:</strong> Both parties agree to handle personal and financial data in accordance with the Nigeria Data Protection Regulation (NDPR).
+                                            <br /><br />
+                                            6. <strong>Liability:</strong> QuickCash's liability is limited to the extent permitted by law and as specified in the full agreement.
+                                            <br /><br />
+                                            7. <strong>Termination:</strong> Either party may terminate this agreement with 30 days written notice, subject to the terms of the full agreement.
+                                        </Typography>
+                                    </Paper>
+                                </CardContent>
+                            </Card>
+
+                            {/* Contracting Details */}
+                            <Card variant="outlined">
+                                <CardContent>
+                                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                        Contracting Entity Details
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField
+                                                label="Contracting Entity Name"
+                                                fullWidth
+                                                {...register('contractingEntity')}
+                                                helperText="Legal entity entering the agreement"
+                                                InputProps={{
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Business color="action" />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField
+                                                label="Company Website"
+                                                fullWidth
+                                                {...register('agreementWebsite')}
+                                                InputProps={{
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Language color="action" />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <TextField
+                                                label="Company Address"
+                                                fullWidth
+                                                multiline
+                                                rows={2}
+                                                {...register('companyAddress')}
+                                                InputProps={{
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Home color="action" />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </CardContent>
+                            </Card>
+
+                            {/* Signatory Details */}
+                            <Card variant="outlined">
+                                <CardContent>
+                                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                        Authorized Signatory
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField
+                                                label="Full Name"
+                                                fullWidth
+                                                {...register('agreementFullName')}
+                                                helperText="Name of authorized signatory"
+                                                InputProps={{
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Person color="action" />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField
+                                                label="Phone Number"
+                                                fullWidth
+                                                {...register('agreementPhone')}
+                                                InputProps={{
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Phone color="action" />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <TextField
+                                                label="Email Address"
+                                                type="email"
+                                                fullWidth
+                                                {...register('agreementEmail')}
+                                                InputProps={{
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Email color="action" />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </CardContent>
+                            </Card>
+
+                            {/* Accept Agreement */}
+                            <Card 
+                                variant="outlined" 
+                                sx={{ 
+                                    bgcolor: agreementAccepted ? 'success.light' : 'warning.light',
+                                    borderColor: agreementAccepted ? 'success.main' : 'warning.main',
+                                }}
+                            >
+                                <CardContent>
+                                    <Controller
+                                        name="agreementAccepted"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox 
+                                                        {...field} 
+                                                        checked={field.value || false}
+                                                        color="primary"
+                                                        size="medium"
+                                                    />
+                                                }
+                                                label={
+                                                    <Typography variant="body1" fontWeight="medium">
+                                                        I have read, understood, and agree to the QuickCash Platform Service Agreement and Terms of Service. 
+                                                        I confirm that I am authorized to enter into this agreement on behalf of the contracting entity.
+                                                    </Typography>
+                                                }
+                                            />
+                                        )}
+                                    />
+                                    {agreementAccepted && (
+                                        <Stack direction="row" spacing={1} alignItems="center" mt={1}>
+                                            <CheckCircle color="success" />
+                                            <Typography variant="body2" color="success.dark">
+                                                Agreement accepted - You can now create the tenant
+                                            </Typography>
+                                        </Stack>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </Stack>
+                    </TabPanel>
+                </form>
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, py: 2, borderTop: 1, borderColor: 'divider' }}>
+                <Stack direction="row" spacing={2} width="100%" justifyContent="space-between">
+                    <Stack direction="row" spacing={1}>
+                        <Button 
+                            onClick={handleBack} 
+                            disabled={activeTab === 0}
+                            startIcon={<NavigateBefore />}
+                        >
+                            Previous
+                        </Button>
+                        <Button 
+                            onClick={handleNext} 
+                            disabled={activeTab === TAB_LABELS.length - 1}
+                            endIcon={<NavigateNext />}
+                        >
+                            Next
+                        </Button>
+                    </Stack>
+                    <Stack direction="row" spacing={1}>
+                        <Button onClick={onClose} disabled={isSubmitting || loading}>
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            form="tenant-form-modal"
+                            variant="contained"
+                            disabled={loading || isSubmitting || submitDisabled || !agreementAccepted}
+                            startIcon={(loading || isSubmitting) ? <CircularProgress size={16} /> : <CheckCircle />}
+                            color="primary"
+                        >
+                            {mode === 'create' ? 'Create Tenant' : 'Save Changes'}
+                        </Button>
+                    </Stack>
+                </Stack>
+            </DialogActions>
+        </Dialog>
+    );
+};
+
+export default TenantFormModal;

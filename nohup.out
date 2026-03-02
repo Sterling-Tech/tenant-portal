@@ -1,0 +1,1 @@
+bash: line 1: 74877 Killed: 9               BROWSER=none PORT=3002 npm start > ../../frontend/tenant-portal.log 2>&1
