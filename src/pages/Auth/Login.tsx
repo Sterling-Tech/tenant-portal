@@ -210,7 +210,7 @@ const Login: React.FC = () => {
 
                     <Box sx={{ textAlign: 'center', mt: 2 }}>
                         <Typography variant="body2" color="text.secondary">
-                            Vendor credentials: vendor1@quickcash.com5 / password
+                            Vendor credentials: vendor1@quickcash.com56 / password
                         </Typography>
                     </Box>
                 </CardContent>
