@@ -69,7 +69,8 @@ const Login: React.FC = () => {
 
         try {
             // Call backend API directly
-            const response = await fetch('http://188.166.161.13:8001/api/v1/auth/login/', {
+            //const response = await fetch('http://188.166.161.13:8001/api/v1/auth/login/', {
+            const response = await fetch('http://188.166.99.136:8061/user/login/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -141,10 +142,10 @@ const Login: React.FC = () => {
                     <Box sx={{ textAlign: 'center', mb: 3 }}>
                         <LoginIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
                         <Typography variant="h4" component="h1" gutterBottom>
-                            QuickCash Vendor Portal
+                            QuickCash Tenant Portal
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Sign in to access your vendor dashboard
+                            Sign in to access your tenant dashboard
                         </Typography>
                     </Box>
 
@@ -209,7 +210,7 @@ const Login: React.FC = () => {
 
                     <Box sx={{ textAlign: 'center', mt: 2 }}>
                         <Typography variant="body2" color="text.secondary">
-                            Vendor credentials: vendor1@quickcash.com / password
+                            Vendor credentials: vendor1@quickcash.com555 / password
                         </Typography>
                     </Box>
                 </CardContent>

@@ -308,7 +308,7 @@ const VendorManagement: React.FC = () => {
                         variant="contained"
                         startIcon={<Add />}
                         onClick={handleCreateClick}
-                        disabled={!selectedTenantId}
+                        //disabled={!selectedTenantId}
                         title={!selectedTenantId ? 'Please select a tenant first' : 'Create new vendor'}
                     >
                         Create Vendor
