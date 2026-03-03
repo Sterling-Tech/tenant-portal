@@ -4,7 +4,7 @@ import { RootState } from '../store';
 import { logoutUser, setTokens, extractAuthPayload } from '../slices/authSlice';
 
 const rawBaseQuery = fetchBaseQuery({
-    baseUrl: process.env.REACT_APP_API_URL || 'http://188.166.161.13:8001/api/v1',
+    baseUrl: process.env.REACT_APP_API_URL || 'http://188.166.99.136:8061',
     prepareHeaders: (headers, { getState }) => {
         const token = (getState() as RootState).auth.token;
         if (token) {
@@ -74,20 +74,20 @@ export const api = createApi({
         // Auth endpoints
         login: builder.mutation({
             query: (credentials) => ({
-                url: 'auth/login/',
+                url: 'user/login/',
                 method: 'POST',
                 body: credentials,
             }),
         }),
         logout: builder.mutation({
             query: () => ({
-                url: 'auth/logout/',
+                url: 'user/logout/',
                 method: 'POST',
             }),
         }),
         refreshToken: builder.mutation({
             query: (refreshToken) => ({
-                url: 'auth/login/refresh/',
+                url: 'user/login/refresh/',
                 method: 'POST',
                 body: { refresh: refreshToken },
             }),
