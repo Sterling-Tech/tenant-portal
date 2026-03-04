@@ -141,8 +141,9 @@ const WalletManagement: React.FC = () => {
         const term = tenantSearchTerm.toLowerCase();
         return tenants.filter(
             (t) =>
-                t.name.toLowerCase().includes(term) ||
-                t.domain.toLowerCase().includes(term)
+                t.business_name.toLowerCase().includes(term)
+            // ||
+                // t.domain.toLowerCase().includes(term)
         );
     }, [tenants, tenantSearchTerm]);
 
@@ -342,7 +343,7 @@ const WalletManagement: React.FC = () => {
                                     <Typography variant="h6">Select Tenant</Typography>
                                     <Autocomplete
                                         options={filteredTenants}
-                                        getOptionLabel={(option) => `${option.name} (${option.domain})`}
+                                        getOptionLabel={(option) => `${option?.business_name }`}
                                         value={tenants?.find((t) => t.id === tenantId) || null}
                                         onChange={(_, newValue) => {
                                             if (newValue) {

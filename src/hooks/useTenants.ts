@@ -101,7 +101,7 @@ export const useTenants = () => {
                     console.log('[useTenants] Summary fetch failed:', err);
                     return null;
                 }),
-                tenantService.getAllTenants(query).catch((err) => {
+                tenantService.getAllTenants().catch((err) => {
                     console.log('[useTenants] Tenants fetch failed:', err);
                     return [];
                 }),
@@ -119,13 +119,19 @@ export const useTenants = () => {
                 return;
             }
 
-            if (selectedTenantId) {
-                const exists = tenantList.some((tenant) => tenant.id === selectedTenantId);
-                if (!exists) {
-                    selectTenant(tenantList[0].id);
+            // if (selectedTenantId) {
+            //     const exists = tenantList.some((tenant) => tenant.id === selectedTenantId);
+            //     if (!exists) {
+            //         selectTenant(tenantList[0].id);
+            //     }
+            // } else {
+            //     selectTenant(tenantList[0].id);
+            // }
+            const firstId = tenantList[0].id;
+            if (!selectedTenantId || !tenantList.some(t => t.id === selectedTenantId)) {
+                if (selectedTenantId !== firstId) {
+                    selectTenant(firstId);
                 }
-            } else {
-                selectTenant(tenantList[0].id);
             }
         } catch (err) {
             setError(parseError(err));
@@ -133,7 +139,7 @@ export const useTenants = () => {
         } finally {
             setLoading(false);
         }
-    }, [selectedTenantId, selectTenant]);
+    }, [selectTenant]);
 
     useEffect(() => {
         refreshTenants();

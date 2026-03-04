@@ -265,10 +265,11 @@ const TenantAdmin: React.FC = () => {
         const term = searchTerm.toLowerCase();
         return tenants.filter(
             (tenant) =>
-                tenant.name.toLowerCase().includes(term) ||
-                tenant.slug.toLowerCase().includes(term) ||
-                tenant.domain.toLowerCase().includes(term) ||
-                (tenant.subdomain && tenant.subdomain.toLowerCase().includes(term))
+                tenant.business_name.toLowerCase().includes(term) 
+                //||
+                // tenant.slug.toLowerCase().includes(term) ||
+                // tenant.domain.toLowerCase().includes(term) ||
+                // (tenant.subdomain && tenant.subdomain.toLowerCase().includes(term))
         );
     }, [tenants, searchTerm]);
 
@@ -363,7 +364,7 @@ const TenantAdmin: React.FC = () => {
                 const newTenant = await createTenant(createPayload);
                 console.log('[TenantAdmin] Tenant created successfully:', newTenant);
 
-                setCreateSuccess(`Tenant "${newTenant.name}" created successfully!`);
+                setCreateSuccess(`Tenant "${newTenant.business_name}" created successfully!`);
                 setTimeout(() => setCreateSuccess(null), 5000);
                 // Clear search to show the new tenant
                 setSearchTerm('');
@@ -479,15 +480,15 @@ const TenantAdmin: React.FC = () => {
         await deleteTenant(selectedTenant.id);
     };
 
-    const handleToggleActive = () => {
-        if (!selectedTenant) return;
-        setTenantActive(selectedTenant.id, !selectedTenant.is_active);
-    };
+    // const handleToggleActive = () => {
+    //     if (!selectedTenant) return;
+    //     setTenantActive(selectedTenant.id, !selectedTenant.is_active);
+    // };
 
-    const handleToggleTrial = async () => {
-        if (!selectedTenant) return;
-        await updateTenant(selectedTenant.id, { is_trial: !selectedTenant.is_trial });
-    };
+    // const handleToggleTrial = async () => {
+    //     if (!selectedTenant) return;
+    //     await updateTenant(selectedTenant.id, { is_trial: !selectedTenant.is_trial });
+    // };
 
     const openAuditDialog = async (keyId: string, keyLabel: string) => {
         await loadAudit(keyId);
@@ -632,7 +633,7 @@ const TenantAdmin: React.FC = () => {
                         <Card>
                             <CardContent>
                                 <Typography color="text.secondary" variant="body2">
-                                    Active Tenants
+                                    Active Vendor
                                 </Typography>
                                 <Typography variant="h5">{summary.active_tenants}</Typography>
                             </CardContent>
@@ -642,7 +643,7 @@ const TenantAdmin: React.FC = () => {
                         <Card>
                             <CardContent>
                                 <Typography color="text.secondary" variant="body2">
-                                    Trial Tenants
+                                    Total Customer
                                 </Typography>
                                 <Typography variant="h5">{summary.trial_tenants}</Typography>
                             </CardContent>
@@ -882,20 +883,20 @@ const TenantAdmin: React.FC = () => {
                                                         primary={
                                                             <Stack direction="row" spacing={1} alignItems="center">
                                                                 <Typography variant="body2" fontWeight={600}>
-                                                                    {tenant.name}
+                                                                    {tenant.business_name}
                                                                 </Typography>
-                                                                <Chip
+                                                                {/* <Chip
                                                                     label={tenant.is_active ? 'Active' : 'Inactive'}
                                                                     size="small"
                                                                     color={tenant.is_active ? 'success' : 'default'}
-                                                                />
+                                                                /> */}
                                                             </Stack>
                                                         }
-                                                        secondary={`${tenant.domain}${tenant.subdomain ? ` • ${tenant.subdomain}` : ''}`}
+                                                        // secondary={`${tenant.domain}${tenant.subdomain ? ` • ${tenant.subdomain}` : ''}`}
                                                     />
-                                                    <ListItemSecondaryAction>
+                                                    {/* <ListItemSecondaryAction>
                                                         {tenant.is_trial && <Chip label="Trial" size="small" color="warning" />}
-                                                    </ListItemSecondaryAction>
+                                                    </ListItemSecondaryAction> */}
                                                 </ListItemButton>
                                             </ListItem>
                                         ))}
@@ -927,14 +928,14 @@ const TenantAdmin: React.FC = () => {
                                 <CardContent>
                                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                                         <Stack spacing={0.5}>
-                                            <Typography variant="h5">{selectedTenant.name}</Typography>
-                                            <Typography color="text.secondary">{selectedTenant.domain}</Typography>
+                                            <Typography variant="h5">{selectedTenant.business_name}</Typography>
+                                            {/* <Typography color="text.secondary">{selectedTenant.domain}</Typography>
                                             {selectedTenant.subdomain && (
                                                 <Typography color="text.secondary">Subdomain: {selectedTenant.subdomain}</Typography>
-                                            )}
+                                            )} */}
                                         </Stack>
                                         <Stack direction="row" spacing={1}>
-                                            <Button
+                                            {/* <Button
                                                 variant={selectedTenant.is_active ? 'outlined' : 'contained'}
                                                 color={selectedTenant.is_active ? 'secondary' : 'success'}
                                                 startIcon={selectedTenant.is_active ? <HighlightOff /> : <CheckCircle />}
@@ -942,7 +943,7 @@ const TenantAdmin: React.FC = () => {
                                                 disabled={mutationLoading}
                                             >
                                                 {selectedTenant.is_active ? 'Deactivate' : 'Activate'}
-                                            </Button>
+                                            </Button> */}
                                             <Button
                                                 variant="outlined"
                                                 startIcon={<Edit />}
@@ -964,26 +965,26 @@ const TenantAdmin: React.FC = () => {
                                     </Box>
 
                                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
-                                        <Chip
+                                        {/* <Chip
                                             label={selectedTenant.is_trial ? 'Trial Tenant' : 'Standard Tenant'}
                                             color={selectedTenant.is_trial ? 'warning' : 'default'}
                                             variant={selectedTenant.is_trial ? 'filled' : 'outlined'}
-                                        />
+                                        /> */}
                                         <Typography variant="body2">
                                             Trial Ends:{' '}
-                                            {selectedTenant.trial_ends_at
+                                            {/* {selectedTenant.trial_ends_at
                                                 ? new Date(selectedTenant.trial_ends_at).toLocaleString()
-                                                : 'Not set'}
+                                                : 'Not set'} */}
                                         </Typography>
                                         <Stack direction="row" spacing={1}>
-                                            <Button
+                                            {/* <Button
                                                 size="small"
                                                 variant="outlined"
                                                 onClick={handleToggleTrial}
                                                 disabled={mutationLoading}
                                             >
                                                 {selectedTenant.is_trial ? 'Mark as Paid' : 'Mark as Trial'}
-                                            </Button>
+                                            </Button> */}
                                             <Button
                                                 size="small"
                                                 variant="outlined"
@@ -1030,7 +1031,7 @@ const TenantAdmin: React.FC = () => {
                                                                 const url = URL.createObjectURL(blob);
                                                                 const a = document.createElement('a');
                                                                 a.href = url;
-                                                                a.download = `${selectedTenant.name}-analytics-${new Date().toISOString().split('T')[0]}.json`;
+                                                                a.download = `${selectedTenant.business_name}-analytics-${new Date().toISOString().split('T')[0]}.json`;
                                                                 a.click();
                                                                 URL.revokeObjectURL(url);
                                                             }
@@ -1702,13 +1703,13 @@ const TenantAdmin: React.FC = () => {
                 initialValues={
                     tenantModalState.mode === 'edit' && tenantModalState.tenant
                         ? {
-                            name: tenantModalState.tenant.name,
-                            slug: tenantModalState.tenant.slug,
-                            domain: tenantModalState.tenant.domain,
-                            subdomain: tenantModalState.tenant.subdomain ?? '',
-                            isTrial: tenantModalState.tenant.is_trial,
-                            trialEndsAt: tenantModalState.tenant.trial_ends_at ?? '',
-                            isActive: tenantModalState.tenant.is_active,
+                            name: tenantModalState.tenant.business_name,
+                            // slug: tenantModalState.tenant.slug,
+                            // domain: tenantModalState.tenant.domain,
+                            // subdomain: tenantModalState.tenant.subdomain ?? '',
+                            // isTrial: tenantModalState.tenant.is_trial,
+                            // trialEndsAt: tenantModalState.tenant.trial_ends_at ?? '',
+                            // isActive: tenantModalState.tenant.is_active,
                         }
                         : undefined
                 }

@@ -75,7 +75,7 @@ const TenantSwitcher: React.FC<TenantSwitcherProps> = ({ onTenantChange, current
 
                 const unique = new Map<string, Tenant>();
                 finalResults.forEach((tenant) => unique.set(tenant.id, tenant));
-                setTenants(Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name)));
+                setTenants(Array.from(unique.values()).sort((a, b) => a.business_name.localeCompare(b.business_name)));
             } catch (err: any) {
                 console.error('TenantSwitcher - failed to load tenants', err);
                 const message =
@@ -123,7 +123,7 @@ const TenantSwitcher: React.FC<TenantSwitcherProps> = ({ onTenantChange, current
                     if (prev.some((item) => item.id === tenant.id)) {
                         return prev;
                     }
-                    return [tenant, ...prev].sort((a, b) => a.name.localeCompare(b.name));
+                    return [tenant, ...prev].sort((a, b) => a.business_name.localeCompare(b.business_name));
                 });
             })
             .catch((err) => {
@@ -228,7 +228,7 @@ const TenantSwitcher: React.FC<TenantSwitcherProps> = ({ onTenantChange, current
                             selected={tenant.id === currentTenantId}
                             onClick={() => handleTenantSelect(tenant)}
                         >
-                            <Typography variant="body2">{tenant.name}</Typography>
+                            <Typography variant="body2">{tenant.business_name}</Typography>
                         </MenuItem>
                     ))}
             </Menu>

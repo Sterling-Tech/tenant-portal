@@ -124,7 +124,7 @@ const VendorManagement: React.FC = () => {
 
     // Load vendors
     const loadVendors = async () => {
-        if (!selectedTenantId) return;
+        // if (!selectedTenantId) return;
 
         setLoading(true);
         setError(null);
@@ -172,9 +172,16 @@ const VendorManagement: React.FC = () => {
         setFormMode('create');
         setVendorForm({
             tenant: selectedTenantId || undefined,
-            name: '',
+            business_name: '',
             email: '',
-            is_active: true,
+            phone_number: '',
+            address: '',
+            city: '',
+            state: '',
+            country: '',
+            postal_code: '',
+            hierachy: '',
+            related_vendor: undefined,
         });
         setVendorDialogOpen(true);
     };
@@ -182,25 +189,24 @@ const VendorManagement: React.FC = () => {
     const handleEditClick = (vendor: Vendor) => {
         setFormMode('edit');
         setVendorForm({
-            name: vendor.name,
+            business_name: vendor.business_name,
             email: vendor.email,
-            phone: vendor.phone || '',
+            phone_number: vendor.phone_number || '',
             address: vendor.address || '',
             city: vendor.city || '',
             state: vendor.state || '',
             country: vendor.country || '',
             postal_code: vendor.postal_code || '',
-            is_active: vendor.is_active,
-            is_verified: vendor.is_verified,
-            metadata: vendor.metadata,
+            hierachy: '',
+            related_vendor: undefined,
         });
         setSelectedVendor(vendor);
         setVendorDialogOpen(true);
     };
 
     const handleSaveVendor = async () => {
-        if (!vendorForm.name || !vendorForm.email) {
-            setError('Name and email are required');
+        if (!vendorForm.business_name || !vendorForm.email || !vendorForm.hierachy) {
+            setError('Business name, email and hierarchy are required');
             return;
         }
 
@@ -208,12 +214,12 @@ const VendorManagement: React.FC = () => {
             if (formMode === 'create') {
                 await createVendor(vendorForm as VendorForm);
             } else if (selectedVendor) {
-                await updateVendor(selectedVendor.id, vendorForm);
+                await updateVendor(String(selectedVendor.id), vendorForm);
             }
             setVendorDialogOpen(false);
             loadVendors();
             if (selectedVendor) {
-                loadVendorDetails(selectedVendor.id);
+                loadVendorDetails(String(selectedVendor.id));
             }
         } catch (err: any) {
             setError(err?.message || 'Failed to save vendor');
@@ -224,7 +230,7 @@ const VendorManagement: React.FC = () => {
         if (!selectedVendor) return;
 
         try {
-            await deleteVendor(selectedVendor.id);
+            await deleteVendor(String(selectedVendor.id));
             setDeleteDialogOpen(false);
             setSelectedVendor(null);
             loadVendors();
@@ -263,31 +269,29 @@ const VendorManagement: React.FC = () => {
     };
 
     const filteredVendors = useMemo(() => {
-        if (!vendors || !Array.isArray(vendors)) return [];
-        return vendors.filter(v => {
-            if (searchTerm) {
-                const search = searchTerm.toLowerCase();
-                return (
-                    v.name.toLowerCase().includes(search) ||
-                    v.email.toLowerCase().includes(search) ||
-                    v.slug.toLowerCase().includes(search) ||
-                    (v.phone && v.phone.includes(search))
-                );
-            }
-            return true;
+        if (!vendors) return [];
+
+        return vendors.filter((v) => {
+            const term = searchTerm.toLowerCase();
+
+            return (
+                v.business_name?.toLowerCase().includes(term) ||
+                v.email?.toLowerCase().includes(term) ||
+                v.phone_number?.includes(term) ||
+                v.hierachy?.toLowerCase().includes(term)
+            );
         });
     }, [vendors, searchTerm]);
-
     // Filtered tenants for search
     const filteredTenants = useMemo(() => {
-        if (!tenants || !Array.isArray(tenants)) return [];
-        if (!tenantSearchTerm.trim()) return tenants;
-        const term = tenantSearchTerm.toLowerCase();
-        return tenants.filter(
-            (t) =>
-                t.name.toLowerCase().includes(term) ||
-                t.domain.toLowerCase().includes(term) ||
-                t.slug.toLowerCase().includes(term)
+        if (!Array.isArray(tenants)) return [];
+
+        const term = String(tenantSearchTerm ?? '').toLowerCase().trim();
+
+        if (!term) return tenants;
+
+        return tenants.filter((t) =>
+            String(t?.business_name ?? '').toLowerCase().includes(term)
         );
     }, [tenants, tenantSearchTerm]);
 
@@ -329,7 +333,9 @@ const VendorManagement: React.FC = () => {
                         <Typography variant="h6">Select Tenant</Typography>
                         <Autocomplete
                             options={filteredTenants}
-                            getOptionLabel={(option) => `${option.name} (${option.domain})`}
+                            getOptionLabel={(option) =>
+                                `${option?.business_name ?? 'Unknown'}`
+                            }
                             value={selectedTenant || null}
                             onChange={(_, newValue) => {
                                 if (newValue) {
@@ -365,7 +371,7 @@ const VendorManagement: React.FC = () => {
                         />
                         {selectedTenant && (
                             <Alert severity="success" sx={{ mt: 1 }}>
-                                Managing vendors for: <strong>{selectedTenant.name}</strong>
+                                Managing vendors for: <strong>{selectedTenant.business_name}</strong>
                             </Alert>
                         )}
                         {!selectedTenantId && (
@@ -437,7 +443,7 @@ const VendorManagement: React.FC = () => {
                                     </FormControl>
                                 </Stack>
 
-                                {!selectedTenantId ? (
+                                {!filteredVendors ? (
                                     <Alert severity="info" sx={{ mt: 2 }}>
                                         Please select a tenant above to view vendors
                                     </Alert>
@@ -450,74 +456,50 @@ const VendorManagement: React.FC = () => {
                                         <Table size="small">
                                             <TableHead>
                                                 <TableRow>
-                                                    <TableCell>Name</TableCell>
+                                                    <TableCell>Business Name</TableCell>
                                                     <TableCell>Email</TableCell>
                                                     <TableCell>Status</TableCell>
-                                                    <TableCell>Actions</TableCell>
+                                                    <TableCell>Wallet</TableCell>
                                                 </TableRow>
                                             </TableHead>
-                                            <TableBody>
-                                                {filteredVendors.map((vendor) => (
-                                                    <TableRow
-                                                        key={vendor.id}
-                                                        hover
-                                                        selected={selectedVendor?.id === vendor.id}
-                                                        onClick={() => {
-                                                            setSelectedVendor(vendor);
-                                                            loadVendorDetails(vendor.id);
-                                                            setTabValue(0);
-                                                        }}
-                                                        sx={{ cursor: 'pointer' }}
-                                                    >
-                                                        <TableCell>
-                                                            <Stack direction="row" spacing={1} alignItems="center">
-                                                                <Typography variant="body2">{vendor.name}</Typography>
-                                                                {vendor.is_verified && (
-                                                                    <Tooltip title="Verified">
-                                                                        <VerifiedUser fontSize="small" color="primary" />
-                                                                    </Tooltip>
-                                                                )}
-                                                            </Stack>
-                                                        </TableCell>
-                                                        <TableCell>{vendor.email}</TableCell>
-                                                        <TableCell>
-                                                            <Chip
-                                                                label={vendor.is_active ? 'Active' : 'Inactive'}
-                                                                color={vendor.is_active ? 'success' : 'default'}
-                                                                size="small"
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Stack direction="row" spacing={1}>
-                                                                <IconButton
-                                                                    size="small"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleEditClick(vendor);
-                                                                    }}
-                                                                >
-                                                                    <Edit fontSize="small" />
-                                                                </IconButton>
-                                                                {!vendor.is_verified && (
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleVerifyVendor(vendor);
-                                                                        }}
-                                                                    >
-                                                                        <CheckCircle fontSize="small" />
-                                                                    </IconButton>
-                                                                )}
-                                                            </Stack>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
+                                           <TableBody>
+                                            {filteredVendors.map((vendor) => (
+                                                <TableRow
+                                                key={vendor.id}
+                                                hover
+                                                selected={selectedVendor?.id === vendor.id}
+                                                onClick={() => setSelectedVendor(vendor)}
+                                                sx={{ cursor: "pointer" }}
+                                                >
+                                                <TableCell>
+                                                    <Stack direction="row" spacing={1} alignItems="center">
+                                                    <Typography variant="body2">
+                                                        {vendor.business_name}
+                                                    </Typography>
+                                                    </Stack>
+                                                </TableCell>
+
+                                                <TableCell>{vendor.email}</TableCell>
+
+                                                <TableCell>
+                                                    <Chip
+                                                    label={vendor.account_status}
+                                                    color={vendor.account_status === "active" ? "success" : "default"}
+                                                    size="small"
+                                                    />
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <Typography variant="caption">
+                                                    ₦{vendor.wallet?.balance || "0.00"}
+                                                    </Typography>
+                                                </TableCell>
+                                                </TableRow>
+                                            ))}
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
                                 )}
-
                                 {!loading && !filteredVendors?.length && (
                                     <Typography color="text.secondary" align="center" p={2}>
                                         No vendors found
@@ -534,7 +516,7 @@ const VendorManagement: React.FC = () => {
                         <Card>
                             <CardContent>
                                 <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                                    <Typography variant="h6">{selectedVendor.name}</Typography>
+                                    <Typography variant="h6">{selectedVendor?.business_name}</Typography>
                                     <Stack direction="row" spacing={1}>
                                         <IconButton size="small" onClick={() => handleEditClick(selectedVendor)}>
                                             <Edit />
@@ -570,21 +552,21 @@ const VendorManagement: React.FC = () => {
                                                 </Grid>
                                                 <Grid item xs={12} sm={6}>
                                                     <Typography variant="caption" color="text.secondary">Phone</Typography>
-                                                    <Typography>{selectedVendor.phone || 'N/A'}</Typography>
+                                                    <Typography>{selectedVendor?.phone_number || 'N/A'}</Typography>
                                                 </Grid>
                                                 <Grid item xs={12} sm={6}>
                                                     <Typography variant="caption" color="text.secondary">Status</Typography>
                                                     <Chip
-                                                        label={selectedVendor.is_active ? 'Active' : 'Inactive'}
-                                                        color={selectedVendor.is_active ? 'success' : 'default'}
+                                                        label={selectedVendor.account_status === "active" ? 'Active' : 'Inactive'}
+                                                        color={selectedVendor.account_status === "active" ? 'success' : 'default'}
                                                         size="small"
                                                     />
                                                 </Grid>
                                                 <Grid item xs={12} sm={6}>
                                                     <Typography variant="caption" color="text.secondary">Verified</Typography>
                                                     <Chip
-                                                        label={selectedVendor.is_verified ? 'Verified' : 'Not Verified'}
-                                                        color={selectedVendor.is_verified ? 'success' : 'default'}
+                                                        label={selectedVendor.account_status === "active" ? 'Verified' : 'Not Verified'}
+                                                        color={selectedVendor.account_status === "active" ? 'success' : 'default'}
                                                         size="small"
                                                     />
                                                 </Grid>
@@ -604,11 +586,11 @@ const VendorManagement: React.FC = () => {
                                                 )}
                                                 <Grid item xs={12} sm={6}>
                                                     <Typography variant="caption" color="text.secondary">Organisations</Typography>
-                                                    <Typography>{selectedVendor.organisation_count || 0}</Typography>
+                                                    <Typography>{0}</Typography>
                                                 </Grid>
                                                 <Grid item xs={12} sm={6}>
                                                     <Typography variant="caption" color="text.secondary">Admins</Typography>
-                                                    <Typography>{selectedVendor.admin_count || 0}</Typography>
+                                                    <Typography>{0}</Typography>
                                                 </Grid>
                                             </Grid>
                                         </TabPanel>
@@ -855,7 +837,7 @@ const VendorManagement: React.FC = () => {
             {/* Create/Edit Vendor Dialog */}
             <Dialog open={vendorDialogOpen} onClose={() => setVendorDialogOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>{formMode === 'create' ? 'Create Vendor' : 'Edit Vendor'}</DialogTitle>
-                <DialogContent>
+                {/* <DialogContent>
                     <Stack spacing={2} sx={{ mt: 1 }}>
                         <TextField
                             label="Name"
@@ -932,6 +914,126 @@ const VendorManagement: React.FC = () => {
                             label="Active"
                         />
                     </Stack>
+                </DialogContent> */}
+                <DialogContent>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                        <TextField
+                            label="Business Name"
+                            value={vendorForm.business_name || ''}
+                            onChange={(e) =>
+                                setVendorForm({ ...vendorForm, business_name: e.target.value })
+                            }
+                            fullWidth
+                            required
+                        />
+
+                        <TextField
+                            label="Email"
+                            type="email"
+                            value={vendorForm.email || ''}
+                            onChange={(e) =>
+                                setVendorForm({ ...vendorForm, email: e.target.value })
+                            }
+                            fullWidth
+                            required
+                        />
+
+                        <TextField
+                            label="Phone Number"
+                            value={vendorForm.phone_number || ''}
+                            onChange={(e) =>
+                                setVendorForm({ ...vendorForm, phone_number: e.target.value })
+                            }
+                            fullWidth
+                        />
+
+                        <TextField
+                            label="Hierarchy"
+                            value={vendorForm.hierachy || ''}
+                            onChange={(e) =>
+                                setVendorForm({ ...vendorForm, hierachy: e.target.value })
+                            }
+                            fullWidth
+                            required
+                            helperText="Example: parent, child, distributor"
+                        />
+
+                        <Autocomplete
+                            options={vendors}
+                            getOptionLabel={(option) => option.business_name}
+                            value={
+                                vendors.find(v => v.id === vendorForm.related_vendor) || null
+                            }
+                            onChange={(_, value) =>
+                                setVendorForm({
+                                    ...vendorForm,
+                                    related_vendor: value?.id,
+                                })
+                            }
+                            renderInput={(params) => (
+                                <TextField {...params} label="Related Vendor (Optional)" />
+                            )}
+                        />
+
+                        <TextField
+                            label="Address"
+                            value={vendorForm.address || ''}
+                            onChange={(e) =>
+                                setVendorForm({ ...vendorForm, address: e.target.value })
+                            }
+                            fullWidth
+                            multiline
+                            rows={2}
+                        />
+
+                        <Grid container spacing={2}>
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="City"
+                                    value={vendorForm.city || ''}
+                                    onChange={(e) =>
+                                        setVendorForm({ ...vendorForm, city: e.target.value })
+                                    }
+                                    fullWidth
+                                />
+                            </Grid>
+
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="State"
+                                    value={vendorForm.state || ''}
+                                    onChange={(e) =>
+                                        setVendorForm({ ...vendorForm, state: e.target.value })
+                                    }
+                                    fullWidth
+                                />
+                            </Grid>
+                        </Grid>
+
+                        <Grid container spacing={2}>
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="Country"
+                                    value={vendorForm.country || ''}
+                                    onChange={(e) =>
+                                        setVendorForm({ ...vendorForm, country: e.target.value })
+                                    }
+                                    fullWidth
+                                />
+                            </Grid>
+
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="Postal Code"
+                                    value={vendorForm.postal_code || ''}
+                                    onChange={(e) =>
+                                        setVendorForm({ ...vendorForm, postal_code: e.target.value })
+                                    }
+                                    fullWidth
+                                />
+                            </Grid>
+                        </Grid>
+                    </Stack>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setVendorDialogOpen(false)}>Cancel</Button>
@@ -941,12 +1043,13 @@ const VendorManagement: React.FC = () => {
                 </DialogActions>
             </Dialog>
 
+        
             {/* Delete Confirmation Dialog */}
             <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
                 <DialogTitle>Delete Vendor</DialogTitle>
                 <DialogContent>
                     <Typography>
-                        Are you sure you want to delete {selectedVendor?.name}? This action cannot be undone.
+                        Are you sure you want to delete {selectedVendor?.business_name}? This action cannot be undone.
                     </Typography>
                 </DialogContent>
                 <DialogActions>
