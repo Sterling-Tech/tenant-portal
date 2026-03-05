@@ -45,13 +45,13 @@ const drawerWidth = 240;
 
 interface Tenant {
     id: string;
-    name: string;
-    slug: string;
-    domain: string;
-    subdomain?: string;
-    is_active: boolean;
-    is_trial?: boolean;
-    trial_ends_at?: string;
+    business_name: string;
+    // slug: string;
+    // domain: string;
+    // subdomain?: string;
+    // is_active: boolean;
+    // is_trial?: boolean;
+    // trial_ends_at?: string;
     created_at?: string;
 }
 
@@ -343,7 +343,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         />
                         {currentTenant && (
                             <Typography variant="caption" sx={{ ml: 2, opacity: 0.7 }}>
-                                ({currentTenant.name})
+                                ({currentTenant.business_name})
                             </Typography>
                         )}
                     </Stack>

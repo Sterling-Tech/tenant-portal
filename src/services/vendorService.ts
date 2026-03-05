@@ -1,44 +1,79 @@
 import { get, post, patch, del } from './api';
 
-export interface Vendor {
-    id: string;
-    tenant: string | null;
-    tenant_name?: string | null;
-    name: string;
-    slug: string;
-    email: string;
-    phone?: string | null;
-    address?: string | null;
-    city?: string | null;
-    state?: string | null;
-    country?: string | null;
-    postal_code?: string | null;
-    is_active: boolean;
-    is_verified: boolean;
-    verification_date?: string | null;
-    organisation_count?: number;
-    admin_count?: number;
-    metadata?: Record<string, unknown>;
-    created_at: string;
-    updated_at: string;
-    deleted_at?: string | null;
-}
+// export interface Vendor {
+//     id: string;
+//     tenant: string | null;
+//     tenant_name?: string | null;
+//     name: string;
+//     slug: string;
+//     email: string;
+//     phone?: string | null;
+//     address?: string | null;
+//     city?: string | null;
+//     state?: string | null;
+//     country?: string | null;
+//     postal_code?: string | null;
+//     is_active: boolean;
+//     is_verified: boolean;
+//     verification_date?: string | null;
+//     organisation_count?: number;
+//     admin_count?: number;
+//     metadata?: Record<string, unknown>;
+//     created_at: string;
+//     updated_at: string;
+//     deleted_at?: string | null;
+// }
 
+// export interface VendorForm {
+//     tenant?: string | null;
+//     name: string;
+//     email: string;
+//     phone?: string;
+//     address?: string;
+//     city?: string;
+//     state?: string;
+//     country?: string;
+//     postal_code?: string;
+//     is_active?: boolean;
+//     is_verified?: boolean;
+//     metadata?: Record<string, unknown>;
+// }
+export interface Vendor {
+  id: string
+  business_name: string
+  email: string
+  phone_number: string
+  address: string
+  city: string
+  state: string
+  country: string
+  postal_code: string
+  account_status: "active" | "inactive"
+  hierachy: string
+  related_vendor: number | null
+  token: string
+  wallet?: {
+    wallet_type?: {
+      name: string
+      description?: string
+    }
+    balance: string
+  }
+  created_at: string
+}
 export interface VendorForm {
     tenant?: string | null;
-    name: string;
+    business_name: string;
     email: string;
-    phone?: string;
+    phone_number?: string;
     address?: string;
     city?: string;
     state?: string;
     country?: string;
     postal_code?: string;
-    is_active?: boolean;
-    is_verified?: boolean;
-    metadata?: Record<string, unknown>;
+    hierachy: string;
+    related_vendor?: string;
 }
-
 export interface VendorAdminProfile {
     id: string;
     vendor: string;
@@ -76,13 +111,14 @@ const buildQuery = (params?: Record<string, unknown>) => {
 };
 
 export const fetchVendors = (params?: { tenant?: string; is_active?: boolean; is_verified?: boolean; search?: string }) =>
-    get<Vendor[]>(`/vendors/vendors/${buildQuery(params)}`);
+    // get<Vendor[]>(`/vendor/retrieve/${buildQuery(params)}`);
+    get<Vendor[]>(`/vendor/retrieve/`);
 
 export const fetchVendor = (id: string) =>
     get<Vendor>(`/vendors/vendors/${id}/`);
 
 export const createVendor = (payload: VendorForm) =>
-    post<Vendor>('/vendors/vendors/', payload);
+    post<Vendor>('/vendor/create/', payload);
 
 export const updateVendor = (id: string, payload: Partial<VendorForm>) =>
     patch<Vendor>(`/vendors/vendors/${id}/`, payload);

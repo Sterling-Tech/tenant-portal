@@ -111,7 +111,7 @@ const TenantAdmin: React.FC = () => {
         auditEntries,
         loadAudit,
     } = useApiKeys('vendor_org', selectedOrgId ?? null);
-
+    
     const user = useAppSelector((state) => state.auth.user);
     const canCreateTenant = useMemo(() => {
         // Debug: Log user object to help diagnose permission issues
@@ -265,10 +265,11 @@ const TenantAdmin: React.FC = () => {
         const term = searchTerm.toLowerCase();
         return tenants.filter(
             (tenant) =>
-                tenant.name.toLowerCase().includes(term) ||
-                tenant.slug.toLowerCase().includes(term) ||
-                tenant.domain.toLowerCase().includes(term) ||
-                (tenant.subdomain && tenant.subdomain.toLowerCase().includes(term))
+                tenant.business_name.toLowerCase().includes(term) 
+                //||
+                // tenant.slug.toLowerCase().includes(term) ||
+                // tenant.domain.toLowerCase().includes(term) ||
+                // (tenant.subdomain && tenant.subdomain.toLowerCase().includes(term))
         );
     }, [tenants, searchTerm]);
 
@@ -363,7 +364,7 @@ const TenantAdmin: React.FC = () => {
                 const newTenant = await createTenant(createPayload);
                 console.log('[TenantAdmin] Tenant created successfully:', newTenant);
 
-                setCreateSuccess(`Tenant "${newTenant.name}" created successfully!`);
+                setCreateSuccess(`Tenant "${newTenant.business_name}" created successfully!`);
                 setTimeout(() => setCreateSuccess(null), 5000);
                 // Clear search to show the new tenant
                 setSearchTerm('');
@@ -479,15 +480,15 @@ const TenantAdmin: React.FC = () => {
         await deleteTenant(selectedTenant.id);
     };
 
-    const handleToggleActive = () => {
-        if (!selectedTenant) return;
-        setTenantActive(selectedTenant.id, !selectedTenant.is_active);
-    };
+    // const handleToggleActive = () => {
+    //     if (!selectedTenant) return;
+    //     setTenantActive(selectedTenant.id, !selectedTenant.is_active);
+    // };
 
-    const handleToggleTrial = async () => {
-        if (!selectedTenant) return;
-        await updateTenant(selectedTenant.id, { is_trial: !selectedTenant.is_trial });
-    };
+    // const handleToggleTrial = async () => {
+    //     if (!selectedTenant) return;
+    //     await updateTenant(selectedTenant.id, { is_trial: !selectedTenant.is_trial });
+    // };
 
     const openAuditDialog = async (keyId: string, keyLabel: string) => {
         await loadAudit(keyId);
@@ -622,9 +623,9 @@ const TenantAdmin: React.FC = () => {
                         <Card>
                             <CardContent>
                                 <Typography color="text.secondary" variant="body2">
-                                    Total Tenants
+                                    Total Vendor
                                 </Typography>
-                                <Typography variant="h5">{summary.total_tenants}</Typography>
+                                <Typography variant="h5">{tenants?.length || 0}</Typography>
                             </CardContent>
                         </Card>
                     </Grid>
@@ -632,9 +633,9 @@ const TenantAdmin: React.FC = () => {
                         <Card>
                             <CardContent>
                                 <Typography color="text.secondary" variant="body2">
-                                    Active Tenants
+                                    Active Vendor
                                 </Typography>
-                                <Typography variant="h5">{summary.active_tenants}</Typography>
+                                <Typography variant="h5">{tenants?.length || 0}</Typography>
                             </CardContent>
                         </Card>
                     </Grid>
@@ -642,7 +643,7 @@ const TenantAdmin: React.FC = () => {
                         <Card>
                             <CardContent>
                                 <Typography color="text.secondary" variant="body2">
-                                    Trial Tenants
+                                    Total Customer
                                 </Typography>
                                 <Typography variant="h5">{summary.trial_tenants}</Typography>
                             </CardContent>
@@ -682,10 +683,10 @@ const TenantAdmin: React.FC = () => {
                         <Card>
                             <CardContent>
                                 <Typography color="text.secondary" variant="body2">
-                                    Storage Used Today (MB)
+                                  Vendor Wallet Ballance                            
                                 </Typography>
                                 <Typography variant="h5">
-                                    {(summary.today_storage_mb ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    {(selectedTenant?.wallet?.balance ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                 </Typography>
                             </CardContent>
                         </Card>
@@ -701,7 +702,7 @@ const TenantAdmin: React.FC = () => {
                             subheader={
                                 searchTerm
                                     ? `${filteredTenants?.length || 0} of ${tenants?.length || 0} tenant${(tenants?.length || 0) !== 1 ? 's' : ''}`
-                                    : `${tenants?.length || 0} total tenant${(tenants?.length || 0) !== 1 ? 's' : ''}`
+                                    : `${tenants?.length || 0} total tenant ${(tenants?.length || 0) !== 1 ? 's' : ''}`
                             }
                         />
                         <CardContent>
@@ -882,20 +883,20 @@ const TenantAdmin: React.FC = () => {
                                                         primary={
                                                             <Stack direction="row" spacing={1} alignItems="center">
                                                                 <Typography variant="body2" fontWeight={600}>
-                                                                    {tenant.name}
+                                                                    {tenant.business_name}
                                                                 </Typography>
-                                                                <Chip
+                                                                {/* <Chip
                                                                     label={tenant.is_active ? 'Active' : 'Inactive'}
                                                                     size="small"
                                                                     color={tenant.is_active ? 'success' : 'default'}
-                                                                />
+                                                                /> */}
                                                             </Stack>
                                                         }
-                                                        secondary={`${tenant.domain}${tenant.subdomain ? ` • ${tenant.subdomain}` : ''}`}
+                                                        // secondary={`${tenant.domain}${tenant.subdomain ? ` • ${tenant.subdomain}` : ''}`}
                                                     />
-                                                    <ListItemSecondaryAction>
+                                                    {/* <ListItemSecondaryAction>
                                                         {tenant.is_trial && <Chip label="Trial" size="small" color="warning" />}
-                                                    </ListItemSecondaryAction>
+                                                    </ListItemSecondaryAction> */}
                                                 </ListItemButton>
                                             </ListItem>
                                         ))}
@@ -927,14 +928,14 @@ const TenantAdmin: React.FC = () => {
                                 <CardContent>
                                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                                         <Stack spacing={0.5}>
-                                            <Typography variant="h5">{selectedTenant.name}</Typography>
-                                            <Typography color="text.secondary">{selectedTenant.domain}</Typography>
+                                            <Typography variant="h5">{selectedTenant.business_name}</Typography>
+                                            {/* <Typography color="text.secondary">{selectedTenant.domain}</Typography>
                                             {selectedTenant.subdomain && (
                                                 <Typography color="text.secondary">Subdomain: {selectedTenant.subdomain}</Typography>
-                                            )}
+                                            )} */}
                                         </Stack>
                                         <Stack direction="row" spacing={1}>
-                                            <Button
+                                            {/* <Button
                                                 variant={selectedTenant.is_active ? 'outlined' : 'contained'}
                                                 color={selectedTenant.is_active ? 'secondary' : 'success'}
                                                 startIcon={selectedTenant.is_active ? <HighlightOff /> : <CheckCircle />}
@@ -942,7 +943,7 @@ const TenantAdmin: React.FC = () => {
                                                 disabled={mutationLoading}
                                             >
                                                 {selectedTenant.is_active ? 'Deactivate' : 'Activate'}
-                                            </Button>
+                                            </Button> */}
                                             <Button
                                                 variant="outlined"
                                                 startIcon={<Edit />}
@@ -964,26 +965,26 @@ const TenantAdmin: React.FC = () => {
                                     </Box>
 
                                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
-                                        <Chip
+                                        {/* <Chip
                                             label={selectedTenant.is_trial ? 'Trial Tenant' : 'Standard Tenant'}
                                             color={selectedTenant.is_trial ? 'warning' : 'default'}
                                             variant={selectedTenant.is_trial ? 'filled' : 'outlined'}
-                                        />
+                                        /> */}
                                         <Typography variant="body2">
                                             Trial Ends:{' '}
-                                            {selectedTenant.trial_ends_at
+                                            {/* {selectedTenant.trial_ends_at
                                                 ? new Date(selectedTenant.trial_ends_at).toLocaleString()
-                                                : 'Not set'}
+                                                : 'Not set'} */}
                                         </Typography>
                                         <Stack direction="row" spacing={1}>
-                                            <Button
+                                            {/* <Button
                                                 size="small"
                                                 variant="outlined"
                                                 onClick={handleToggleTrial}
                                                 disabled={mutationLoading}
                                             >
                                                 {selectedTenant.is_trial ? 'Mark as Paid' : 'Mark as Trial'}
-                                            </Button>
+                                            </Button> */}
                                             <Button
                                                 size="small"
                                                 variant="outlined"
@@ -1030,7 +1031,7 @@ const TenantAdmin: React.FC = () => {
                                                                 const url = URL.createObjectURL(blob);
                                                                 const a = document.createElement('a');
                                                                 a.href = url;
-                                                                a.download = `${selectedTenant.name}-analytics-${new Date().toISOString().split('T')[0]}.json`;
+                                                                a.download = `${selectedTenant.business_name}-analytics-${new Date().toISOString().split('T')[0]}.json`;
                                                                 a.click();
                                                                 URL.revokeObjectURL(url);
                                                             }
@@ -1083,10 +1084,10 @@ const TenantAdmin: React.FC = () => {
                                                             <Card variant="outlined">
                                                                 <CardContent>
                                                                     <Typography color="text.secondary" variant="body2">
-                                                                        Storage Used
+                                                                        Vendor Wallet Ballance
                                                                     </Typography>
                                                                     <Typography variant="h4">
-                                                                        {stats.total_storage_used_mb.toFixed(1)} MB
+                                                                        {selectedTenant?.wallet?.balance}
                                                                     </Typography>
                                                                 </CardContent>
                                                             </Card>
@@ -1141,21 +1142,21 @@ const TenantAdmin: React.FC = () => {
                                             subheader={stats ? `Last activity: ${stats.last_activity ? new Date(stats.last_activity).toLocaleString() : 'N/A'}` : 'No data'}
                                         />
                                         <CardContent>
-                                            {detailLoading && !stats ? (
+                                            {detailLoading && !selectedTenant ? (
                                                 <Box display="flex" justifyContent="center" py={4}>
                                                     <CircularProgress size={24} />
                                                 </Box>
-                                            ) : stats ? (
+                                            ) : selectedTenant ? (
                                                 <Stack spacing={1}>
-                                                    <Typography variant="body2">Total Users: {stats.total_users}</Typography>
+                                                    <Typography variant="body2">Total Users: </Typography>
                                                     <Typography variant="body2">
-                                                        Transactions Today: {stats.total_transactions}
+                                                        Transactions Today: 
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        API Calls Today: {stats.api_calls_today}
+                                                        API Calls Today: 
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        Storage Used: {stats.total_storage_used_mb.toFixed(2)} MB
+                                                        Wallet Ballance: {selectedTenant?.wallet?.balance}
                                                     </Typography>
                                                 </Stack>
                                             ) : (
@@ -1172,17 +1173,25 @@ const TenantAdmin: React.FC = () => {
                                                 <Box display="flex" justifyContent="center" py={4}>
                                                     <CircularProgress size={24} />
                                                 </Box>
-                                            ) : profile ? (
+                                            ) : selectedTenant ? (
                                                 <Stack spacing={1}>
                                                     <Typography variant="body2">
-                                                        Admin Email: <strong>{profile.user_email}</strong>
+                                                        Admin Email: <strong>{selectedTenant.email}</strong>
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        Default Limits: {JSON.stringify(profile.default_limits)}
+                                                        Admin Phone: <strong>{selectedTenant.phone_number}</strong>
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        Onboarding Config: {JSON.stringify(profile.onboarding_config)}
+                                                        Admin address: <strong>{selectedTenant.address}</strong>
                                                     </Typography>
+                                                    
+                                                    
+                                                    {/* <Typography variant="body2">
+                                                        Default Limits: {JSON.stringify(tenants)}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        Onboarding Config: {JSON.stringify(selectedTenant)}
+                                                    </Typography> */}
                                                 </Stack>
                                             ) : (
                                                 <Typography color="text.secondary">No admin profile assigned.</Typography>
@@ -1702,13 +1711,13 @@ const TenantAdmin: React.FC = () => {
                 initialValues={
                     tenantModalState.mode === 'edit' && tenantModalState.tenant
                         ? {
-                            name: tenantModalState.tenant.name,
-                            slug: tenantModalState.tenant.slug,
-                            domain: tenantModalState.tenant.domain,
-                            subdomain: tenantModalState.tenant.subdomain ?? '',
-                            isTrial: tenantModalState.tenant.is_trial,
-                            trialEndsAt: tenantModalState.tenant.trial_ends_at ?? '',
-                            isActive: tenantModalState.tenant.is_active,
+                            name: tenantModalState.tenant.business_name,
+                            // slug: tenantModalState.tenant.slug,
+                            // domain: tenantModalState.tenant.domain,
+                            // subdomain: tenantModalState.tenant.subdomain ?? '',
+                            // isTrial: tenantModalState.tenant.is_trial,
+                            // trialEndsAt: tenantModalState.tenant.trial_ends_at ?? '',
+                            // isActive: tenantModalState.tenant.is_active,
                         }
                         : undefined
                 }
