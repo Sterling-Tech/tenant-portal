@@ -111,7 +111,7 @@ const TenantAdmin: React.FC = () => {
         auditEntries,
         loadAudit,
     } = useApiKeys('vendor_org', selectedOrgId ?? null);
-
+    
     const user = useAppSelector((state) => state.auth.user);
     const canCreateTenant = useMemo(() => {
         // Debug: Log user object to help diagnose permission issues
@@ -623,9 +623,9 @@ const TenantAdmin: React.FC = () => {
                         <Card>
                             <CardContent>
                                 <Typography color="text.secondary" variant="body2">
-                                    Total Tenants
+                                    Total Vendor
                                 </Typography>
-                                <Typography variant="h5">{summary.total_tenants}</Typography>
+                                <Typography variant="h5">{tenants?.length || 0}</Typography>
                             </CardContent>
                         </Card>
                     </Grid>
@@ -635,7 +635,7 @@ const TenantAdmin: React.FC = () => {
                                 <Typography color="text.secondary" variant="body2">
                                     Active Vendor
                                 </Typography>
-                                <Typography variant="h5">{summary.active_tenants}</Typography>
+                                <Typography variant="h5">{tenants?.length || 0}</Typography>
                             </CardContent>
                         </Card>
                     </Grid>
@@ -683,10 +683,10 @@ const TenantAdmin: React.FC = () => {
                         <Card>
                             <CardContent>
                                 <Typography color="text.secondary" variant="body2">
-                                    Storage Used Today (MB)
+                                  Vendor Wallet Ballance                            
                                 </Typography>
                                 <Typography variant="h5">
-                                    {(summary.today_storage_mb ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    {(selectedTenant?.wallet?.balance ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                 </Typography>
                             </CardContent>
                         </Card>
@@ -702,7 +702,7 @@ const TenantAdmin: React.FC = () => {
                             subheader={
                                 searchTerm
                                     ? `${filteredTenants?.length || 0} of ${tenants?.length || 0} tenant${(tenants?.length || 0) !== 1 ? 's' : ''}`
-                                    : `${tenants?.length || 0} total tenant${(tenants?.length || 0) !== 1 ? 's' : ''}`
+                                    : `${tenants?.length || 0} total tenant ${(tenants?.length || 0) !== 1 ? 's' : ''}`
                             }
                         />
                         <CardContent>
@@ -1084,10 +1084,10 @@ const TenantAdmin: React.FC = () => {
                                                             <Card variant="outlined">
                                                                 <CardContent>
                                                                     <Typography color="text.secondary" variant="body2">
-                                                                        Storage Used
+                                                                        Vendor Wallet Ballance
                                                                     </Typography>
                                                                     <Typography variant="h4">
-                                                                        {stats.total_storage_used_mb.toFixed(1)} MB
+                                                                        {selectedTenant?.wallet?.balance}
                                                                     </Typography>
                                                                 </CardContent>
                                                             </Card>
@@ -1142,21 +1142,21 @@ const TenantAdmin: React.FC = () => {
                                             subheader={stats ? `Last activity: ${stats.last_activity ? new Date(stats.last_activity).toLocaleString() : 'N/A'}` : 'No data'}
                                         />
                                         <CardContent>
-                                            {detailLoading && !stats ? (
+                                            {detailLoading && !selectedTenant ? (
                                                 <Box display="flex" justifyContent="center" py={4}>
                                                     <CircularProgress size={24} />
                                                 </Box>
-                                            ) : stats ? (
+                                            ) : selectedTenant ? (
                                                 <Stack spacing={1}>
-                                                    <Typography variant="body2">Total Users: {stats.total_users}</Typography>
+                                                    <Typography variant="body2">Total Users: </Typography>
                                                     <Typography variant="body2">
-                                                        Transactions Today: {stats.total_transactions}
+                                                        Transactions Today: 
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        API Calls Today: {stats.api_calls_today}
+                                                        API Calls Today: 
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        Storage Used: {stats.total_storage_used_mb.toFixed(2)} MB
+                                                        Wallet Ballance: {selectedTenant?.wallet?.balance}
                                                     </Typography>
                                                 </Stack>
                                             ) : (
@@ -1173,17 +1173,25 @@ const TenantAdmin: React.FC = () => {
                                                 <Box display="flex" justifyContent="center" py={4}>
                                                     <CircularProgress size={24} />
                                                 </Box>
-                                            ) : profile ? (
+                                            ) : selectedTenant ? (
                                                 <Stack spacing={1}>
                                                     <Typography variant="body2">
-                                                        Admin Email: <strong>{profile.user_email}</strong>
+                                                        Admin Email: <strong>{selectedTenant.email}</strong>
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        Default Limits: {JSON.stringify(profile.default_limits)}
+                                                        Admin Phone: <strong>{selectedTenant.phone_number}</strong>
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        Onboarding Config: {JSON.stringify(profile.onboarding_config)}
+                                                        Admin address: <strong>{selectedTenant.address}</strong>
                                                     </Typography>
+                                                    
+                                                    
+                                                    {/* <Typography variant="body2">
+                                                        Default Limits: {JSON.stringify(tenants)}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        Onboarding Config: {JSON.stringify(selectedTenant)}
+                                                    </Typography> */}
                                                 </Stack>
                                             ) : (
                                                 <Typography color="text.secondary">No admin profile assigned.</Typography>

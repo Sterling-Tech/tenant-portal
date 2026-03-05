@@ -77,6 +77,7 @@ import {
 } from '../../services/vendorService';
 import { useTenants } from '../../hooks/useTenants';
 import { del } from '../../services/api';
+import { Tenant } from '../../services/tenantService';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -124,30 +125,35 @@ const VendorManagement: React.FC = () => {
 
     // Load vendors
     const loadVendors = async () => {
-        // if (!selectedTenantId) return;
+        if (!selectedTenantId) return;
 
         setLoading(true);
         setError(null);
+
         try {
             const params: any = { tenant: selectedTenantId };
+
             if (filterActive !== null) params.is_active = filterActive;
             if (filterVerified !== null) params.is_verified = filterVerified;
             if (searchTerm) params.search = searchTerm;
 
             const data = await fetchVendors(params);
+
             setVendors(data);
         } catch (err: any) {
-            setError(err?.message || 'Failed to load vendors');
+            setError(err?.message || "Failed to load vendors");
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
+        if (!selectedTenantId) return;
         loadVendors();
     }, [selectedTenantId, filterActive, filterVerified, searchTerm]);
 
     // Load vendor details
+    
     const loadVendorDetails = async (vendorId: string) => {
         setDetailLoading(true);
         try {
@@ -157,6 +163,17 @@ const VendorManagement: React.FC = () => {
                 fetchVendorAdmins(vendorId),
                 fetchVendorPermissions(vendorId),
             ]);
+            const formattedVendor: Tenant = {
+            ...vendor,
+            wallet: {
+                wallet_type: {
+                name: vendor.wallet?.wallet_type?.name || "Default",
+                description: vendor.wallet?.wallet_type?.description || "",
+                },
+                balance: vendor.wallet?.balance || "0.00",
+            },
+            };
+
             setSelectedVendor(vendor);
             setVendorApiKeys(apiKeys);
             setVendorAdmins(admins);
@@ -269,7 +286,7 @@ const VendorManagement: React.FC = () => {
     };
 
     const filteredVendors = useMemo(() => {
-        if (!vendors) return [];
+        if (!vendors || !Array.isArray(vendors)) return [];
 
         return vendors.filter((v) => {
             const term = searchTerm.toLowerCase();
@@ -837,84 +854,6 @@ const VendorManagement: React.FC = () => {
             {/* Create/Edit Vendor Dialog */}
             <Dialog open={vendorDialogOpen} onClose={() => setVendorDialogOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>{formMode === 'create' ? 'Create Vendor' : 'Edit Vendor'}</DialogTitle>
-                {/* <DialogContent>
-                    <Stack spacing={2} sx={{ mt: 1 }}>
-                        <TextField
-                            label="Name"
-                            value={vendorForm.name || ''}
-                            onChange={(e) => setVendorForm({ ...vendorForm, name: e.target.value })}
-                            fullWidth
-                            required
-                        />
-                        <TextField
-                            label="Email"
-                            type="email"
-                            value={vendorForm.email || ''}
-                            onChange={(e) => setVendorForm({ ...vendorForm, email: e.target.value })}
-                            fullWidth
-                            required
-                        />
-                        <TextField
-                            label="Phone"
-                            value={vendorForm.phone || ''}
-                            onChange={(e) => setVendorForm({ ...vendorForm, phone: e.target.value })}
-                            fullWidth
-                        />
-                        <TextField
-                            label="Address"
-                            value={vendorForm.address || ''}
-                            onChange={(e) => setVendorForm({ ...vendorForm, address: e.target.value })}
-                            fullWidth
-                            multiline
-                            rows={2}
-                        />
-                        <Grid container spacing={2}>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="City"
-                                    value={vendorForm.city || ''}
-                                    onChange={(e) => setVendorForm({ ...vendorForm, city: e.target.value })}
-                                    fullWidth
-                                />
-                            </Grid>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="State"
-                                    value={vendorForm.state || ''}
-                                    onChange={(e) => setVendorForm({ ...vendorForm, state: e.target.value })}
-                                    fullWidth
-                                />
-                            </Grid>
-                        </Grid>
-                        <Grid container spacing={2}>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="Country"
-                                    value={vendorForm.country || ''}
-                                    onChange={(e) => setVendorForm({ ...vendorForm, country: e.target.value })}
-                                    fullWidth
-                                />
-                            </Grid>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="Postal Code"
-                                    value={vendorForm.postal_code || ''}
-                                    onChange={(e) => setVendorForm({ ...vendorForm, postal_code: e.target.value })}
-                                    fullWidth
-                                />
-                            </Grid>
-                        </Grid>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={vendorForm.is_active ?? true}
-                                    onChange={(e) => setVendorForm({ ...vendorForm, is_active: e.target.checked })}
-                                />
-                            }
-                            label="Active"
-                        />
-                    </Stack>
-                </DialogContent> */}
                 <DialogContent>
                     <Stack spacing={2} sx={{ mt: 1 }}>
                         <TextField
