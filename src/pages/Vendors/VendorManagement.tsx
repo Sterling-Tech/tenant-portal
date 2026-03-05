@@ -125,19 +125,20 @@ const VendorManagement: React.FC = () => {
 
     // Load vendors
     const loadVendors = async () => {
-        if (!selectedTenantId) return;
+        // if (!selectedTenantId) return;
 
         setLoading(true);
         setError(null);
 
         try {
-            const params: any = { tenant: selectedTenantId };
+            // const params: any = { tenant: selectedTenantId };
 
-            if (filterActive !== null) params.is_active = filterActive;
-            if (filterVerified !== null) params.is_verified = filterVerified;
-            if (searchTerm) params.search = searchTerm;
+            // if (filterActive !== null) params.is_active = filterActive;
+            // if (filterVerified !== null) params.is_verified = filterVerified;
+            // if (searchTerm) params.search = searchTerm;
 
-            const data = await fetchVendors(params);
+            const data = await fetchVendors()
+            console.error('TenantSwitcher ', data);
 
             setVendors(data);
         } catch (err: any) {
@@ -148,9 +149,9 @@ const VendorManagement: React.FC = () => {
     };
 
     useEffect(() => {
-        if (!selectedTenantId) return;
+        // if (!selectedTenantId) return;
         loadVendors();
-    }, [selectedTenantId, filterActive, filterVerified, searchTerm]);
+    }, []);
 
     // Load vendor details
     

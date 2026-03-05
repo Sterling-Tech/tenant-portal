@@ -111,7 +111,8 @@ const buildQuery = (params?: Record<string, unknown>) => {
 };
 
 export const fetchVendors = (params?: { tenant?: string; is_active?: boolean; is_verified?: boolean; search?: string }) =>
-    get<Vendor[]>(`/vendor/retrieve/${buildQuery(params)}`);
+    // get<Vendor[]>(`/vendor/retrieve/${buildQuery(params)}`);
+    get<Vendor[]>(`/vendor/retrieve/`);
 
 export const fetchVendor = (id: string) =>
     get<Vendor>(`/vendors/vendors/${id}/`);
