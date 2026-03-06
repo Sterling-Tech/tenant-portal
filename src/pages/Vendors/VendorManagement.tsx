@@ -39,6 +39,7 @@ import {
     ListItemSecondaryAction,
     Tooltip,
     Autocomplete,
+    Snackbar,
 } from '@mui/material';
 import {
     Add,
@@ -105,7 +106,6 @@ const VendorManagement: React.FC = () => {
     const [filterActive, setFilterActive] = useState<boolean | null>(null);
     const [filterVerified, setFilterVerified] = useState<boolean | null>(null);
     const [tenantSearchTerm, setTenantSearchTerm] = useState('');
-
     // Dialog states
     const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -122,7 +122,9 @@ const VendorManagement: React.FC = () => {
     const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
     const [newApiKey, setNewApiKey] = useState<any>(null);
     const [showApiKeySecret, setShowApiKeySecret] = useState(false);
+    const [saving, setSaving] = useState(false);
 
+    const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string;} | null>(null);
     // Load vendors
     const loadVendors = async () => {
         // if (!selectedTenantId) return;
@@ -224,23 +226,47 @@ const VendorManagement: React.FC = () => {
 
     const handleSaveVendor = async () => {
         if (!vendorForm.business_name || !vendorForm.email || !vendorForm.hierachy) {
-            setError('Business name, email and hierarchy are required');
+            setNotification({
+                type: "error",
+                message: "Business name, email and hierarchy are required",
+            });
             return;
         }
 
+        setSaving(true);
+
         try {
-            if (formMode === 'create') {
+            if (formMode === "create") {
                 await createVendor(vendorForm as VendorForm);
+
+                setNotification({
+                    type: "success",
+                    message: "Vendor created successfully",
+                });
+
             } else if (selectedVendor) {
                 await updateVendor(String(selectedVendor.id), vendorForm);
+
+                setNotification({
+                    type: "success",
+                    message: "Vendor updated successfully",
+                });
             }
+
             setVendorDialogOpen(false);
             loadVendors();
+
             if (selectedVendor) {
                 loadVendorDetails(String(selectedVendor.id));
             }
+
         } catch (err: any) {
-            setError(err?.message || 'Failed to save vendor');
+            setNotification({
+                type: "error",
+                message: err?.message || "Failed to save vendor",
+            });
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -977,8 +1003,18 @@ const VendorManagement: React.FC = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setVendorDialogOpen(false)}>Cancel</Button>
-                    <Button variant="contained" onClick={handleSaveVendor}>
-                        {formMode === 'create' ? 'Create' : 'Save'}
+                    <Button
+                        variant="contained"
+                        onClick={handleSaveVendor}
+                        disabled={saving}
+                        startIcon={saving ? <CircularProgress size={20} color="inherit" /> : null}>
+                        {saving
+                            ? formMode === "create"
+                                ? "Creating..."
+                                : "Saving..."
+                            : formMode === "create"
+                            ? "Create"
+                            : "Save"}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -1048,6 +1084,23 @@ const VendorManagement: React.FC = () => {
                     <Button onClick={() => setApiKeyDialogOpen(false)}>Close</Button>
                 </DialogActions>
             </Dialog>
+
+            {notification && (
+            <Snackbar
+                open
+                autoHideDuration={4000}
+                onClose={() => setNotification(null)}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+                <Alert
+                severity={notification.type}
+                onClose={() => setNotification(null)}
+                sx={{ width: "100%" }}
+                >
+                {notification.message}
+                </Alert>
+            </Snackbar>
+            )}
         </Box>
     );
 };
