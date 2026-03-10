@@ -85,7 +85,13 @@ interface TabPanelProps {
     index: number;
     value: number;
 }
-
+const hierarchyOptions = [
+  { value: "vendor", label: "Vendor" },
+  { value: "sub_vendor", label: "Sub Vendor" },
+  { value: "agent", label: "Agent" },
+  { value: "cashier", label: "Cashier" },
+  { value: "POS", label: "POS" },
+];
 function TabPanel(props: TabPanelProps) {
     const { children, value, index, ...other } = props;
     return (
@@ -858,16 +864,25 @@ const VendorManagement: React.FC = () => {
                             fullWidth
                         />
 
-                        <TextField
+                        <FormControl fullWidth required>
+                        <InputLabel>Hierarchy</InputLabel>
+                        <Select
                             label="Hierarchy"
-                            value={vendorForm.hierachy || ''}
+                            value={vendorForm.hierachy || ""}
                             onChange={(e) =>
-                                setVendorForm({ ...vendorForm, hierachy: e.target.value })
+                            setVendorForm({
+                                ...vendorForm,
+                                hierachy: e.target.value,
+                            })
                             }
-                            fullWidth
-                            required
-                            helperText="Example: parent, child, distributor"
-                        />
+                        >
+                            {hierarchyOptions.map((option) => (
+                            <MenuItem key={option.value} value={option.value}>
+                                {option.label}
+                            </MenuItem>
+                            ))}
+                        </Select>
+                        </FormControl>
 
                         <Autocomplete
                             options={vendors}

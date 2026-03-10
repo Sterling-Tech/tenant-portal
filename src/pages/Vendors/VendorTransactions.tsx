@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -111,6 +111,12 @@ const VendorTransactions: React.FC = () => {
         setTransactionsLoading(false)
     }
     }
+
+    useEffect(() => {
+     if (tenantId) {
+       loadTransactions(Number(tenantId))
+     }
+    }, [tenantId])
     // Sync tenant selection - only when selectedTenantId changes
     React.useEffect(() => {
         if (selectedTenantId && selectedTenantId !== tenantId) {
