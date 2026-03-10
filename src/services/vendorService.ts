@@ -118,6 +118,13 @@ export interface Category {
     name: string;
     description: string;
 }
+export interface Ledger {
+  transaction_ref: string
+  debit_amount: string
+  credit_amount: string
+  timestamp: string
+}
+
 export interface Class {
     id: number;
     category: {
@@ -181,6 +188,13 @@ const buildQuery = (params?: Record<string, unknown>) => {
 export const fetchVendors = (params?: { tenant?: string; is_active?: boolean; is_verified?: boolean; search?: string }) =>
     // get<Vendor[]>(`/vendor/retrieve/${buildQuery(params)}`);
     get<Vendor[]>(`/vendor/retrieve/`);
+
+export const fetchTransactions = (params?: {
+  start_date?: string
+  end_date?: string
+  vendor_id?: number
+}) =>
+  get<Ledger[]>(`/vendor/transactions/${buildQuery(params)}`)
 
 export const fetchCustomers = () =>
     get<Customer[]>(`/customer/`);

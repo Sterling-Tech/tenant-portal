@@ -54,6 +54,7 @@ import AddChildOrgModal from '../../components/VendorHierarchy/AddChildOrgModal'
 import EditOrgModal from '../../components/VendorHierarchy/EditOrgModal';
 import DeleteOrgModal from '../../components/VendorHierarchy/DeleteOrgModal';
 import AssignUserModal from '../../components/VendorHierarchy/AssignUserModal';
+import { fetchTransactions, Ledger } from '../../services/vendorService';
 
 const VendorTransactions: React.FC = () => {
     const { tenants, selectedTenantId, selectTenant } = useTenants();
@@ -80,7 +81,8 @@ const VendorTransactions: React.FC = () => {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [assignUserModalOpen, setAssignUserModalOpen] = useState(false);
-
+    const [transactions, setTransactions] = useState<Ledger[]>([])
+    const [transactionsLoading, setTransactionsLoading] = useState(false)
     // Context menu state
     const [contextMenu, setContextMenu] = useState<{
         mouseX: number;
@@ -92,6 +94,23 @@ const VendorTransactions: React.FC = () => {
     const [tenantSearchTerm, setTenantSearchTerm] = useState('');
     const [orgSearchTerm, setOrgSearchTerm] = useState('');
 
+    const loadTransactions = async (vendorId: number) => {
+    try {
+        setTransactionsLoading(true)
+
+        const res = await fetchTransactions({
+        vendor_id: vendorId,
+        // start_date: "2026-02-01",
+        // end_date: "2026-02-28",
+        })
+
+        setTransactions(res)
+    } catch (err) {
+        console.error("Failed to fetch transactions", err)
+    } finally {
+        setTransactionsLoading(false)
+    }
+    }
     // Sync tenant selection - only when selectedTenantId changes
     React.useEffect(() => {
         if (selectedTenantId && selectedTenantId !== tenantId) {
@@ -320,7 +339,7 @@ const VendorTransactions: React.FC = () => {
                     >
                         Add Vendor Admin
                     </Button>
-                    <Button
+                    {/* <Button
                         variant="outlined"
                         startIcon={<Add />}
                         onClick={() => {
@@ -334,7 +353,7 @@ const VendorTransactions: React.FC = () => {
                         title={!tenantId ? 'Please select a tenant first' : 'Add Root Organization'}
                     >
                         Add Root Organization
-                    </Button>
+                    </Button> */}
                 </Stack>
             </Stack>
 
@@ -359,8 +378,11 @@ const VendorTransactions: React.FC = () => {
                                         value={tenants.find((t) => t.id === tenantId) || null}
                                         onChange={(_, newValue) => {
                                             if (newValue) {
-                                                selectTenant(newValue.id);
-                                                setTenantId(newValue.id);
+                                            selectTenant(newValue.id)
+                                            setTenantId(newValue.id)
+
+                                            // 🔥 fetch transactions
+                                            loadTransactions(Number(newValue.id))
                                             }
                                         }}
                                         renderInput={(params) => (
@@ -445,242 +467,269 @@ const VendorTransactions: React.FC = () => {
 
                 {/* Right Panel: Organization Details */}
                 <Grid item xs={12} md={8}>
-                    {selectedOrg ? (
-                        <Card>
+                    {transactions ? (
+                        // <Card>
+                        //     <CardContent>
+                        //         <Stack spacing={3}>
+                        //             <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        //                 <Typography variant="h5">{transactions.name}</Typography>
+                        //                 <Stack direction="row" spacing={1}>
+                        //                     <Button
+                        //                         size="small"
+                        //                         variant="outlined"
+                        //                         startIcon={<PersonAdd />}
+                        //                         onClick={() => selectedOrg && handleAddAdmin(selectedOrg)}
+                        //                         disabled={!selectedOrg || loading}
+                        //                         title={!selectedOrg ? 'Select an organization first' : 'Add Vendor Admin'}
+                        //                     >
+                        //                         Add Admin
+                        //                     </Button>
+                        //                     <Button
+                        //                         size="small"
+                        //                         variant="outlined"
+                        //                         startIcon={<Add />}
+                        //                         onClick={() => selectedOrg && handleAddChild(selectedOrg)}
+                        //                         disabled={!selectedOrg || loading}
+                        //                         title={!selectedOrg ? 'Select an organization first' : 'Add Child Organization'}
+                        //                     >
+                        //                         Add Child
+                        //                     </Button>
+                        //                     <Button
+                        //                         size="small"
+                        //                         variant="outlined"
+                        //                         startIcon={<Edit />}
+                        //                         onClick={() => selectedOrg && handleEdit(selectedOrg)}
+                        //                         disabled={!selectedOrg || loading}
+                        //                         title={!selectedOrg ? 'Select an organization first' : 'Edit Organization'}
+                        //                     >
+                        //                         Edit
+                        //                     </Button>
+                        //                     <Button
+                        //                         size="small"
+                        //                         variant="outlined"
+                        //                         color="error"
+                        //                         startIcon={<Delete />}
+                        //                         onClick={() => selectedOrg && handleDelete(selectedOrg)}
+                        //                         disabled={!selectedOrg || loading}
+                        //                         title={!selectedOrg ? 'Select an organization first' : 'Delete Organization'}
+                        //                     >
+                        //                         Delete
+                        //                     </Button>
+                        //                 </Stack>
+                        //             </Stack>
+
+                        //             <Divider />
+
+                        //             {/* Organization Details */}
+                        //             <Stack spacing={2}>
+                        //                 <Typography variant="subtitle1">Details</Typography>
+                        //                 <Grid container spacing={2}>
+                        //                     <Grid item xs={12} sm={6}>
+                        //                         <Typography variant="caption" color="text.secondary">
+                        //                             Level
+                        //                         </Typography>
+                        //                         <Typography>{selectedOrg.level}</Typography>
+                        //                     </Grid>
+                        //                     <Grid item xs={12} sm={6}>
+                        //                         <Typography variant="caption" color="text.secondary">
+                        //                             Status
+                        //                         </Typography>
+                        //                         <Chip
+                        //                             label={selectedOrg.status}
+                        //                             color={selectedOrg.status === 'active' ? 'success' : 'default'}
+                        //                             size="small"
+                        //                         />
+                        //                     </Grid>
+                        //                     <Grid item xs={12} sm={6}>
+                        //                         <Typography variant="caption" color="text.secondary">
+                        //                             Slug
+                        //                         </Typography>
+                        //                         <Typography>{selectedOrg.slug}</Typography>
+                        //                     </Grid>
+                        //                     {selectedOrg.parent_name && (
+                        //                         <Grid item xs={12} sm={6}>
+                        //                             <Typography variant="caption" color="text.secondary">
+                        //                                 Parent
+                        //                             </Typography>
+                        //                             <Typography>{selectedOrg.parent_name}</Typography>
+                        //                         </Grid>
+                        //                     )}
+                        //                 </Grid>
+                        //             </Stack>
+
+                        //             <Divider />
+
+                        //             {/* User Bindings */}
+                        //             <Stack spacing={2}>
+                        //                 <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        //                     <Typography variant="subtitle1">
+                        //                         Assigned Users {bindings?.length > 0 && `(${bindings.length})`}
+                        //                     </Typography>
+                        //                     <Stack direction="row" spacing={1}>
+                        //                         <Button
+                        //                             size="small"
+                        //                             variant="outlined"
+                        //                             startIcon={<PersonAdd />}
+                        //                             onClick={() => handleAddAdmin(selectedOrg)}
+                        //                             disabled={!selectedOrg || loading}
+                        //                             title={!selectedOrg ? 'Select an organization first' : 'Add Vendor Admin'}
+                        //                         >
+                        //                             Add Admin
+                        //                         </Button>
+                        //                         <Button
+                        //                             size="small"
+                        //                             variant="outlined"
+                        //                             startIcon={<PersonAdd />}
+                        //                             onClick={() => handleAssignUser(selectedOrg)}
+                        //                             disabled={!selectedOrg || loading}
+                        //                             title={!selectedOrg ? 'Select an organization first' : 'Assign User to Organization'}
+                        //                         >
+                        //                             Assign User
+                        //                         </Button>
+                        //                     </Stack>
+                        //                 </Stack>
+                        //                 {bindingsLoading ? (
+                        //                     <Box display="flex" justifyContent="center" p={2}>
+                        //                         <CircularProgress size={24} />
+                        //                     </Box>
+                        //                 ) : !bindings?.length ? (
+                        //                     <Alert severity="info">
+                        //                         No users assigned to this organization. Click "Add Admin" or "Assign User" to add users.
+                        //                     </Alert>
+                        //                 ) : (
+                        //                     <Stack spacing={1}>
+                        //                         {(bindings || []).map((binding) => (
+                        //                             <Paper key={binding.id} variant="outlined" sx={{ p: 2 }}>
+                        //                                 <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        //                                     <Stack spacing={0.5}>
+                        //                                         <Typography variant="body2" fontWeight={500}>
+                        //                                             {binding.user_email}
+                        //                                         </Typography>
+                        //                                         <Stack direction="row" spacing={1}>
+                        //                                             <Chip
+                        //                                                 label={binding.role}
+                        //                                                 size="small"
+                        //                                                 variant="outlined"
+                        //                                                 color="primary"
+                        //                                             />
+                        //                                             <Chip
+                        //                                                 label={binding.status}
+                        //                                                 size="small"
+                        //                                                 color={
+                        //                                                     binding.status === 'active'
+                        //                                                         ? 'success'
+                        //                                                         : binding.status === 'suspended'
+                        //                                                             ? 'error'
+                        //                                                             : 'default'
+                        //                                                 }
+                        //                                             />
+                        //                                         </Stack>
+                        //                                         {binding.assigned_at && (
+                        //                                             <Typography variant="caption" color="text.secondary">
+                        //                                                 Assigned: {new Date(binding.assigned_at).toLocaleDateString()}
+                        //                                             </Typography>
+                        //                                         )}
+                        //                                     </Stack>
+                        //                                 </Stack>
+                        //                             </Paper>
+                        //                         ))}
+                        //                     </Stack>
+                        //                 )}
+                        //             </Stack>
+
+                        //             <Divider />
+
+                        //             {/* Wallet Summary */}
+                        //             <Stack spacing={2}>
+                        //                 <Typography variant="subtitle1">Wallet Summary</Typography>
+                        //                 {walletsLoading ? (
+                        //                     <Box display="flex" justifyContent="center" p={2}>
+                        //                         <CircularProgress size={24} />
+                        //                     </Box>
+                        //                 ) : wallets.length === 0 ? (
+                        //                     <Alert severity="info">
+                        //                         No wallets found for this organisation. Wallets are created automatically when needed.
+                        //                     </Alert>
+                        //                 ) : (
+                        //                     <Stack spacing={2}>
+                        //                         <Paper variant="outlined" sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+                        //                             <Typography variant="caption" display="block" sx={{ opacity: 0.9 }}>
+                        //                                 Total Balance
+                        //                             </Typography>
+                        //                             <Typography variant="h5" fontWeight={600}>
+                        //                                 ₦{Number(totalBalance).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        //                             </Typography>
+                        //                         </Paper>
+                        //                         <Stack spacing={1}>
+                        //                             {wallets.map((wallet) => (
+                        //                                 <Paper key={wallet.id} variant="outlined" sx={{ p: 2 }}>
+                        //                                     <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        //                                         <Stack spacing={0.5}>
+                        //                                             <Typography variant="body2" fontWeight={500}>
+                        //                                                 {wallet.key} ({wallet.type})
+                        //                                             </Typography>
+                        //                                             <Typography variant="caption" color="text.secondary">
+                        //                                                 {wallet.role || 'No role'}
+                        //                                             </Typography>
+                        //                                         </Stack>
+                        //                                         <Typography variant="h6" fontWeight={600}>
+                        //                                             ₦{Number(wallet.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        //                                         </Typography>
+                        //                                     </Stack>
+                        //                                     {wallet.daily_limit && (
+                        //                                         <Stack direction="row" spacing={2} mt={1}>
+                        //                                             <Typography variant="caption" color="text.secondary">
+                        //                                                 Daily Limit: ₦{Number(wallet.daily_limit).toLocaleString('en-NG')}
+                        //                                             </Typography>
+                        //                                             {wallet.daily_spent && (
+                        //                                                 <Typography variant="caption" color="text.secondary">
+                        //                                                     Spent: ₦{Number(wallet.daily_spent).toLocaleString('en-NG')}
+                        //                                                 </Typography>
+                        //                                             )}
+                        //                                         </Stack>
+                        //                                     )}
+                        //                                 </Paper>
+                        //                             ))}
+                        //                         </Stack>
+                        //                     </Stack>
+                        //                 )}
+                        //             </Stack>
+                        //         </Stack>
+                        //     </CardContent>
+                        // </Card>
+                         <Card>
                             <CardContent>
-                                <Stack spacing={3}>
-                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                        <Typography variant="h5">{selectedOrg.name}</Typography>
-                                        <Stack direction="row" spacing={1}>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                startIcon={<PersonAdd />}
-                                                onClick={() => selectedOrg && handleAddAdmin(selectedOrg)}
-                                                disabled={!selectedOrg || loading}
-                                                title={!selectedOrg ? 'Select an organization first' : 'Add Vendor Admin'}
-                                            >
-                                                Add Admin
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                startIcon={<Add />}
-                                                onClick={() => selectedOrg && handleAddChild(selectedOrg)}
-                                                disabled={!selectedOrg || loading}
-                                                title={!selectedOrg ? 'Select an organization first' : 'Add Child Organization'}
-                                            >
-                                                Add Child
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                startIcon={<Edit />}
-                                                onClick={() => selectedOrg && handleEdit(selectedOrg)}
-                                                disabled={!selectedOrg || loading}
-                                                title={!selectedOrg ? 'Select an organization first' : 'Edit Organization'}
-                                            >
-                                                Edit
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                color="error"
-                                                startIcon={<Delete />}
-                                                onClick={() => selectedOrg && handleDelete(selectedOrg)}
-                                                disabled={!selectedOrg || loading}
-                                                title={!selectedOrg ? 'Select an organization first' : 'Delete Organization'}
-                                            >
-                                                Delete
-                                            </Button>
+                                <Typography variant="h6">Transactions</Typography>
+
+                                {transactionsLoading ? (
+                                <CircularProgress />
+                                ) : transactions.length === 0 ? (
+                                <Alert severity="info">No transactions found</Alert>
+                                ) : (
+                                <Stack spacing={1}>
+                                    {transactions.map((tx) => (
+                                    <Paper key={tx.transaction_ref} sx={{ p: 2 }}>
+                                        <Stack direction="row" justifyContent="space-between">
+                                        <Typography variant="body2">{tx.transaction_ref}</Typography>
+                                        <Typography variant="body2">
+                                            ₦{Number(tx.debit_amount).toLocaleString()}
+                                        </Typography>
                                         </Stack>
-                                    </Stack>
-
-                                    <Divider />
-
-                                    {/* Organization Details */}
-                                    <Stack spacing={2}>
-                                        <Typography variant="subtitle1">Details</Typography>
-                                        <Grid container spacing={2}>
-                                            <Grid item xs={12} sm={6}>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Level
-                                                </Typography>
-                                                <Typography>{selectedOrg.level}</Typography>
-                                            </Grid>
-                                            <Grid item xs={12} sm={6}>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Status
-                                                </Typography>
-                                                <Chip
-                                                    label={selectedOrg.status}
-                                                    color={selectedOrg.status === 'active' ? 'success' : 'default'}
-                                                    size="small"
-                                                />
-                                            </Grid>
-                                            <Grid item xs={12} sm={6}>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Slug
-                                                </Typography>
-                                                <Typography>{selectedOrg.slug}</Typography>
-                                            </Grid>
-                                            {selectedOrg.parent_name && (
-                                                <Grid item xs={12} sm={6}>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        Parent
-                                                    </Typography>
-                                                    <Typography>{selectedOrg.parent_name}</Typography>
-                                                </Grid>
-                                            )}
-                                        </Grid>
-                                    </Stack>
-
-                                    <Divider />
-
-                                    {/* User Bindings */}
-                                    <Stack spacing={2}>
-                                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                            <Typography variant="subtitle1">
-                                                Assigned Users {bindings?.length > 0 && `(${bindings.length})`}
-                                            </Typography>
-                                            <Stack direction="row" spacing={1}>
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
-                                                    startIcon={<PersonAdd />}
-                                                    onClick={() => handleAddAdmin(selectedOrg)}
-                                                    disabled={!selectedOrg || loading}
-                                                    title={!selectedOrg ? 'Select an organization first' : 'Add Vendor Admin'}
-                                                >
-                                                    Add Admin
-                                                </Button>
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
-                                                    startIcon={<PersonAdd />}
-                                                    onClick={() => handleAssignUser(selectedOrg)}
-                                                    disabled={!selectedOrg || loading}
-                                                    title={!selectedOrg ? 'Select an organization first' : 'Assign User to Organization'}
-                                                >
-                                                    Assign User
-                                                </Button>
-                                            </Stack>
-                                        </Stack>
-                                        {bindingsLoading ? (
-                                            <Box display="flex" justifyContent="center" p={2}>
-                                                <CircularProgress size={24} />
-                                            </Box>
-                                        ) : !bindings?.length ? (
-                                            <Alert severity="info">
-                                                No users assigned to this organization. Click "Add Admin" or "Assign User" to add users.
-                                            </Alert>
-                                        ) : (
-                                            <Stack spacing={1}>
-                                                {(bindings || []).map((binding) => (
-                                                    <Paper key={binding.id} variant="outlined" sx={{ p: 2 }}>
-                                                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                                            <Stack spacing={0.5}>
-                                                                <Typography variant="body2" fontWeight={500}>
-                                                                    {binding.user_email}
-                                                                </Typography>
-                                                                <Stack direction="row" spacing={1}>
-                                                                    <Chip
-                                                                        label={binding.role}
-                                                                        size="small"
-                                                                        variant="outlined"
-                                                                        color="primary"
-                                                                    />
-                                                                    <Chip
-                                                                        label={binding.status}
-                                                                        size="small"
-                                                                        color={
-                                                                            binding.status === 'active'
-                                                                                ? 'success'
-                                                                                : binding.status === 'suspended'
-                                                                                    ? 'error'
-                                                                                    : 'default'
-                                                                        }
-                                                                    />
-                                                                </Stack>
-                                                                {binding.assigned_at && (
-                                                                    <Typography variant="caption" color="text.secondary">
-                                                                        Assigned: {new Date(binding.assigned_at).toLocaleDateString()}
-                                                                    </Typography>
-                                                                )}
-                                                            </Stack>
-                                                        </Stack>
-                                                    </Paper>
-                                                ))}
-                                            </Stack>
-                                        )}
-                                    </Stack>
-
-                                    <Divider />
-
-                                    {/* Wallet Summary */}
-                                    <Stack spacing={2}>
-                                        <Typography variant="subtitle1">Wallet Summary</Typography>
-                                        {walletsLoading ? (
-                                            <Box display="flex" justifyContent="center" p={2}>
-                                                <CircularProgress size={24} />
-                                            </Box>
-                                        ) : wallets.length === 0 ? (
-                                            <Alert severity="info">
-                                                No wallets found for this organisation. Wallets are created automatically when needed.
-                                            </Alert>
-                                        ) : (
-                                            <Stack spacing={2}>
-                                                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
-                                                    <Typography variant="caption" display="block" sx={{ opacity: 0.9 }}>
-                                                        Total Balance
-                                                    </Typography>
-                                                    <Typography variant="h5" fontWeight={600}>
-                                                        ₦{Number(totalBalance).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </Typography>
-                                                </Paper>
-                                                <Stack spacing={1}>
-                                                    {wallets.map((wallet) => (
-                                                        <Paper key={wallet.id} variant="outlined" sx={{ p: 2 }}>
-                                                            <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                                                <Stack spacing={0.5}>
-                                                                    <Typography variant="body2" fontWeight={500}>
-                                                                        {wallet.key} ({wallet.type})
-                                                                    </Typography>
-                                                                    <Typography variant="caption" color="text.secondary">
-                                                                        {wallet.role || 'No role'}
-                                                                    </Typography>
-                                                                </Stack>
-                                                                <Typography variant="h6" fontWeight={600}>
-                                                                    ₦{Number(wallet.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                </Typography>
-                                                            </Stack>
-                                                            {wallet.daily_limit && (
-                                                                <Stack direction="row" spacing={2} mt={1}>
-                                                                    <Typography variant="caption" color="text.secondary">
-                                                                        Daily Limit: ₦{Number(wallet.daily_limit).toLocaleString('en-NG')}
-                                                                    </Typography>
-                                                                    {wallet.daily_spent && (
-                                                                        <Typography variant="caption" color="text.secondary">
-                                                                            Spent: ₦{Number(wallet.daily_spent).toLocaleString('en-NG')}
-                                                                        </Typography>
-                                                                    )}
-                                                                </Stack>
-                                                            )}
-                                                        </Paper>
-                                                    ))}
-                                                </Stack>
-                                            </Stack>
-                                        )}
-                                    </Stack>
+                                        <Typography variant="caption">
+                                        {new Date(tx.timestamp).toLocaleString()}
+                                        </Typography>
+                                    </Paper>
+                                    ))}
                                 </Stack>
+                                )}
                             </CardContent>
-                        </Card>
+                            </Card>
                     ) : (
                         <Stack spacing={2}>
                             <Card>
                                 <CardContent>
                                     <Typography color="text.secondary" align="center" p={4}>
-                                        Select an organization from the tree to view details
+                                        Select an Vendor from the tree to view details
                                     </Typography>
                                 </CardContent>
                             </Card>
@@ -689,7 +738,7 @@ const VendorTransactions: React.FC = () => {
                                     <CardContent>
                                         <Alert severity="info">
                                             <Typography variant="body2" gutterBottom>
-                                                No organizations found for this tenant.
+                                                No Vendor found for this tenant.
                                             </Typography>
                                             <Button
                                                 size="small"
