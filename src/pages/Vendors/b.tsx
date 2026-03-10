@@ -374,7 +374,7 @@ const VendorManagement: React.FC = () => {
 						<Card sx={{ mb: 3 }}>
 								<CardContent>
 										<Stack spacing={2}>
-												<Typography variant="h6">Select Tenant</Typography>
+												<Typography variant="h6">Select Vendor</Typography>
 												<Autocomplete
 														options={filteredTenants}
 														getOptionLabel={(option) =>

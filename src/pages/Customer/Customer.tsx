@@ -69,6 +69,7 @@ import {
 		verifyVendor,
 		Customercategory,
 		CustomerClass,
+		MeteringTypeS,
 		fetchVendorApiKeys,
 		createVendorApiKey,
 		fetchVendorAdmins,
@@ -83,6 +84,7 @@ import {
 		type VendorPermissions,
 		Category,
 		Class,
+		type MeteringType,
 } from '../../services/vendorService';
 import { del } from '../../services/api';
 import { Tenant } from '../../services/tenantService';
@@ -120,7 +122,7 @@ const CustomerManagement: React.FC = () => {
 		// Detail view states
 		const [categories, setCategories] = useState<Category[]>([])
 		const [classes, setClasses] = useState<Class[]>([])
-		const [meterTypes, setMeterTypes] = useState<any[]>([])
+		const [meterTypes, setMeterTypes] = useState<MeteringType[]>([])
 
 		const [vendorAdmins, setVendorAdmins] = useState<VendorAdminProfile[]>([]);
 		const [vendorPermissions, setVendorPermissions] = useState<VendorPermissions | null>(null);
@@ -151,13 +153,15 @@ const CustomerManagement: React.FC = () => {
 		};
 		const loadCustomerMeta = async () => {
 			try {
-				const [categoryData, classData] = await Promise.all([
+				const [categoryData, classData, meterTypeData] = await Promise.all([
 					Customercategory(),
 					CustomerClass(),
+					MeteringTypeS(),
 				]);
 
 				setCategories(Array.isArray(categoryData) ? categoryData : []);
 				setClasses(Array.isArray(classData) ? classData : []);
+				setMeterTypes(Array.isArray(meterTypeData) ? meterTypeData : []);
 
 			} catch (err: any) {
 				setError(err?.message || "Failed to load customer metadata");
@@ -532,14 +536,14 @@ const CustomerManagement: React.FC = () => {
 																												</Typography>
 																										</Grid>
 																								)} */}
-																								<Grid item xs={12} sm={6}>
+																								{/* <Grid item xs={12} sm={6}>
 																										<Typography variant="caption" color="text.secondary">Organisations</Typography>
 																										<Typography>{0}</Typography>
 																								</Grid>
 																								<Grid item xs={12} sm={6}>
 																										<Typography variant="caption" color="text.secondary">Admins</Typography>
 																										<Typography>{0}</Typography>
-																								</Grid>
+																								</Grid> */}
 																						</Grid>
 																				</TabPanel>
 																				<TabPanel value={tabValue} index={2}>

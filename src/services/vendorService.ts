@@ -128,6 +128,11 @@ export interface Class {
     name: string;
     description: string;
 }
+export interface MeteringType {
+    id: string;
+    name: string;
+    description: string;
+}
 export interface CustomerForm {
   name: string
   email: string
@@ -182,6 +187,9 @@ export const fetchCustomers = () =>
 
 export const Customercategory = () =>
     get<Category[]>(`/customer/category/`);
+
+export const MeteringTypeS = () =>
+    get<MeteringType[]>(`/customer/metering-type/`);
 
 export const CustomerClass = () =>
     get<Class[]>(`/customer/class/`);

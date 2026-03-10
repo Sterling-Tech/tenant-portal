@@ -521,7 +521,7 @@ const VendorManagement: React.FC = () => {
 
                                 <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
                                     <Tab label="Details" />
-                                    <Tab label="API Keys" />
+                                    <Tab label="API Token" />
                                     <Tab label="Admins" />
                                     <Tab label="Permissions" />
                                 </Tabs>
@@ -572,45 +572,46 @@ const VendorManagement: React.FC = () => {
                                                         </Typography>
                                                     </Grid>
                                                 )}
-                                                <Grid item xs={12} sm={6}>
+                                                {/* <Grid item xs={12} sm={6}>
                                                     <Typography variant="caption" color="text.secondary">Organisations</Typography>
                                                     <Typography>{0}</Typography>
                                                 </Grid>
                                                 <Grid item xs={12} sm={6}>
                                                     <Typography variant="caption" color="text.secondary">Admins</Typography>
                                                     <Typography>{0}</Typography>
-                                                </Grid>
+                                                </Grid> */}
                                             </Grid>
                                         </TabPanel>
 
                                         <TabPanel value={tabValue} index={1}>
                                             <Stack spacing={2}>
                                                 <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                                    <Typography variant="subtitle1">API Keys</Typography>
+                                                    <Typography variant="subtitle1">API Token</Typography>
                                                     <Button
                                                         size="small"
                                                         variant="outlined"
                                                         startIcon={<Add />}
                                                         onClick={handleCreateApiKey}
                                                     >
-                                                        Create Key
+                                                        Refresh Token
                                                     </Button>
                                                 </Stack>
 
-                                                {!vendorApiKeys?.length ? (
-                                                    <Typography color="text.secondary">No API keys</Typography>
+                                                {!selectedVendor.token?.length ? (
+                                                    <Typography color="text.secondary">No API Token</Typography>
                                                 ) : (
                                                     <List>
-                                                        {(vendorApiKeys || []).map((key) => (
-                                                            <ListItem key={key.id}>
+                                                        {/* {(selectedVendor || []).map((key) => ( */}
+                                                            <ListItem>
                                                                 <ListItemText
-                                                                    primary={key.key_id}
+                                                                    // primary={key.key_id}
                                                                     secondary={
                                                                         <Stack spacing={0.5}>
                                                                             <Typography variant="caption">
-                                                                                Scopes: {key.scopes?.join(', ') || 'All'}
+                                                                            {selectedVendor.token || 'All'}
                                                                             </Typography>
-                                                                            {key.expires_at && (
+
+                                                                            {/* {key.expires_at && (
                                                                                 <Typography variant="caption" color="text.secondary">
                                                                                     Expires: {new Date(key.expires_at).toLocaleDateString()}
                                                                                 </Typography>
@@ -619,37 +620,37 @@ const VendorManagement: React.FC = () => {
                                                                                 <Typography variant="caption" color="text.secondary">
                                                                                     Last used: {new Date(key.last_used_at).toLocaleString()}
                                                                                 </Typography>
-                                                                            )}
+                                                                            )} */}
                                                                         </Stack>
                                                                     }
                                                                 />
-                                                                <ListItemSecondaryAction>
+                                                                {/* <ListItemSecondaryAction>
                                                                     <Stack direction="row" spacing={1}>
                                                                         <Chip
-                                                                            label={key.is_active ? 'Active' : 'Inactive'}
-                                                                            color={key.is_active ? 'success' : 'default'}
+                                                                            label={'Active'}
+                                                                            color={'success'}
                                                                             size="small"
                                                                         />
                                                                         <IconButton
                                                                             size="small"
                                                                             color="error"
-                                                                            onClick={async () => {
-                                                                                if (window.confirm('Are you sure you want to revoke this API key?')) {
-                                                                                    try {
-                                                                                        await del(`/core/api-keys/${key.id}/`);
-                                                                                        loadVendorDetails(selectedVendor.id);
-                                                                                    } catch (err: any) {
-                                                                                        setError(err?.message || 'Failed to revoke API key');
-                                                                                    }
-                                                                                }
-                                                                            }}
+                                                                            // onClick={async () => {
+                                                                            //     if (window.confirm('Are you sure you want to revoke this API key?')) {
+                                                                            //         try {
+                                                                            //             await del(`/core/api-keys/${key.id}/`);
+                                                                            //             loadVendorDetails(selectedVendor.id);
+                                                                            //         } catch (err: any) {
+                                                                            //             setError(err?.message || 'Failed to revoke API key');
+                                                                            //         }
+                                                                            //     }
+                                                                            // }}
                                                                         >
                                                                             <Delete />
                                                                         </IconButton>
                                                                     </Stack>
-                                                                </ListItemSecondaryAction>
+                                                                </ListItemSecondaryAction> */}
                                                             </ListItem>
-                                                        ))}
+                                                        {/* ))} */}
                                                     </List>
                                                 )}
                                             </Stack>

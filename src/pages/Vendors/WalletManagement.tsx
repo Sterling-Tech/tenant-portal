@@ -340,7 +340,7 @@ const WalletManagement: React.FC = () => {
                         <Card>
                             <CardContent>
                                 <Stack spacing={2}>
-                                    <Typography variant="h6">Select Tenant</Typography>
+                                    <Typography variant="h6">Select Vendor</Typography>
                                     <Autocomplete
                                         options={filteredTenants}
                                         getOptionLabel={(option) => `${option?.business_name }`}
@@ -377,7 +377,7 @@ const WalletManagement: React.FC = () => {
                         </Card>
 
                         {/* Organisation Tree */}
-                        <Card>
+                        {/* <Card>
                             <CardContent>
                                 <Stack spacing={2}>
                                     <Typography variant="h6">Select Organisation</Typography>
@@ -413,7 +413,7 @@ const WalletManagement: React.FC = () => {
                                     )}
                                 </Stack>
                             </CardContent>
-                        </Card>
+                        </Card> */}
 
                         {/* Selected Org Summary */}
                         {selectedOrg && (

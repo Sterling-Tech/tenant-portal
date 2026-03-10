@@ -101,7 +101,7 @@ const VendorHierarchy: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTenantId]);
 
-    // Auto-select tenant if available but not set - run once on mount
+    // Auto-Select Vendor if available but not set - run once on mount
     React.useEffect(() => {
         if (!tenantId && !selectedTenantId && tenants?.length > 0) {
             console.log('[VendorHierarchy] Auto-selecting first tenant:', tenants[0].id);
@@ -352,7 +352,7 @@ const VendorHierarchy: React.FC = () => {
                         <Card>
                             <CardContent>
                                 <Stack spacing={2}>
-                                    <Typography variant="h6">Select Tenant</Typography>
+                                    <Typography variant="h6">Select Vendor</Typography>
                                     <Autocomplete
                                         options={filteredTenants}
                                         getOptionLabel={(option) => `${option.business_name}`}
