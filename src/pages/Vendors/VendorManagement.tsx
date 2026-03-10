@@ -370,62 +370,6 @@ const VendorManagement: React.FC = () => {
                 </Alert>
             )}
 
-            {/* Tenant Selection */}
-            <Card sx={{ mb: 3 }}>
-                <CardContent>
-                    <Stack spacing={2}>
-                        <Typography variant="h6">Select Tenant</Typography>
-                        <Autocomplete
-                            options={filteredTenants}
-                            getOptionLabel={(option) =>
-                                `${option?.business_name ?? 'Unknown'}`
-                            }
-                            value={selectedTenant || null}
-                            onChange={(_, newValue) => {
-                                if (newValue) {
-                                    selectTenant(newValue.id);
-                                }
-                            }}
-                            onInputChange={(_, newValue) => {
-                                setTenantSearchTerm(newValue);
-                            }}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    placeholder="Search tenants..."
-                                    InputProps={{
-                                        ...params.InputProps,
-                                        startAdornment: (
-                                            <>
-                                                <InputAdornment position="start">
-                                                    <Domain />
-                                                </InputAdornment>
-                                                {params.InputProps.startAdornment}
-                                            </>
-                                        ),
-                                    }}
-                                />
-                            )}
-                            loading={loading}
-                            noOptionsText={
-                                tenantSearchTerm.length > 0
-                                    ? 'No tenants found'
-                                    : 'No tenants available'
-                            }
-                        />
-                        {selectedTenant && (
-                            <Alert severity="success" sx={{ mt: 1 }}>
-                                Managing vendors for: <strong>{selectedTenant.business_name}</strong>
-                            </Alert>
-                        )}
-                        {!selectedTenantId && (
-                            <Alert severity="info" sx={{ mt: 1 }}>
-                                Please select a tenant to view and manage vendors
-                            </Alert>
-                        )}
-                    </Stack>
-                </CardContent>
-            </Card>
 
             {!selectedTenantId && (
                 <Alert severity="warning" sx={{ mb: 2 }}>

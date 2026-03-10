@@ -13,6 +13,8 @@ import VendorManagement from './pages/Vendors/VendorManagement';
 import VendorHierarchy from './pages/Vendors/VendorHierarchy';
 import WalletManagement from './pages/Vendors/WalletManagement';
 import Layout from './components/Layout/Layout';
+import CustomerManagement from './pages/Customer/Customer';
+import VendorTransactions from './pages/Vendors/VendorTransactions';
 
 // Enhanced theme
 const theme = createTheme({
@@ -123,11 +125,31 @@ const App: React.FC = () => {
                                 }
                             />
                             <Route
+                                path="/customer"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <CustomerManagement/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
                                 path="/vendors/hierarchy"
                                 element={
                                     <ProtectedRoute>
                                         <Layout>
                                             <VendorHierarchy />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/vendors/transactions"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <VendorTransactions />
                                         </Layout>
                                     </ProtectedRoute>
                                 }

@@ -24,6 +24,7 @@ import {
 import {
     Menu as MenuIcon,
     Domain,
+    People,
     Settings,
     Notifications,
     Logout,
@@ -33,6 +34,7 @@ import {
     ExpandLess,
     ExpandMore,
     AccountBalanceWallet,
+    History,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -40,6 +42,8 @@ import { logoutUser } from '../../store/slices/authSlice';
 import TenantSwitcher from '../TenantSwitcher/TenantSwitcher';
 import { useVendorHierarchy } from '../../contexts/VendorContext';
 import { useEnsureUserApiKey } from '../../hooks/useEnsureUserApiKey';
+import CustomerManagement from '../../pages/Customer/Customer';
+import VendorTransactions from '../../pages/Vendors/VendorTransactions';
 
 const drawerWidth = 240;
 
@@ -257,6 +261,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </ListItemIcon>
                             <ListItemText primary="Vendor Hierarchy" />
                         </ListItemButton>
+                         {/* Transactions */}
+                        <ListItemButton
+                            selected={location.pathname === '/vendors/transactions'}
+                            onClick={() => handleNavigation('/vendors/transactions')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <History fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Transactions" />
+                        </ListItemButton>
                         {/* Wallets */}
                         <ListItemButton
                             selected={location.pathname === '/vendors/wallets'}
@@ -282,6 +309,31 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </ListItemButton>
                     </List>
                 </Collapse>
+                
+                {/* Customer */}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        selected={location.pathname === '/customer'}
+                        onClick={() => handleNavigation('/customer')}
+                        sx={{
+                            '&.Mui-selected': {
+                                backgroundColor: 'primary.main',
+                                color: 'white',
+                                '&:hover': {
+                                    backgroundColor: 'primary.dark',
+                                },
+                                '& .MuiListItemIcon-root': {
+                                    color: 'white',
+                                },
+                            },
+                        }}
+                    >
+                        <ListItemIcon>
+                            <People />
+                        </ListItemIcon>
+                        <ListItemText primary="Customer" />
+                    </ListItemButton>
+                </ListItem>
 
                 {/* Settings */}
                 <ListItem disablePadding>

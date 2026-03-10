@@ -61,6 +61,45 @@ export interface Vendor {
   }
   created_at: string
 }
+export interface Customer {
+  id: string
+  name: string
+  phone_number: string
+  account_number: string
+  meter_number: string
+
+  customer_category: {
+    id: number
+    name: string
+    description: string
+  }
+
+  customer_class: {
+    id: number
+    category: {
+      id: number
+      name: string
+      description: string
+    }
+    name: string
+    description: string
+  }
+
+  metering_type: {
+    id: number
+    name: string
+    description: string
+  }
+
+  wallet: {
+    id: number
+    wallet_type: {
+      name: string
+      description?: string
+    }
+    balance: string
+  }
+}
 export interface VendorForm {
     tenant?: string | null;
     business_name: string;
@@ -73,6 +112,30 @@ export interface VendorForm {
     postal_code?: string;
     hierachy: string;
     related_vendor?: string;
+}
+export interface Category {
+    id: string;
+    name: string;
+    description: string;
+}
+export interface Class {
+    id: number;
+    category: {
+      id: string;
+      name: string;
+      description: string;
+    };
+    name: string;
+    description: string;
+}
+export interface CustomerForm {
+  name: string
+  email: string
+  phone_number: string
+  address: string
+  customer_category: number
+  customer_class: number
+  metering_type: number
 }
 export interface VendorAdminProfile {
     id: string;
@@ -114,8 +177,23 @@ export const fetchVendors = (params?: { tenant?: string; is_active?: boolean; is
     // get<Vendor[]>(`/vendor/retrieve/${buildQuery(params)}`);
     get<Vendor[]>(`/vendor/retrieve/`);
 
+export const fetchCustomers = () =>
+    get<Customer[]>(`/customer/`);
+
+export const Customercategory = () =>
+    get<Category[]>(`/customer/category/`);
+
+export const CustomerClass = () =>
+    get<Class[]>(`/customer/class/`);
+
 export const fetchVendor = (id: string) =>
-    get<Vendor>(`/vendors/vendors/${id}/`);
+    get<Vendor>(`/vendor/retrieve/${id}/`);
+
+export const fetchCustomer = (id: string) =>
+    get<Customer>(`/customer/${id}/`);
+
+export const createCustomer = (payload: CustomerForm) =>
+    post<Customer>('/customer/', payload);
 
 export const createVendor = (payload: VendorForm) =>
     post<Vendor>('/vendor/create/', payload);
