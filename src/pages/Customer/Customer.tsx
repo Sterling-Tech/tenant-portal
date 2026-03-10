@@ -774,7 +774,7 @@ const CustomerManagement: React.FC = () => {
 													})
 												}
 											>
-												{categories.map((cat) => (
+												{(categories || []).map((cat) => (
 													<MenuItem key={cat.id} value={cat.id}>
 														{cat.name}
 													</MenuItem>
@@ -796,7 +796,7 @@ const CustomerManagement: React.FC = () => {
 													})
 												}
 											>
-												{classes.map((cls) => (
+												{(classes || []).map((cls) => (
 													<MenuItem key={cls.id} value={cls.id}>
 														{cls.name}
 													</MenuItem>
@@ -818,7 +818,7 @@ const CustomerManagement: React.FC = () => {
 													})
 												}
 											>
-												{meterTypes.map((meter) => (
+												{(meterTypes || []).map((meter) => (
 													<MenuItem key={meter.id} value={meter.id}>
 														{meter.name}
 													</MenuItem>
