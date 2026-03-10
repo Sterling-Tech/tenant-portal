@@ -34,10 +34,10 @@ export const getAuthHeaders = (): Record<string, string> => {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const tenantId = localStorage.getItem('tenantId');
-    if (tenantId) {
-        headers['X-Tenant-ID'] = tenantId;
-    }
+    // const tenantId = localStorage.getItem('tenantId');
+    // if (tenantId) {
+    //     headers['X-Tenant-ID'] = tenantId;
+    // }
 
     return headers;
 };

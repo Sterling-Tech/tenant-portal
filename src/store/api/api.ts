@@ -10,10 +10,10 @@ const rawBaseQuery = fetchBaseQuery({
         if (token) {
             headers.set('authorization', `Bearer ${token}`);
         }
-        const tenantId = localStorage.getItem('tenantId');
-        if (tenantId) {
-            headers.set('X-Tenant-ID', tenantId);
-        }
+        // const tenantId = localStorage.getItem('tenantId');
+        // if (tenantId) {
+        //     headers.set('X-Tenant-ID', tenantId);
+        // }
         return headers;
     },
 });
