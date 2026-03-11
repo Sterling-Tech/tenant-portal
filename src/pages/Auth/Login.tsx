@@ -70,7 +70,8 @@ const Login: React.FC = () => {
         try {
             // Call backend API directly
             //const response = await fetch('http://188.166.161.13:8001/api/v1/auth/login/', {
-            const response = await fetch('http://188.166.99.136:8061/user/login/', {
+            // const response = await fetch('http://188.166.99.136:8061/user/login/', {
+            const response = await fetch('http://188.166.161.13:8061/user/login/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

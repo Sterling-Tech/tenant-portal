@@ -55,7 +55,8 @@ const extractAuthPayload = (data: any) => {
 export const login = createAsyncThunk(
     'user/login',
     async (credentials: { email: string; password: string }) => {
-        const response = await fetch('http://188.166.99.136:8061/user/login/', {
+        const response = await fetch('http://188.166.161.13:8061/user/login/', {
+        // const response = await fetch('http://188.166.99.136:8061/user/login/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(credentials),
