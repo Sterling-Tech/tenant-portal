@@ -100,8 +100,8 @@ const VendorTransactions: React.FC = () => {
 
         const res = await fetchTransactions({
         vendor_id: vendorId,
-        // start_date: "2026-02-01",
-        // end_date: "2026-02-28",
+        start_date: "2026-02-01",
+        end_date: "2026-04-28",
         })
 
         setTransactions(res)
@@ -381,7 +381,7 @@ const VendorTransactions: React.FC = () => {
                                     <Autocomplete
                                         options={filteredTenants}
                                         getOptionLabel={(option) => `${option.business_name}`}
-                                        value={tenants.find((t) => t.id === tenantId) || null}
+                                        value={Array.isArray(tenants) ? tenants.find((t) => t.id === tenantId) : null}
                                         onChange={(_, newValue) => {
                                             if (newValue) {
                                             selectTenant(newValue.id)

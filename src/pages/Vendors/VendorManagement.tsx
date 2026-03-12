@@ -887,9 +887,10 @@ const VendorManagement: React.FC = () => {
                         <Autocomplete
                             options={vendors}
                             getOptionLabel={(option) => option.business_name}
-                            value={
-                                vendors.find(v => v.id === vendorForm.related_vendor) || null
-                            }
+                            value={Array.isArray(vendors) ? vendors.find((v) => v.id === vendorForm.related_vendor) : null}
+                            // value={
+                            //     vendors.find(v => v.id === vendorForm.related_vendor) || null
+                            // }
                             onChange={(_, value) =>
                                 setVendorForm({
                                     ...vendorForm,
