@@ -83,6 +83,8 @@ const VendorTransactions: React.FC = () => {
     const [assignUserModalOpen, setAssignUserModalOpen] = useState(false);
     const [transactions, setTransactions] = useState<Ledger[]>([])
     const [transactionsLoading, setTransactionsLoading] = useState(false)
+    const [startDate, setStartDate] = useState("")
+    const [endDate, setEndDate] = useState("")
     // Context menu state
     const [contextMenu, setContextMenu] = useState<{
         mouseX: number;
@@ -95,28 +97,28 @@ const VendorTransactions: React.FC = () => {
     const [orgSearchTerm, setOrgSearchTerm] = useState('');
 
     const loadTransactions = async (vendorId: number) => {
-    try {
-        setTransactionsLoading(true)
+        try {
+            setTransactionsLoading(true)
 
-        const res = await fetchTransactions({
-        vendor_id: vendorId,
-        start_date: "2026-02-01",
-        end_date: "2026-04-28",
-        })
+            const res = await fetchTransactions({
+            vendor_id: vendorId,
+            start_date: startDate,
+            end_date: endDate,
+            })
 
-        setTransactions(res)
-    } catch (err) {
-        console.error("Failed to fetch transactions", err)
-    } finally {
-        setTransactionsLoading(false)
-    }
-    }
+            setTransactions(res)
+        } catch (err) {
+            console.error("Failed to fetch transactions", err)
+        } finally {
+            setTransactionsLoading(false)
+        }
+        }
 
     useEffect(() => {
      if (tenantId) {
        loadTransactions(Number(tenantId))
      }
-    }, [tenantId])
+    }, [tenantId, startDate, endDate])
     // Sync tenant selection - only when selectedTenantId changes
     React.useEffect(() => {
         if (selectedTenantId && selectedTenantId !== tenantId) {
@@ -705,7 +707,42 @@ const VendorTransactions: React.FC = () => {
                         // </Card>
                          <Card>
                             <CardContent>
+                                <Stack
+                                direction={{ xs: "column", md: "row" }}
+                                spacing={2}
+                                justifyContent="space-between"
+                                alignItems="center"
+                                mb={2}
+                                >
                                 <Typography variant="h6">Transactions</Typography>
+
+                                <Stack direction="row" spacing={2}>
+                                    <TextField
+                                    type="date"
+                                    size="small"
+                                    label="Start Date"
+                                    InputLabelProps={{ shrink: true }}
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    />
+
+                                    <TextField
+                                    type="date"
+                                    size="small"
+                                    label="End Date"
+                                    InputLabelProps={{ shrink: true }}
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    />
+
+                                    <Button
+                                    variant="contained"
+                                    onClick={() => tenantId && loadTransactions(Number(tenantId))}
+                                    >
+                                    Filter
+                                    </Button>
+                                </Stack>
+                                </Stack>
 
                                 {transactionsLoading ? (
                                 <CircularProgress />
@@ -735,7 +772,7 @@ const VendorTransactions: React.FC = () => {
                             <Card>
                                 <CardContent>
                                     <Typography color="text.secondary" align="center" p={4}>
-                                        Select an Vendor from the tree to view details
+                                        No transactions found
                                     </Typography>
                                 </CardContent>
                             </Card>
@@ -744,7 +781,7 @@ const VendorTransactions: React.FC = () => {
                                     <CardContent>
                                         <Alert severity="info">
                                             <Typography variant="body2" gutterBottom>
-                                                No Vendor found for this tenant.
+                                                No Vendor found for this V.
                                             </Typography>
                                             <Button
                                                 size="small"
