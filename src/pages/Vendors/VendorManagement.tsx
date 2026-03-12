@@ -146,9 +146,8 @@ const VendorManagement: React.FC = () => {
             // if (searchTerm) params.search = searchTerm;
 
             const data = await fetchVendors()
-            console.error('TenantSwitcher ', data);
+            setVendors(Array.isArray(data) ? data : [])
 
-            setVendors(data);
         } catch (err: any) {
             setError(err?.message || "Failed to load vendors");
         } finally {
@@ -885,9 +884,10 @@ const VendorManagement: React.FC = () => {
                         </FormControl>
 
                         <Autocomplete
-                            options={vendors}
+                            options={Array.isArray(vendors) ? vendors : []}
                             getOptionLabel={(option) => option.business_name}
-                            value={Array.isArray(vendors) ? vendors.find((v) => v.id === vendorForm.related_vendor) : null}
+                            // value={Array.isArray(vendors) ? vendors.find((v) => v.id === vendorForm.related_vendor) : null}
+                            value={(vendors || []).find((v) => v.id === vendorForm.related_vendor) || null}
                             // value={
                             //     vendors.find(v => v.id === vendorForm.related_vendor) || null
                             // }
