@@ -15,6 +15,7 @@ import WalletManagement from './pages/Vendors/WalletManagement';
 import Layout from './components/Layout/Layout';
 import CustomerManagement from './pages/Customer/Customer';
 import VendorTransactions from './pages/Vendors/VendorTransactions';
+import CustomerAdmin from './pages/Customer/Dashboard';
 
 // Enhanced theme
 const theme = createTheme({
@@ -100,6 +101,16 @@ const App: React.FC = () => {
                                     <ProtectedRoute>
                                         <Layout>
                                             <TenantAdmin />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/customer/admin"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <CustomerAdmin />
                                         </Layout>
                                     </ProtectedRoute>
                                 }

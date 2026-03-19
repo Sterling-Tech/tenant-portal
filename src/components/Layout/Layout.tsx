@@ -42,8 +42,6 @@ import { logoutUser } from '../../store/slices/authSlice';
 import TenantSwitcher from '../TenantSwitcher/TenantSwitcher';
 import { useVendorHierarchy } from '../../contexts/VendorContext';
 import { useEnsureUserApiKey } from '../../hooks/useEnsureUserApiKey';
-import CustomerManagement from '../../pages/Customer/Customer';
-import VendorTransactions from '../../pages/Vendors/VendorTransactions';
 
 const drawerWidth = 240;
 
@@ -76,7 +74,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
-    const [vendorMenuOpen, setVendorMenuOpen] = useState(true); // For collapsible vendor section
+    const [vendorMenuOpen, setVendorMenuOpen] = useState(true);
+    const [customerMenuOpen, setCustomerMenuOpen] = useState(false); // 👈 ADD THIS // For collapsible vendor section
 
     // Load tenant from localStorage on mount only
     useEffect(() => {
@@ -207,7 +206,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <Store />
                         </ListItemIcon>
                         <ListItemText
-                            primary="Vendor Management"
+                            primary="Vendor Mgmt"
                             primaryTypographyProps={{ fontWeight: isVendorSection ? 600 : 400 }}
                         />
                         {vendorMenuOpen ? <ExpandLess /> : <ExpandMore />}
@@ -309,12 +308,81 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </ListItemButton>
                     </List>
                 </Collapse>
-                
-                {/* Customer */}
+                 {/* Customer Management Section - Collapsible */}
                 <ListItem disablePadding>
                     <ListItemButton
-                        selected={location.pathname === '/customer'}
-                        onClick={() => handleNavigation('/customer')}
+                        onClick={() => setCustomerMenuOpen(!customerMenuOpen)}
+                        sx={{
+                            bgcolor: isVendorSection ? 'action.selected' : 'inherit',
+                        }}
+                    >
+                        <ListItemIcon>
+                            <Store />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary="Customer Mgmt"
+                            primaryTypographyProps={{ fontWeight: isVendorSection ? 600 : 400 }}
+                        />
+                        {vendorMenuOpen ? <ExpandLess /> : <ExpandMore />}
+                    </ListItemButton>
+                </ListItem>
+                <Collapse in={customerMenuOpen} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+                        {/* Customer admin */}
+                        <ListItemButton
+                            selected={location.pathname === '/customer/admin'}
+                            onClick={() => handleNavigation('/customer/admin')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <Store fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="analytics" />
+                        </ListItemButton>
+                      
+                        {/* Customer */}
+                        <ListItemButton
+                            selected={location.pathname === '/customer'}
+                            onClick={() => handleNavigation('/customer')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <People fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="customer" />
+                        </ListItemButton>
+                    </List>
+                </Collapse>
+                
+                {/* Sub account*/}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        selected={location.pathname === '/'}
+                        onClick={() => handleNavigation('/')}
                         sx={{
                             '&.Mui-selected': {
                                 backgroundColor: 'primary.main',
@@ -331,7 +399,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <ListItemIcon>
                             <People />
                         </ListItemIcon>
-                        <ListItemText primary="Customer" />
+                        <ListItemText primary="Sub account" />
                     </ListItemButton>
                 </ListItem>
 
