@@ -381,8 +381,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {/* Sub account*/}
                 <ListItem disablePadding>
                     <ListItemButton
-                        selected={location.pathname === '/'}
-                        onClick={() => handleNavigation('/')}
+                        selected={location.pathname === '/customer/subaccount'}
+                        onClick={() => handleNavigation('/customer/subaccount')}
                         sx={{
                             '&.Mui-selected': {
                                 backgroundColor: 'primary.main',

@@ -61,6 +61,31 @@ export interface Vendor {
   }
   created_at: string
 }
+export interface Debt {
+    id: string,
+    customer: {
+      name: string
+      address: string
+    }
+    description: string
+    payment_plan: {
+      id: number
+      name: string
+      description: string
+      code: string
+    }
+    effective_date: string
+    rate: number
+    debt_type: string
+    balance: string
+    last_debit: string
+}
+export interface DebtHistory {
+  transaction_ref: string
+  amount_paid: string
+  timestamp: string
+}
+
 export interface Customer {
   id: string
   name: string
@@ -124,7 +149,37 @@ export interface Ledger {
   credit_amount: string
   timestamp: string
 }
+export interface AnalyticsCount {
+  analytics: {
+    total_revenue: number
+    total_customers: number
+    total_debt: number
+    average_revenue: string
+    collection_efficiency: number
+  }
+}
+export interface AnalyticsBreakdown {
+  customer_category: {
+    category_name: string;
+    count: number;
+  }[];
 
+  metering_type: {
+    name: string;
+    count: number;
+  }[];
+
+  daily_transaction: {
+    day: string;   // ISO date string
+    total: number;
+  }[];
+  debt_exposure: {
+    plan_name: string
+    plan_code: string
+    total: string
+  }[],
+    
+}
 export interface Class {
     id: number;
     category: {
@@ -166,7 +221,6 @@ export interface VendorAdminProfile {
     created_at: string;
     updated_at: string;
 }
-
 export interface VendorPermissions {
     vendor_id: string;
     metadata: Record<string, unknown>;
@@ -194,7 +248,7 @@ export const fetchTransactions = (params?: {
   end_date?: string
   vendor_id?: number
 }) =>
-  get<Ledger[]>(`/vendor/transactions/${buildQuery(params)}`)
+  get<Ledger[]>(`/vendor/ledger/${buildQuery(params)}`)
 
 export const fetchCustomers = () =>
     get<Customer[]>(`/customer/`);
@@ -213,6 +267,25 @@ export const fetchVendor = (id: string) =>
 
 export const fetchCustomer = (id: string) =>
     get<Customer>(`/customer/${id}/`);
+
+export const fetchDebt = (id?: number) =>
+    get<Debt[]>(`/customer/debt/?customer_id=${id}`);
+
+export const fetchDebtHistory = (id?: string) =>
+  get<DebtHistory[]>(
+    id
+      ? `/customer/debt/history/?debt_id=${id}`
+      : `/customer/debt/history/`
+  );
+
+export const fetchanalytics = (params?: {
+  start_date?: string
+  end_date?: string
+}) =>
+  get<AnalyticsCount>(`/user/dashboard/analytics/${buildQuery(params)}`)
+
+export const fetchAnalyticsBreakdown = () =>
+    get<AnalyticsBreakdown>(`/user/dashboard/classification/`);
 
 export const createCustomer = (payload: CustomerForm) =>
     post<Customer>('/customer/', payload);

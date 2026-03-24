@@ -13,17 +13,7 @@ import {
 		DialogTitle,
 		DialogContent,
 		DialogActions,
-		Divider,
-		FormControlLabel,
 		Grid,
-		IconButton,
-		InputAdornment,
-		List,
-		ListItem,
-		ListItemAvatar,
-		ListItemButton,
-		ListItemSecondaryAction,
-		ListItemText,
 		Stack,
 		Switch,
 		TextField,
@@ -33,39 +23,24 @@ import {
 import {
 		Add,
 		Assessment,
-		CheckCircle,
-		ContentCopy,
-		Delete,
-		Domain,
-		Edit,
-		HighlightOff,
-		Key,
-		Loop,
 		People,
 		Refresh,
 		Settings,
 		Security,
-		Visibility,
-		CheckBox,
-		CheckBoxOutlineBlank,
-		SelectAll,
-		// BarChart,
 		Analytics,
 		Download,
 		Search,
+		DateRange,
 } from '@mui/icons-material';
 import { useTenants } from '../../hooks/useTenants';
 import { useVendorHierarchy } from '../../contexts/VendorContext';
 import { useTenantAdminProfile } from '../../hooks/useTenantAdminProfile';
 import { useApiKeys } from '../../hooks/useApiKeys';
 import { useAppSelector } from '../../store/hooks';
-import TenantFormModal, { TenantFormValues } from '../../components/TenantAdmin/TenantFormModal';
 import TenantDomainModal, { TenantDomainFormValues } from '../../components/TenantAdmin/TenantDomainModal';
-import TenantUserRoleModal, { TenantUserRoleFormValues } from '../../components/TenantAdmin/TenantUserRoleModal';
-import ConfirmDialog from '../../components/TenantAdmin/ConfirmDialog';
-import ApiKeyAuditDialog from '../../components/TenantAdmin/ApiKeyAuditDialog';
 import type { Tenant, TenantConfiguration as TenantConfigurationType, TenantUser, CreateTenantRequest } from '../../services/tenantService';
 import { BarChart, PieChart } from '@mui/x-charts';
+import { AnalyticsBreakdown, AnalyticsCount, fetchanalytics, fetchAnalyticsBreakdown } from '../../services/vendorService';
 
 const CustomerAdmin: React.FC = () => {
 		const {
@@ -83,108 +58,15 @@ const CustomerAdmin: React.FC = () => {
 				error,
 				setError,
 				refreshTenants,
-				selectTenant,
-				createTenant,
-				updateTenant,
-				deleteTenant,
-				setTenantActive,
 				addDomain,
-				updateDomain,
-				removeDomain,
-				updateConfiguration,
-				toggleTenantUserAdmin,
-				setTenantUserRole,
-				updateTenantUser,
-				removeTenantUser,
 		} = useTenants();
 
 		const { tree, selectedOrg, selectedOrgId, selectOrg } = useVendorHierarchy();
 		const { profile, loading: profileLoading, error: profileError } = useTenantAdminProfile(selectedTenantId);
-		const {
-				keys,
-				loading: keysLoading,
-				createKey,
-				rotateKey,
-				revokeKey,
-				removeKey,
-				lastIssuedSecret,
-				setLastIssuedSecret,
-				auditEntries,
-				loadAudit,
-		} = useApiKeys('vendor_org', selectedOrgId ?? null);
 		
 		const user = useAppSelector((state) => state.auth.user);
-		const canCreateTenant = useMemo(() => {
-				// Debug: Log user object to help diagnose permission issues
-				if (process.env.NODE_ENV === 'development') {
-						console.log('[TenantAdmin] Permission check - User object:', user);
-						console.log('[TenantAdmin] Permission check - User role:', user?.role);
-						console.log('[TenantAdmin] Permission check - is_superuser:', (user as any)?.is_superuser);
-						console.log('[TenantAdmin] Permission check - is_staff:', (user as any)?.is_staff);
-				}
-
-				if (!user) {
-						if (process.env.NODE_ENV === 'development') {
-								console.log('[TenantAdmin] No user object found');
-						}
-						return false;
-				}
-
-				// Check if user has superuser status (from backend) - this is the primary check
-				if ((user as any)?.is_superuser === true || (user as any)?.isSuperuser === true) {
-						if (process.env.NODE_ENV === 'development') {
-								console.log('[TenantAdmin] Permission granted: is_superuser = true');
-						}
-						return true;
-				}
-
-				// Check if user is staff (staff members can also create tenants)
-				// Also check if email contains 'admin' as a fallback for tenant admins
-				const isStaff = (user as any)?.is_staff === true || (user as any)?.isStaff === true;
-				const isAdminEmail = user?.email?.toLowerCase().includes('admin');
-
-				if (isStaff || isAdminEmail) {
-						if (process.env.NODE_ENV === 'development') {
-								console.log('[TenantAdmin] Permission granted:', { isStaff, isAdminEmail });
-						}
-						return true;
-				}
-
-				// Check role-based permissions
-				const role = user?.role;
-				if (!role) {
-						if (process.env.NODE_ENV === 'development') {
-								console.log('[TenantAdmin] Permission denied: No role found for user');
-						}
-						return false;
-				}
-
-				// Normalize role to lowercase for comparison
-				const roleLower = typeof role === 'string' ? role.toLowerCase().trim() : String(role).toLowerCase().trim();
-
-				// Allow admin, platform_admin, platform, super_admin, and owner roles
-				const allowedRoles = ['admin', 'platform_admin', 'platform', 'super_admin', 'owner'];
-				const hasPermission = allowedRoles.includes(roleLower);
-
-				if (process.env.NODE_ENV === 'development') {
-						console.log('[TenantAdmin] Role-based permission check:', {
-								originalRole: role,
-								roleType: typeof role,
-								normalizedRole: roleLower,
-								allowedRoles,
-								hasPermission,
-								roleInList: allowedRoles.includes(roleLower),
-								exactMatch: roleLower === 'admin'
-						});
-						console.log('[TenantAdmin] Final canCreateTenant result:', hasPermission);
-				}
-
-				return hasPermission;
-		}, [user]);
-		const tenantCreateDisabledMessage = canCreateTenant
-				? undefined
-				: 'Only platform administrators can create new tenants.';
-
+	
+	
 		const [searchTerm, setSearchTerm] = useState('');
 		const [searchLoading, setSearchLoading] = useState(false);
 		const searchInitializedRef = useRef(false);
@@ -194,13 +76,17 @@ const CustomerAdmin: React.FC = () => {
 		});
 		const [createSuccess, setCreateSuccess] = useState<string | null>(null);
 		const [domainModalOpen, setDomainModalOpen] = useState(false);
-		const [userRoleModalState, setUserRoleModalState] = useState<{ open: boolean; user?: TenantUser | null }>({
-				open: false,
-		});
-		const [deleteTenantOpen, setDeleteTenantOpen] = useState(false);
-		const [auditModalState, setAuditModalState] = useState<{ open: boolean; keyId?: string | null; keyLabel?: string }>({
-				open: false,
-		});
+	   
+		const today = new Date().toISOString().split('T')[0];
+
+		const [startDate, setStartDate] = useState<string>(today);
+		const [endDate, setEndDate] = useState<string>(today);
+
+		const [analyticsData, setAnalyticsData] = useState<AnalyticsCount | null>(null);
+		const [breakdownData, setBreakdownData] = useState<AnalyticsBreakdown | null>(null);
+
+		const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
 		const [configDraft, setConfigDraft] = useState({
 				max_users: '',
 				api_rate_limit: '',
@@ -208,6 +94,36 @@ const CustomerAdmin: React.FC = () => {
 				max_storage_mb: '',
 		});
 
+		const loadAnalytics = async (start?: string, end?: string) => {
+			setAnalyticsLoading(true);
+			try {
+				const [analyticsRes, breakdownRes] = await Promise.all([
+					fetchanalytics({
+						start_date: start,
+						end_date: end,
+					}),
+					fetchAnalyticsBreakdown(),
+				]);
+				console.log(analyticsRes || null, "this th works", breakdownRes || null)
+				// API returns array → take first item
+				setAnalyticsData(analyticsRes || null);
+				setBreakdownData(breakdownRes || null);
+			} catch (err) {
+				console.error("Analytics error:", err);
+			} finally {
+				setAnalyticsLoading(false);
+			}
+		};
+
+		const prepaid = breakdownData?.metering_type.find((m) => m.name === "Prepaid")?.count || 0;
+    const postpaid = breakdownData?.metering_type.find((m) => m.name === "Postpaid")?.count || 0;
+    const totalCustomers = prepaid + postpaid;
+		const prepaidPercent = totalCustomers > 0 ? (prepaid / totalCustomers) * 100 : 0;
+    const postpaidPercent = totalCustomers > 0 ? (postpaid / totalCustomers) * 100 : 0;
+
+    useEffect(() => {
+			loadAnalytics(startDate, endDate);
+		}, []);
 		useEffect(() => {
 				if (!searchInitializedRef.current) {
 						searchInitializedRef.current = true;
@@ -231,6 +147,38 @@ const CustomerAdmin: React.FC = () => {
 				return () => clearTimeout(handler);
 		}, [searchTerm, refreshTenants]);
 
+    const last7Days = useMemo(() => {
+			if (!breakdownData?.daily_transaction) return [];
+
+			return [...breakdownData.daily_transaction]
+				.sort((a, b) => new Date(b.day).getTime() - new Date(a.day).getTime())
+				.slice(0, 7)
+				.map((item, index, arr) => {
+					const prev = arr[index + 1];
+
+					const change = prev
+						? ((item.total - prev.total) / prev.total) * 100
+						: 0;
+
+					return {
+						date: new Date(item.day).toLocaleDateString('en-GB', {
+							day: '2-digit',
+							month: 'short',
+						}).toUpperCase(),
+
+						amount: `₦${item.total.toLocaleString()}`,
+						change: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`,
+						up: change >= 0,
+					};
+				});
+		}, [breakdownData]);
+
+		const revenueData = last7Days.length
+			? last7Days
+			: [
+					{ date: '18 MAR', amount: '₦13.1M', change: '+5.4%', up: true },
+					{ date: '17 MAR', amount: '₦12.4M', change: '+1.8%', up: true },
+				];
 		useEffect(() => {
 				if (configuration) {
 						setConfigDraft({
@@ -267,43 +215,9 @@ const CustomerAdmin: React.FC = () => {
 				return tenants.filter(
 						(tenant) =>
 								tenant.business_name.toLowerCase().includes(term) 
-								//||
-								// tenant.slug.toLowerCase().includes(term) ||
-								// tenant.domain.toLowerCase().includes(term) ||
-								// (tenant.subdomain && tenant.subdomain.toLowerCase().includes(term))
 				);
 		}, [tenants, searchTerm]);
 
-		const vendorSummary = useMemo(() => {
-				const totals = { total: 0, vendors: 0, subVendors: 0, agents: 0, cashiers: 0 };
-				const traverse = (nodes: typeof tree) => {
-						if (!nodes || !Array.isArray(nodes)) return;
-						nodes.forEach((node) => {
-								totals.total += 1;
-								switch (node.level) {
-										case 'vendor':
-												totals.vendors += 1;
-												break;
-										case 'sub_vendor':
-												totals.subVendors += 1;
-												break;
-										case 'agent':
-												totals.agents += 1;
-												break;
-										case 'cashier':
-												totals.cashiers += 1;
-												break;
-										default:
-												break;
-								}
-								if (node.children?.length) traverse(node.children);
-						});
-				};
-				traverse(tree);
-				return totals;
-		}, [tree]);
-
-		const openDomainModal = () => setDomainModalOpen(true);
 		const closeDomainModal = () => setDomainModalOpen(false);
 
 		const handleDomainModalSubmit = async (values: TenantDomainFormValues) => {
@@ -316,17 +230,6 @@ const CustomerAdmin: React.FC = () => {
 				});
 		};
 
-		const openDeleteTenantModal = () => setDeleteTenantOpen(true);
-		const closeDeleteTenantModal = () => setDeleteTenantOpen(false);
-
-		const handleDeleteTenant = async () => {
-				if (!selectedTenant) {
-						return;
-				}
-				await deleteTenant(selectedTenant.id);
-		};
-
-
 		// Bulk operations state
 		const [selectedTenants, setSelectedTenants] = useState<Set<string>>(new Set());
 		const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
@@ -336,37 +239,6 @@ const CustomerAdmin: React.FC = () => {
 		const [analyticsView, setAnalyticsView] = useState<'summary' | 'detailed'>('summary');
 
 		// Bulk operation handlers
-		const handleBulkAction = async () => {
-				if (!bulkAction || selectedTenants.size === 0) return;
-
-				const tenantIds = Array.from(selectedTenants);
-				const promises: Promise<unknown>[] = [];
-
-				try {
-						if (bulkAction === 'activate') {
-								for (const id of tenantIds) {
-										promises.push(setTenantActive(id, true));
-								}
-						} else if (bulkAction === 'deactivate') {
-								for (const id of tenantIds) {
-										promises.push(setTenantActive(id, false));
-								}
-						} else if (bulkAction === 'delete' && canCreateTenant) {
-								for (const id of tenantIds) {
-										promises.push(deleteTenant(id));
-								}
-						}
-
-						await Promise.all(promises);
-						setSelectedTenants(new Set());
-						setBulkActionDialogOpen(false);
-						setBulkAction(null);
-						await refreshTenants();
-				} catch (err) {
-						setError(typeof err === 'string' ? err : (err as any)?.message || 'Failed to perform bulk action');
-				}
-		};
-
 		const closeBulkActionDialog = () => {
 				setBulkActionDialogOpen(false);
 				setBulkAction(null);
@@ -385,18 +257,34 @@ const CustomerAdmin: React.FC = () => {
 										>
 												Refresh
 										</Button>
-										{/* <Button
-												variant="contained"
-												startIcon={<Add />}
-												disabled={!canCreateTenant}
-												title={canCreateTenant ? 'Create a new tenant' : tenantCreateDisabledMessage}
-												sx={{
-														opacity: canCreateTenant ? 1 : 0.6,
-												}}
+										
+											{/* Date Here */}
+										<Stack direction="row" spacing={1} alignItems="center">
+										<TextField
+											type="date"
+											size="small"
+											value={startDate}
+											onChange={(e) => setStartDate(e.target.value)}
+										/>
+
+										<TextField
+											type="date"
+											size="small"
+											value={endDate}
+											onChange={(e) => setEndDate(e.target.value)}
+										/>
+
+										<Button
+											variant="contained"
+											startIcon={<DateRange />}
+											onClick={() => loadAnalytics(startDate, endDate)}
+											disabled={analyticsLoading}
 										>
-												Add Tenant
-										</Button> */}
-									
+											Apply
+										</Button>
+									</Stack>
+								
+						
 								</Stack>
 						</Box>
 
@@ -436,7 +324,10 @@ const CustomerAdmin: React.FC = () => {
 																<Typography color="text.secondary" variant="body2">
 																		Avg Daily Revenue
 																</Typography>
-																<Typography variant="h5">₦{(400776).toLocaleString(undefined, { maximumFractionDigits: 2 })}</Typography>
+																<Typography variant="h5">
+																	₦{Number(analyticsData?.analytics.average_revenue || 0).toLocaleString()}
+																	{/* ₦{(400776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
+																</Typography>
 														</CardContent>
 												</Card>
 										</Grid>
@@ -446,7 +337,7 @@ const CustomerAdmin: React.FC = () => {
 																<Typography color="text.secondary" variant="body2">
 																		Collection Efficiency
 																</Typography>
-																<Typography variant="h5">78.4%</Typography>
+																<Typography variant="h5">{analyticsData?.analytics.collection_efficiency || 0}%</Typography>
 														</CardContent>
 												</Card>
 										</Grid>
@@ -466,7 +357,7 @@ const CustomerAdmin: React.FC = () => {
 																<Typography color="text.secondary" variant="body2">
 																		Total Prepaid Customer
 																</Typography>
-																<Typography variant="h5">{(7889540).toLocaleString()}</Typography>
+																<Typography variant="h5">{(prepaid).toLocaleString()}</Typography>
 														</CardContent>
 												</Card>
 										</Grid>
@@ -476,7 +367,7 @@ const CustomerAdmin: React.FC = () => {
 																<Typography color="text.secondary" variant="body2">
 																		Total Postpaid Customer
 																</Typography>
-																<Typography variant="h5">{(889540).toLocaleString()}</Typography>
+																<Typography variant="h5">{(postpaid).toLocaleString()}</Typography>
 														</CardContent>
 												</Card>
 										</Grid>
@@ -487,7 +378,8 @@ const CustomerAdmin: React.FC = () => {
 																	Total Revenue                         
 																</Typography>
 																<Typography variant="h5">
-																		₦{(90000776).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+																	 ₦{Number(analyticsData?.analytics.total_revenue || 0).toLocaleString()}
+																		{/* ₦{(90000776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
 																</Typography>
 														</CardContent>
 												</Card>
@@ -498,10 +390,6 @@ const CustomerAdmin: React.FC = () => {
 						<Grid container spacing={3}>
 								<Grid item xs={12} md={4}>
 										<Card sx={{ height: '80%' }}>
-												{/* <CardHeader
-														title="Revenue Log"
-														subheader="LAST 7 TRADING DAYS"
-												/> */}
 											<CardContent>
 											<Typography variant="h6" fontWeight={600} fontSize={16}>
 												Revenue Log
@@ -511,15 +399,7 @@ const CustomerAdmin: React.FC = () => {
 											</Typography>
 
 											<Stack mt={2} spacing={2}>
-												{[
-													{ date: '18 MAR', amount: '₦13.1M', change: '+5.4%', up: true },
-													{ date: '17 MAR', amount: '₦12.4M', change: '+1.8%', up: true },
-													{ date: '16 MAR', amount: '₦12.2M', change: '-2.1%', up: false },
-													{ date: '15 MAR', amount: '₦12.5M', change: '+3.2%', up: true },
-													{ date: '14 MAR', amount: '₦12.1M', change: '+0.7%', up: true },
-													{ date: '13 MAR', amount: '₦12.0M', change: '-1.4%', up: false },
-													{ date: '12 MAR', amount: '₦11.8M', change: '+4.0%', up: true },
-												].map((item, i) => (
+												{revenueData.map((item, i) => (
 													<Box key={i} display="flex" justifyContent="space-between">
 														<Typography color="text.secondary">{item.date}</Typography>
 
@@ -566,8 +446,8 @@ const CustomerAdmin: React.FC = () => {
 																paddingAngle: 0,
 																cornerRadius: 4,
 																data: [
-																	{ id: 0, value: 63, color: '#c9a646' }, // gold
-																	{ id: 1, value: 37, color: '#5b84c9' }, // blue
+																	{ id: 0, value: prepaid, color: '#c9a646' }, // gold
+																	{ id: 1, value: postpaid, color: '#5b84c9' }, // blue
 																],
 															},
 														]}
@@ -584,7 +464,7 @@ const CustomerAdmin: React.FC = () => {
 														textAlign="center"
 													>
 														<Typography fontWeight={700} fontSize={24}>
-															94K
+														{totalCustomers.toLocaleString()}
 														</Typography>
 														<Typography fontSize={10} color="text.secondary" letterSpacing={2}>
 															TOTAL
@@ -600,7 +480,7 @@ const CustomerAdmin: React.FC = () => {
 															PREPAID
 														</Typography>
 														<Typography ml={4} fontWeight={600}>
-															63%
+															 {prepaidPercent.toFixed(0)}%
 														</Typography>
 													</Stack>
 
@@ -610,7 +490,7 @@ const CustomerAdmin: React.FC = () => {
 															POSTPAID
 														</Typography>
 														<Typography ml={3.5} fontWeight={600}>
-															37%
+															{postpaidPercent.toFixed(0)}%
 														</Typography>
 													</Stack>
 												</Stack>
@@ -709,15 +589,12 @@ const CustomerAdmin: React.FC = () => {
 																<CardHeader avatar={<Security color="primary" />} title="Customer Overview" />
 																<CardContent>
 																		<Stack direction="row" spacing={2} mb={2}  flexWrap="wrap">
-																				<Chip label={`Total Customer: ${(889540).toLocaleString()}`} size="small" />
+																				<Chip label={`Total Customer: ${(analyticsData?.analytics.total_customers || 0).toLocaleString()}`} size="small" />
 																				<Chip label={`Postpaid daily collection: ₦${(889540).toLocaleString()}`} size="small" />
 																				<Chip label={`Prepaid daily collection: ₦${(889540).toLocaleString()}`} size="small" />
 																				<Chip label={`Total Unmetered Customers: ${(889540).toLocaleString()}`} size="small" />
 																				<Chip label={`Suspended Customers: ${(889540).toLocaleString()}`} size="small" />
 																		</Stack>
-																				{/* <Typography color="text.secondary">
-																						No vendor organisations have been created for this tenant.
-																				</Typography> */}
 																</CardContent>
 														</Card>
 
@@ -820,16 +697,13 @@ const CustomerAdmin: React.FC = () => {
 																				<CardContent>
                                            <Stack spacing={2}>
 
-																						{[
-																							{ label: 'RESIDENTIAL', value: 31.4 },
-																							{ label: 'COMMERCIAL', value: 18.2 },
-																							{ label: 'INDUSTRIAL', value: 8.7 },
-																							{ label: 'SPECIAL', value: 4.0 },
-																						].map((item, i) => (
+																					{(breakdownData?.debt_exposure || []).map((item, i) => {
+																							const value = Number(item.total || 0);
+																						return (
 																							<Box key={i}>
 																								<Box display="flex" justifyContent="space-between">
-																									<Typography variant="body2">{item.label}</Typography>
-																									<Typography fontWeight={500}>₦{item.value}M</Typography>
+																									<Typography variant="body2">{item.plan_name}</Typography>
+																									<Typography fontWeight={500}>₦{value.toLocaleString()}</Typography>
 																								</Box>
 																								<Box
 																									sx={{
@@ -841,7 +715,7 @@ const CustomerAdmin: React.FC = () => {
 																								>
 																									<Box
 																										sx={{
-																											width: `${item.value * 2}%`,
+																											width: `${value > 0 ? Math.min(value / 1000, 100) : 0}%`,
 																											height: '100%',
 																											bgcolor: 'primary.main',
 																											borderRadius: 5,
@@ -849,7 +723,8 @@ const CustomerAdmin: React.FC = () => {
 																									/>
 																								</Box>
 																							</Box>
-																						))}
+																							);
+})}
 
 																						<Typography mt={2} textAlign="center">Payment Plan Uptake</Typography>
 
@@ -896,91 +771,6 @@ const CustomerAdmin: React.FC = () => {
 																		</Card>
 																</Grid>
 														</Grid>
-
-												
-
-														<Card>
-																<CardHeader
-																		avatar={<Domain color="primary" />}
-																		title="Tenant Domains"
-																		action={
-																				<Button
-																						size="small"
-																						startIcon={<Add />}
-																						onClick={openDomainModal}
-																						disabled={!selectedTenant || mutationLoading}
-																				>
-																						Add Domain
-																				</Button>
-																		}
-																/>
-																<CardContent>
-																		{domains?.length ? (
-																				<List dense>
-																						{domains.map((domain) => (
-																								<ListItem key={domain.id}>
-																										<ListItemAvatar>
-																												<Avatar>{domain.domain[0]?.toUpperCase()}</Avatar>
-																										</ListItemAvatar>
-																										<ListItemText
-																												primary={domain.domain}
-																												secondary={
-																														<Stack direction="row" spacing={1}>
-																																<Chip
-																																		label={domain.is_primary ? 'Primary' : 'Secondary'}
-																																		color={domain.is_primary ? 'success' : 'default'}
-																																		size="small"
-																																/>
-																																<Chip
-																																		label={domain.is_active ? 'Active' : 'Inactive'}
-																																		color={domain.is_active ? 'success' : 'default'}
-																																		size="small"
-																																/>
-																														</Stack>
-																												}
-																										/>
-																										<ListItemSecondaryAction>
-																												<Stack direction="row" spacing={1}>
-																														{!domain.is_primary && (
-																																<Button
-																																		size="small"
-																																		onClick={() => updateDomain(domain.id, { is_primary: true })}
-																																		disabled={mutationLoading}
-																																>
-																																		Make Primary
-																																</Button>
-																														)}
-																														<Button
-																																size="small"
-																																onClick={() =>
-																																		updateDomain(domain.id, { is_active: !domain.is_active })
-																																}
-																																disabled={mutationLoading}
-																														>
-																																{domain.is_active ? 'Deactivate' : 'Activate'}
-																														</Button>
-																														<IconButton
-																																edge="end"
-																																color="error"
-																																onClick={() => removeDomain(domain.id)}
-																																disabled={mutationLoading}
-																														>
-																																<Delete />
-																														</IconButton>
-																												</Stack>
-																										</ListItemSecondaryAction>
-																								</ListItem>
-																						))}
-																				</List>
-																		) : (
-																				<Typography color="text.secondary">No domains configured.</Typography>
-																		)}
-																</CardContent>
-														</Card>
-
-
-													
-
 														
 												</Stack>
 										) : loading ? (
@@ -998,16 +788,12 @@ const CustomerAdmin: React.FC = () => {
 										)}
 								</Grid>
 						</Grid>
-
-			
 						<TenantDomainModal
 								open={domainModalOpen}
 								loading={mutationLoading}
 								onClose={closeDomainModal}
 								onSubmit={handleDomainModalSubmit}
 						/>
-
-
 						{/* Bulk Action Confirmation Dialog */}
 						<Dialog open={bulkActionDialogOpen} onClose={closeBulkActionDialog} maxWidth="sm" fullWidth>
 								<DialogTitle>
@@ -1027,7 +813,6 @@ const CustomerAdmin: React.FC = () => {
 								<DialogActions>
 										<Button onClick={closeBulkActionDialog}>Cancel</Button>
 										<Button
-												onClick={handleBulkAction}
 												variant="contained"
 												color={bulkAction === 'delete' ? 'error' : 'primary'}
 												disabled={mutationLoading}
@@ -1036,8 +821,6 @@ const CustomerAdmin: React.FC = () => {
 										</Button>
 								</DialogActions>
 						</Dialog>
-
-						
 				</Box>
 		);
 };

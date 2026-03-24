@@ -16,6 +16,7 @@ import Layout from './components/Layout/Layout';
 import CustomerManagement from './pages/Customer/Customer';
 import VendorTransactions from './pages/Vendors/VendorTransactions';
 import CustomerAdmin from './pages/Customer/Dashboard';
+import Subaccount from './pages/Customer/Subaccount';
 
 // Enhanced theme
 const theme = createTheme({
@@ -115,6 +116,18 @@ const App: React.FC = () => {
                                     </ProtectedRoute>
                                 }
                             />
+                            <Route
+                                path="/customer/subaccount"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <Subaccount />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+
+                            
                             <Route
                                 path="/settings"
                                 element={
