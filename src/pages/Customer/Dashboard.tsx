@@ -593,7 +593,7 @@ const CustomerAdmin: React.FC = () => {
 																				<Chip label={`Postpaid daily collection: ₦${(889540).toLocaleString()}`} size="small" />
 																				<Chip label={`Prepaid daily collection: ₦${(889540).toLocaleString()}`} size="small" />
 																				<Chip label={`Total Unmetered Customers: ${(889540).toLocaleString()}`} size="small" />
-																				<Chip label={`Suspended Customers: ${(889540).toLocaleString()}`} size="small" />
+																				<Chip label={`Suspended Customers: ${(analyticsData?.analytics.suspended_custommers || 0).toLocaleString()}`} size="small" />
 																		</Stack>
 																</CardContent>
 														</Card>
@@ -698,11 +698,11 @@ const CustomerAdmin: React.FC = () => {
                                            <Stack spacing={2}>
 
 																					{(breakdownData?.debt_exposure || []).map((item, i) => {
-																							const value = Number(item.total || 0);
+																							const value = Number(item.total_collections || 0);
 																						return (
 																							<Box key={i}>
 																								<Box display="flex" justifyContent="space-between">
-																									<Typography variant="body2">{item.plan_name}</Typography>
+																									<Typography variant="body2">{item.category_name}</Typography>
 																									<Typography fontWeight={500}>₦{value.toLocaleString()}</Typography>
 																								</Box>
 																								<Box

@@ -156,6 +156,13 @@ export interface AnalyticsCount {
     total_debt: number
     average_revenue: string
     collection_efficiency: number
+    suspended_custommers: number
+    days_collection: [
+      {
+        name: string,
+        total_day_collection: string
+      }
+    ],
   }
 }
 export interface AnalyticsBreakdown {
@@ -174,9 +181,8 @@ export interface AnalyticsBreakdown {
     total: number;
   }[];
   debt_exposure: {
-    plan_name: string
-    plan_code: string
-    total: string
+    category_name: string
+    total_collections: string
   }[],
     
 }

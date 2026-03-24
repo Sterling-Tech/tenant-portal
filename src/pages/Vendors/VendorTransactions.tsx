@@ -83,8 +83,17 @@ const VendorTransactions: React.FC = () => {
     const [assignUserModalOpen, setAssignUserModalOpen] = useState(false);
     const [transactions, setTransactions] = useState<Ledger[]>([])
     const [transactionsLoading, setTransactionsLoading] = useState(false)
-    const [startDate, setStartDate] = useState("")
-    const [endDate, setEndDate] = useState("")
+
+    const today = new Date();
+    const past = new Date();
+    past.setDate(today.getDate() - 7);
+
+    const format = (d: Date) => d.toISOString().split("T")[0];
+
+    const [startDate, setStartDate] = useState(format(past));
+    const [endDate, setEndDate] = useState(format(today));
+
+    
     // Context menu state
     const [contextMenu, setContextMenu] = useState<{
         mouseX: number;
@@ -101,9 +110,9 @@ const VendorTransactions: React.FC = () => {
             setTransactionsLoading(true)
 
             const res = await fetchTransactions({
-            vendor_id: vendorId,
-            start_date: startDate,
-            end_date: endDate,
+                vendor_id: vendorId,
+                start_date: startDate,
+                end_date: endDate,
             })
 
             setTransactions(res)
@@ -332,7 +341,7 @@ const VendorTransactions: React.FC = () => {
                     <Button variant="outlined" startIcon={<Refresh />} onClick={refresh} disabled={loading}>
                         Refresh
                     </Button>
-                    <Button
+                    {/* <Button
                         variant="contained"
                         startIcon={<PersonAdd />}
                         onClick={() => {
@@ -346,7 +355,7 @@ const VendorTransactions: React.FC = () => {
                         title={!tenantId ? 'Please select a tenant first' : 'Add Vendor Admin'}
                     >
                         Add Vendor Admin
-                    </Button>
+                    </Button> */}
                     {/* <Button
                         variant="outlined"
                         startIcon={<Add />}
