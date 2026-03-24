@@ -268,7 +268,7 @@ export const fetchVendor = (id: string) =>
 export const fetchCustomer = (id: string) =>
     get<Customer>(`/customer/${id}/`);
 
-export const fetchDebt = (id?: number) =>
+export const fetchDebt = (id?: string) =>
     get<Debt[]>(`/customer/debt/?customer_id=${id}`);
 
 export const fetchDebtHistory = (id?: string) =>

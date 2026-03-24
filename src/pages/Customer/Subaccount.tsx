@@ -120,7 +120,6 @@ const Subaccount: React.FC = () => {
 		const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 		const [customerForm, setCustomerForm] = useState<Partial<CustomerForm>>({});
 		const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-
 		// Detail view states
 		const [categories, setCategories] = useState<Category[]>([])
 		const [classes, setClasses] = useState<Class[]>([])
@@ -136,6 +135,7 @@ const Subaccount: React.FC = () => {
 		const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string;} | null>(null);
 
 		const [debtTab, setDebtTab] = useState<'debt' | 'history'>('debt');
+		const [customerId, setCustomerId] = useState<string | null>(null);
 
 		// data
 		const [debts, setDebts] = useState<any[]>([]);
@@ -149,9 +149,9 @@ const Subaccount: React.FC = () => {
 		const [startDate, setStartDate] = useState('');
 		const [endDate, setEndDate] = useState('');
 
-		const loadDebts = async () => {
+		const loadDebts = async (id?: string) => {
 			try {
-				const data = await fetchDebt(7);
+				const data = await fetchDebt(id);
 
 				console.log('fetchDebt ', data);
 
@@ -184,12 +184,17 @@ const Subaccount: React.FC = () => {
 			}
 		};
 		useEffect(() => {
-			if (debtTab === 'debt') {
-				loadDebts();
-			} else {
-				loadDebtHistory();
+			if (customerId) {
+				loadDebts(customerId);
 			}
-		}, [debtTab]);
+		}, [customerId]);
+		// useEffect(() => {
+		// 	if (debtTab === 'debt') {
+		// 		loadDebts();
+		// 	} else {
+		// 		loadDebtHistory();
+		// 	}
+		// }, [debtTab]);
 
 		const paginatedDebts = useMemo(() => {
 			if (!Array.isArray(debts)) return [];
@@ -214,25 +219,26 @@ const Subaccount: React.FC = () => {
 			const start = (page - 1) * rowsPerPage;
 			return filteredHistory.slice(start, start + rowsPerPage);
 		}, [filteredHistory, page]);
-		// Load customers
-		// const loadVendors = async () => {
-		// 		// if (!selectedTenantId) return;
 
-		// 		setLoading(true);
-		// 		setError(null);
+		///Load customers
+		const loadcustomer = async () => {
+				// if (!selectedTenantId) return;
 
-		// 		try {
+				setLoading(true);
+				setError(null);
 
-		// 				const data = await fetchCustomers()
-		// 				console.error('TenantSwitcher ', data);
+				try {
 
-		// 				setCustomers(data);
-		// 		} catch (err: any) {
-		// 				setError(err?.message || "Failed to load customers");
-		// 		} finally {
-		// 				setLoading(false);
-		// 		}
-		// };
+						const data = await fetchCustomers()
+						console.error('TenantSwitcher ', data);
+
+						setCustomers(data);
+				} catch (err: any) {
+						setError(err?.message || "Failed to load customers");
+				} finally {
+						setLoading(false);
+				}
+		};
 		// const loadCustomerMeta = async () => {
 		// 	try {
 		// 		const [categoryData, classData, meterTypeData] = await Promise.all([
@@ -249,11 +255,11 @@ const Subaccount: React.FC = () => {
 		// 		setError(err?.message || "Failed to load customer metadata");
 		// 	}
 		// };
-		// useEffect(() => {
-		// 		// if (!selectedTenantId) return;
-		// 		loadVendors();
-		// 		loadCustomerMeta();
-		// }, []);
+		useEffect(() => {
+				// if (!selectedTenantId) return;
+				loadcustomer();
+				// loadCustomerMeta();
+		}, []);
 
 		// Load vendor details
 		
@@ -392,14 +398,6 @@ const Subaccount: React.FC = () => {
 										>
 												Refresh
 										</Button>
-										<Button
-												variant="contained"
-												startIcon={<Add />}
-												onClick={handleCreateClick}
-												title={'Create new customer'}
-										>
-												Create customer
-										</Button>
 								</Stack>
 						</Stack>
 
@@ -410,129 +408,59 @@ const Subaccount: React.FC = () => {
 						)}
 						<Grid container spacing={3}>
 								{/* Customer List */}
-								<Grid item xs={12} md={selectedCustomer ? 5 : 12}>
-									{debtTab === 'debt' && (
-										<Card sx={{ mt: 2 }}>
-											<CardContent>
-												<Typography variant="h6">Customer Debt</Typography>
+									{/* Left Panel: Tenant & Organization Selection */}
+																<Grid item xs={12} md={4}>
+																		<Stack spacing={2}>
+																				{/* Tenant Selection */}
+																				<Card>
+																						<CardContent>
+																								<Stack spacing={2}>
+																										<Typography variant="h6">Select Customer</Typography>
+																										<Autocomplete
+																												options={filteredcustomers || []}
+																												getOptionLabel={(option) => option.name || ''} // ✅ FIXED
+																												value={
+																													customerId
+																														? filteredcustomers.find((c) => c.id === customerId) || null
+																														: null
+																												}
+																												onChange={(_, newValue) => {
+																													if (newValue) {
+																														setCustomerId(newValue.id);           // ✅ store id
+																														setSelectedCustomer(newValue);        // ✅ optional (for UI)
 
-												<TableContainer>
-													<Table>
-														<TableHead>
-															<TableRow>
-																<TableCell>Name</TableCell>
-																<TableCell>Description</TableCell>
-																<TableCell>Plan</TableCell>
-																<TableCell>Rate</TableCell>
-																<TableCell>Balance</TableCell>
-															</TableRow>
-														</TableHead>
+																														loadDebts(newValue.id);               // ✅ fetch debt for selected
+																													} else {
+																														setCustomerId(null);
+																														setSelectedCustomer(null);
+																														setDebts([]);
+																													}
+																												}}
+																												renderInput={(params) => (
+																													<TextField
+																														{...params}
+																														placeholder="Search customers..."
+																														InputProps={{
+																															...params.InputProps,
+																															startAdornment: (
+																																<>
+																																	<InputAdornment position="start">
+																																		<Domain />
+																																	</InputAdornment>
+																																	{params.InputProps.startAdornment}
+																																</>
+																															),
+																														}}
+																													/>
+																												)}
+																												loading={loading}
+																											/>
+																								</Stack>
+																						</CardContent>
+																				</Card>
 
-														<TableBody>
-															{paginatedDebts.map((d) => (
-																<TableRow key={d.id}>
-																	<TableCell>{d.customer.name}</TableCell>
-																	<TableCell>{d.description}</TableCell>
-																	<TableCell>{d.payment_plan.name}</TableCell>
-																	<TableCell>{d.rate}</TableCell>
-																	<TableCell>₦{d.balance}</TableCell>
-																</TableRow>
-															))}
-														</TableBody>
-													</Table>
-												</TableContainer>
-												<Stack direction="row" justifyContent="center" mt={2} spacing={2}>
-												<Button
-													disabled={page === 1}
-													onClick={() => setPage((p) => p - 1)}
-												>
-													Prev
-												</Button>
-
-												<Typography>Page {page}</Typography>
-
-												<Button
-													onClick={() => setPage((p) => p + 1)}
-												>
-													Next
-												</Button>
-											</Stack>
-											</CardContent>
-										</Card>
-									)}
-
-									{debtTab === 'history' && (
-										<Card sx={{ mt: 2 }}>
-											<CardContent>
-												<Typography variant="h6">Customer Debt History</Typography>
-
-												{/* DATE FILTER */}
-												<Stack direction="row" spacing={2} sx={{ my: 2 }}>
-													<TextField
-														type="date"
-														label="Start Date"
-														InputLabelProps={{ shrink: true }}
-														value={startDate}
-														onChange={(e) => setStartDate(e.target.value)}
-													/>
-
-													<TextField
-														type="date"
-														label="End Date"
-														InputLabelProps={{ shrink: true }}
-														value={endDate}
-														onChange={(e) => setEndDate(e.target.value)}
-													/>
-												</Stack>
-
-												<TableContainer>
-													<Table>
-														<TableHead>
-															<TableRow>
-																<TableCell>Transaction Ref</TableCell>
-																<TableCell>Amount</TableCell>
-																<TableCell>Date</TableCell>
-															</TableRow>
-														</TableHead>
-
-														<TableBody>
-															{paginatedHistory.map((h, index) => (
-																<TableRow key={index}>
-																	<TableCell>{h.transaction_ref}</TableCell>
-																	<TableCell>{h.amount_paid}</TableCell>
-																	<TableCell>
-																		{new Date(h.timestamp).toLocaleString()}
-																	</TableCell>
-																</TableRow>
-															))}
-														</TableBody>
-													</Table>
-
-													
-												</TableContainer><Stack direction="row" justifyContent="center" mt={2} spacing={2}>
-												<Button
-													disabled={page === 1}
-													onClick={() => setPage((p) => p - 1)}
-												>
-													Prev
-												</Button>
-
-												<Typography>Page {page}</Typography>
-
-												<Button
-													onClick={() => setPage((p) => p + 1)}
-												>
-													Next
-												</Button>
-											</Stack>
-											</CardContent>
-										</Card>
-									)}
-								</Grid>
-
-								{/* Vendor Details */}
+																					{/* Vendor Details */}
 								{selectedCustomer && (
-										<Grid item xs={12} md={7}>
 												<Card>
 														<CardContent>
 																<Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -541,21 +469,12 @@ const Subaccount: React.FC = () => {
 																				<IconButton size="small" onClick={() => handleEditClick(selectedCustomer)}>
 																						<Edit />
 																				</IconButton>
-																				<IconButton
-																						size="small"
-																						color="error"
-																						onClick={() => setDeleteDialogOpen(true)}
-																				>
-																						<Delete />
-																				</IconButton>
 																		</Stack>
 																</Stack>
 
 																<Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
 																		<Tab label="Details" />
 																		<Tab label="API Keys" />
-																		<Tab label="Admins" />
-																		<Tab label="Permissions" />
 																</Tabs>
 
 																{detailLoading ? (
@@ -785,8 +704,132 @@ const Subaccount: React.FC = () => {
 																)}
 														</CardContent>
 												</Card>
-										</Grid>
 								)}
+																		</Stack>
+																</Grid>
+																
+								{/* <Grid item xs={12} md={selectedCustomer ? 5 : 8}> */}
+								<Grid item xs={12} md={8}>
+									{debtTab === 'debt' && (
+										<Card sx={{ mt: 2 }}>
+											<CardContent>
+												<Typography variant="h6">Customer Debt</Typography>
+
+												<TableContainer>
+													<Table>
+														<TableHead>
+															<TableRow>
+																<TableCell>Name</TableCell>
+																<TableCell>Description</TableCell>
+																<TableCell>Plan</TableCell>
+																<TableCell>Rate</TableCell>
+																<TableCell>Balance</TableCell>
+															</TableRow>
+														</TableHead>
+
+														<TableBody>
+															{paginatedDebts.map((d) => (
+																<TableRow key={d.id}>
+																	<TableCell>{d.customer.name}</TableCell>
+																	<TableCell>{d.description}</TableCell>
+																	<TableCell>{d.payment_plan.name}</TableCell>
+																	<TableCell>{d.rate}</TableCell>
+																	<TableCell>₦{d.balance}</TableCell>
+																</TableRow>
+															))}
+														</TableBody>
+													</Table>
+												</TableContainer>
+												<Stack direction="row" justifyContent="center" mt={2} spacing={2}>
+												<Button
+													disabled={page === 1}
+													onClick={() => setPage((p) => p - 1)}
+												>
+													Prev
+												</Button>
+
+												<Typography>Page {page}</Typography>
+
+												<Button
+													onClick={() => setPage((p) => p + 1)}
+												>
+													Next
+												</Button>
+											</Stack>
+											</CardContent>
+										</Card>
+									)}
+
+									{debtTab === 'history' && (
+										<Card sx={{ mt: 2 }}>
+											<CardContent>
+												<Typography variant="h6">Customer Debt History</Typography>
+
+												{/* DATE FILTER */}
+												<Stack direction="row" spacing={2} sx={{ my: 2 }}>
+													<TextField
+														type="date"
+														label="Start Date"
+														InputLabelProps={{ shrink: true }}
+														value={startDate}
+														onChange={(e) => setStartDate(e.target.value)}
+													/>
+
+													<TextField
+														type="date"
+														label="End Date"
+														InputLabelProps={{ shrink: true }}
+														value={endDate}
+														onChange={(e) => setEndDate(e.target.value)}
+													/>
+												</Stack>
+
+												<TableContainer>
+													<Table>
+														<TableHead>
+															<TableRow>
+																<TableCell>Transaction Ref</TableCell>
+																<TableCell>Amount</TableCell>
+																<TableCell>Date</TableCell>
+															</TableRow>
+														</TableHead>
+
+														<TableBody>
+															{paginatedHistory.map((h, index) => (
+																<TableRow key={index}>
+																	<TableCell>{h.transaction_ref}</TableCell>
+																	<TableCell>{h.amount_paid}</TableCell>
+																	<TableCell>
+																		{new Date(h.timestamp).toLocaleString()}
+																	</TableCell>
+																</TableRow>
+															))}
+														</TableBody>
+													</Table>
+
+													
+												</TableContainer><Stack direction="row" justifyContent="center" mt={2} spacing={2}>
+												<Button
+													disabled={page === 1}
+													onClick={() => setPage((p) => p - 1)}
+												>
+													Prev
+												</Button>
+
+												<Typography>Page {page}</Typography>
+
+												<Button
+													onClick={() => setPage((p) => p + 1)}
+												>
+													Next
+												</Button>
+											</Stack>
+											</CardContent>
+										</Card>
+									)}
+								</Grid>
+
+							
 						</Grid>
 
 						{/* Create/Edit Vendor Dialog */}
