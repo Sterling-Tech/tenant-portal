@@ -579,7 +579,7 @@ const TenantAdmin: React.FC = () => {
                     >
                         Refresh
                     </Button>
-                    <Button
+                    {/* <Button
                         variant="contained"
                         startIcon={<Add />}
                         onClick={openCreateTenantModal}
@@ -590,12 +590,12 @@ const TenantAdmin: React.FC = () => {
                         }}
                     >
                         Add Tenant
-                    </Button>
-                    {process.env.NODE_ENV === 'development' && (
+                    </Button> */}
+                    {/* {process.env.NODE_ENV === 'development' && (
                         <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                             (canCreate: {String(canCreateTenant)})
                         </Typography>
-                    )}
+                    )} */}
                 </Stack>
             </Box>
 
@@ -698,11 +698,11 @@ const TenantAdmin: React.FC = () => {
                 <Grid item xs={12} md={4}>
                     <Card sx={{ height: '100%' }}>
                         <CardHeader
-                            title="Tenants"
+                            title="Vendors"
                             subheader={
                                 searchTerm
-                                    ? `${filteredTenants?.length || 0} of ${tenants?.length || 0} tenant${(tenants?.length || 0) !== 1 ? 's' : ''}`
-                                    : `${tenants?.length || 0} total tenant ${(tenants?.length || 0) !== 1 ? 's' : ''}`
+                                    ? `${filteredTenants?.length || 0} of ${tenants?.length || 0} Vendor${(tenants?.length || 0) !== 1 ? 's' : ''}`
+                                    : `${tenants?.length || 0} total Vendor${(tenants?.length || 0) !== 1 ? 's' : ''}`
                             }
                         />
                         <CardContent>
@@ -710,7 +710,7 @@ const TenantAdmin: React.FC = () => {
                                 <TextField
                                     value={searchTerm}
                                     onChange={(event) => setSearchTerm(event.target.value)}
-                                    placeholder="Search tenants by name, domain, slug, or subdomain..."
+                                    placeholder="Search Vendor by name, domain, slug, or subdomain..."
                                     fullWidth
                                     size="small"
                                     InputProps={{
@@ -743,7 +743,7 @@ const TenantAdmin: React.FC = () => {
                                 />
                                 {searchTerm && (
                                     <Chip
-                                        label={`${filteredTenants?.length || 0} tenant${(filteredTenants?.length || 0) !== 1 ? 's' : ''} found`}
+                                        label={`${filteredTenants?.length || 0} Vendor${(filteredTenants?.length || 0) !== 1 ? 's' : ''} found`}
                                         size="small"
                                         color="primary"
                                         variant="outlined"
