@@ -142,7 +142,7 @@ const VendorManagement: React.FC = () => {
 						const data = await fetchVendors()
 						console.error('TenantSwitcher ', data);
 
-						setVendors(data);
+						//setVendors(data.result);
 				} catch (err: any) {
 						setError(err?.message || "Failed to load vendors");
 				} finally {

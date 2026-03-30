@@ -61,6 +61,14 @@ export interface Vendor {
   }
   created_at: string
 }
+
+export interface PaginatedVendorResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Vendor[];
+}
+
 export interface Debt {
     id: string,
     customer: {
@@ -245,9 +253,20 @@ const buildQuery = (params?: Record<string, unknown>) => {
     return query.toString() ? `?${query.toString()}` : '';
 };
 
-export const fetchVendors = (params?: { tenant?: string; is_active?: boolean; is_verified?: boolean; search?: string }) =>
-    // get<Vendor[]>(`/vendor/retrieve/${buildQuery(params)}`);
-    get<Vendor[]>(`/vendor/retrieve/`);
+// export const fetchVendors = (params?: { tenant?: string; is_active?: boolean; is_verified?: boolean; search?: string }) =>
+//     // get<Vendor[]>(`/vendor/retrieve/${buildQuery(params)}`);
+//     get<Vendor[]>(`/vendor/retrieve/`);
+
+export const fetchVendors = (params?: {
+  page?: number;
+  tenant?: string;
+  is_active?: boolean;
+  is_verified?: boolean;
+  search?: string;
+}) =>
+  get<PaginatedVendorResponse>(
+    `/vendor/retrieve/${buildQuery(params)}`
+  );
 
 export const fetchTransactions = (params?: {
   start_date?: string

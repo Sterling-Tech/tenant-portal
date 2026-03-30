@@ -35,10 +35,10 @@ import {
   Edit,
   Delete,
 } from "@mui/icons-material";
-import { fetchVendors, createVendor, type VendorForm} from "../../services/vendorService";
+import { fetchVendors, createVendor, type VendorForm, Vendor} from "../../services/vendorService";
 // 		type Vendor,
 // 		
-const ITEMS_PER_PAGE = 5;
+
 
 const formatCurrency = (val: any) => {
   const num = Number(val || 0);
@@ -51,7 +51,7 @@ const formatCurrency = (val: any) => {
 };
 
 export default function VendorHub() {
-  const [vendors, setVendors] = useState<any[]>([]);
+  // const [vendors, setVendors] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -64,6 +64,10 @@ export default function VendorHub() {
   const [openModal, setOpenModal] = useState(false);
   const [vendorForm, setVendorForm] = useState<Partial<VendorForm>>({});
 
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [count, setCount] = useState(0);
+  const [next, setNext] = useState<string | null>(null);
+  const [previous, setPrevious] = useState<string | null>(null);
 
 
  const hierarchyOptions = [
@@ -73,11 +77,31 @@ export default function VendorHub() {
 	{ value: "cashier", label: "Cashier" },
 	{ value: "POS", label: "POS" },
 ];
-  const load = async () => {
-    const res = await fetchVendors();
-    setVendors(res || []);
-    if (res?.length) setSelected(res[0]);
-  };
+
+const load = async (pageNumber = 1) => {
+  const res = await fetchVendors({
+    page: pageNumber,
+    search,
+    is_active:
+      statusFilter === "all"
+        ? undefined
+        : statusFilter === "active",
+    is_verified:
+      verifiedFilter === "all"
+        ? undefined
+        : verifiedFilter === "verified",
+  });
+
+  console.log("VENDORS API RESPONSE:", res);
+
+  setVendors(res.results);
+  setCount(res.count);
+  setNext(res.next);
+  setPrevious(res.previous);
+
+  if (res.results.length) setSelected(res.results[0]);
+};
+  
   const handleCreateVendor = async () => {
   if (!vendorForm.business_name || !vendorForm.email || !vendorForm.hierachy) {
     alert("Business name, email and hierarchy are required");
@@ -117,11 +141,11 @@ export default function VendorHub() {
 //     console.error(err);
 //   }
 // };
-  useEffect(() => {
-    load();
-  }, []);
+useEffect(() => {
+  load(page);
+}, [page, search, statusFilter, verifiedFilter]);
 
-  const filtered = vendors
+  const filtered = (Array.isArray(vendors) ? vendors : [])
     .filter((v) =>
       `${v.business_name} ${v.email}`
         .toLowerCase()
@@ -134,14 +158,8 @@ export default function VendorHub() {
       verifiedFilter === "all"
         ? true
         : verifiedFilter === "verified"
-        ? v.is_verified
-        : !v.is_verified
     );
 
-  const paginated = filtered.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
-  );
 
   return (
     <Box
@@ -166,7 +184,7 @@ export default function VendorHub() {
     size="small"
     variant="outlined"
     startIcon={<Refresh />}
-    onClick={load}
+    onClick={() => load(page)}
     sx={{ height: 36, textTransform: "none", borderRadius: 2 }}
   >
     Refresh
@@ -262,7 +280,7 @@ export default function VendorHub() {
             </TableHead>
 
             <TableBody>
-              {paginated.map((v) => (
+              {vendors.map((v) => (
                 <TableRow
                   key={v.id}
                   hover
@@ -272,23 +290,23 @@ export default function VendorHub() {
                 >
                   <TableCell padding="checkbox">
                     {/* <Checkbox /> */}
-<Checkbox
-  checked={
-    paginated.length > 0 &&
-    paginated.every((v) => selectedIds.includes(v.id))
-  }
-  indeterminate={
-    selectedIds.length > 0 &&
-    !paginated.every((v) => selectedIds.includes(v.id))
-  }
-  onChange={(e) => {
-    if (e.target.checked) {
-      setSelectedIds(paginated.map((v) => v.id));
-    } else {
-      setSelectedIds([]);
-    }
-  }}
-/>
+                  <Checkbox
+                    checked={
+                      vendors.length > 0 &&
+                      vendors.every((v) => selectedIds.includes(Number(v.id)))
+                    }
+                    indeterminate={
+                      selectedIds.length > 0 &&
+                      !vendors.every((v) => selectedIds.includes(Number(v.id)))
+                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIds(vendors.map((v) => Number(v.id)));
+                      } else {
+                        setSelectedIds([]);
+                      }
+                    }}
+                  />
                   </TableCell>
 
                   <TableCell>
@@ -347,7 +365,7 @@ export default function VendorHub() {
                 ←
               </Button>
 
-              {Array.from({ length: Math.ceil(filtered.length / ITEMS_PER_PAGE) }, (_, i) => i + 1).map((p) => (
+              {Array.from({ length: Math.ceil(count / 10) }, (_, i) => i + 1).map((p) => (
                 <Button
                   key={p}
                   size="small"
@@ -371,10 +389,10 @@ export default function VendorHub() {
                 size="small"
                 variant="outlined"
                 sx={{ minWidth: 36, borderRadius: "10px" }}
-                disabled={page === Math.ceil(filtered.length / ITEMS_PER_PAGE)}
+                disabled={page === Math.ceil(count / 10)}
                 onClick={() =>
                   setPage((p) =>
-                    Math.min(Math.ceil(filtered.length / ITEMS_PER_PAGE), p + 1)
+                    Math.min(Math.ceil(count / 10), p + 1)
                   )
                 }
               >
