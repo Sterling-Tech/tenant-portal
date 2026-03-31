@@ -36,13 +36,11 @@ import {
   Delete,
 } from "@mui/icons-material";
 import { fetchVendors, createVendor, type VendorForm, Vendor} from "../../services/vendorService";
-// 		type Vendor,
-// 		
-
+	
+const PAGE_SIZE = 10;
 
 const formatCurrency = (val: any) => {
   const num = Number(val || 0);
-
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
     currency: "NGN",
@@ -51,11 +49,8 @@ const formatCurrency = (val: any) => {
 };
 
 export default function VendorHub() {
-  // const [vendors, setVendors] = useState<any[]>([]);
-  const [selected, setSelected] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [verifiedFilter, setVerifiedFilter] = useState("all");
   const [page, setPage] = useState(1);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -68,6 +63,74 @@ export default function VendorHub() {
   const [count, setCount] = useState(0);
   const [next, setNext] = useState<string | null>(null);
   const [previous, setPrevious] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Vendor | null>(null);
+
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const [verifiedFilter, setVerifiedFilter] = useState("all");
+
+
+  const totalPages = Math.ceil(count / PAGE_SIZE);
+
+  // ✅ Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const load = async (pageNumber = 1) => {
+    const res = await fetchVendors({
+      page: pageNumber,
+      search: debouncedSearch,
+      is_active:
+        statusFilter === "all"
+          ? undefined
+          : statusFilter === "active",
+      is_verified:
+        verifiedFilter === "all"
+          ? undefined
+          : verifiedFilter === "verified",
+    });
+
+    setVendors(res.results);
+    setCount(res.count);
+
+    if (res.results.length) setSelected(res.results[0]);
+    setSelectedIds([]); // reset selection on page change
+  };
+
+  useEffect(() => {
+    load(page);
+  }, [page, debouncedSearch, statusFilter, verifiedFilter]);
+
+  // ✅ HEADER CHECKBOX
+  const allSelected =
+    vendors.length > 0 &&
+    vendors.every((v) => selectedIds.includes(Number(v.id)));
+
+  const isIndeterminate =
+    selectedIds.length > 0 && !allSelected;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(vendors.map((v) => Number(v.id)));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const toggleRow = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((i) => i !== id)
+        : [...prev, id]
+    );
+  };
+
 
 
  const hierarchyOptions = [
@@ -78,29 +141,29 @@ export default function VendorHub() {
 	{ value: "POS", label: "POS" },
 ];
 
-const load = async (pageNumber = 1) => {
-  const res = await fetchVendors({
-    page: pageNumber,
-    search,
-    is_active:
-      statusFilter === "all"
-        ? undefined
-        : statusFilter === "active",
-    is_verified:
-      verifiedFilter === "all"
-        ? undefined
-        : verifiedFilter === "verified",
-  });
+// const load = async (pageNumber = 1) => {
+//   const res = await fetchVendors({
+//     page: pageNumber,
+//     search,
+//     is_active:
+//       statusFilter === "all"
+//         ? undefined
+//         : statusFilter === "active",
+//     is_verified:
+//       verifiedFilter === "all"
+//         ? undefined
+//         : verifiedFilter === "verified",
+//   });
 
-  console.log("VENDORS API RESPONSE:", res);
+//   console.log("VENDORS API RESPONSE:", res);
 
-  setVendors(res.results);
-  setCount(res.count);
-  setNext(res.next);
-  setPrevious(res.previous);
+//   setVendors(res.results);
+//   setCount(res.count);
+//   setNext(res.next);
+//   setPrevious(res.previous);
 
-  if (res.results.length) setSelected(res.results[0]);
-};
+//   if (res.results.length) setSelected(res.results[0]);
+// };
   
   const handleCreateVendor = async () => {
   if (!vendorForm.business_name || !vendorForm.email || !vendorForm.hierachy) {
@@ -163,7 +226,7 @@ useEffect(() => {
 
   return (
     <Box
-      p={3}
+      // /p={2}
       bgcolor="#f5f7fb"
       minHeight="100vh"
       sx={{ fontFamily: "Inter, Roboto, sans-serif" }}
@@ -189,16 +252,6 @@ useEffect(() => {
   >
     Refresh
   </Button>
-
-  <Button
-    size="small"
-    variant="contained"
-    color="success"
-    sx={{ height: 36, textTransform: "none", borderRadius: 2 }}
-  >
-    Export
-  </Button>
-
   <Button
     size="small"
     variant="contained"
@@ -216,22 +269,18 @@ useEffect(() => {
 </Stack>
       </Stack>
 
-      <Stack direction="row" spacing={3}>
+      
+      <Stack direction={{ xs: "column", lg: "row" }} spacing={2}>
         {/* TABLE */}
-        <Card sx={{ flex: 2, p: 2, borderRadius: 3 }}>
-          {/* SEARCH + FILTERS */}
+        <Card sx={{ flex: 2, p: 2, borderRadius: 3, overflowX: "auto" }}>
+          {/* SEARCH */}
           <Stack direction="row" spacing={2} mb={2}>
             <TextField
               fullWidth
               size="small"
-              placeholder="Search vendors by name, email, domain..."
+              placeholder="Search vendors..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              sx={{
-                "& .MuiInputBase-root": {
-                  height: 40,
-                },
-              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -246,20 +295,9 @@ useEffect(() => {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <MenuItem value="all">All Status</MenuItem>
+                <MenuItem value="all">All</MenuItem>
                 <MenuItem value="active">Active</MenuItem>
                 <MenuItem value="inactive">Inactive</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl size="small">
-              <Select
-                value={verifiedFilter}
-                onChange={(e) => setVerifiedFilter(e.target.value)}
-              >
-                <MenuItem value="all">All Verified</MenuItem>
-                <MenuItem value="verified">Verified</MenuItem>
-                <MenuItem value="unverified">Unverified</MenuItem>
               </Select>
             </FormControl>
           </Stack>
@@ -269,7 +307,13 @@ useEffect(() => {
             <TableHead>
               <TableRow>
                 <TableCell padding="checkbox">
-                  <Checkbox />
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={isIndeterminate}
+                    onChange={(e) =>
+                      handleSelectAll(e.target.checked)
+                    }
+                  />
                 </TableCell>
                 <TableCell>Business</TableCell>
                 <TableCell>Email</TableCell>
@@ -289,30 +333,28 @@ useEffect(() => {
                   sx={{ cursor: "pointer" }}
                 >
                   <TableCell padding="checkbox">
-                    {/* <Checkbox /> */}
-                  <Checkbox
-                    checked={
-                      vendors.length > 0 &&
-                      vendors.every((v) => selectedIds.includes(Number(v.id)))
-                    }
-                    indeterminate={
-                      selectedIds.length > 0 &&
-                      !vendors.every((v) => selectedIds.includes(Number(v.id)))
-                    }
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedIds(vendors.map((v) => Number(v.id)));
-                      } else {
-                        setSelectedIds([]);
-                      }
-                    }}
-                  />
+                    <Checkbox
+                      checked={selectedIds.includes(Number(v.id))}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => toggleRow(Number(v.id))}
+                    />
                   </TableCell>
 
                   <TableCell>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Avatar>{v.business_name?.charAt(0)}</Avatar>
-                      <Typography fontWeight={600}>
+                    <Stack direction="row" spacing={2}>
+                      <Avatar>
+                        {v.business_name?.charAt(0)}
+                      </Avatar>
+
+                      <Typography
+                        fontWeight={600}
+                        sx={{
+                          maxWidth: 150,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
                         {v.business_name}
                       </Typography>
                     </Stack>
@@ -324,24 +366,23 @@ useEffect(() => {
                     <Chip
                       label={v.account_status}
                       color={
-                        v.account_status === "active" ? "success" : "default"
+                        v.account_status === "active"
+                          ? "success"
+                          : "default"
                       }
                       size="small"
                     />
                   </TableCell>
 
                   <TableCell>
-  <Typography fontWeight={600}>
-    {formatCurrency(v.wallet?.balance)}
-  </Typography>
-</TableCell>
+                    {formatCurrency(v.wallet?.balance)}
+                  </TableCell>
 
                   <TableCell>
                     <IconButton
                       onClick={(e) => {
                         e.stopPropagation();
                         setAnchorEl(e.currentTarget);
-                        setMenuVendor(v);
                       }}
                     >
                       <MoreVert />
@@ -352,53 +393,25 @@ useEffect(() => {
             </TableBody>
           </Table>
 
-          {/* PAGINATION */}
-          <Stack alignItems="center" mt={2}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Button
-                size="small"
-                variant="outlined"
-                sx={{ minWidth: 36, borderRadius: "10px" }}
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                ←
-              </Button>
+          {/* PAGINATION (ONLY ARROWS) */}
+          <Stack direction="row" justifyContent="center" mt={2}>
+            <Button
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              ← Prev
+            </Button>
 
-              {Array.from({ length: Math.ceil(count / 10) }, (_, i) => i + 1).map((p) => (
-                <Button
-                  key={p}
-                  size="small"
-                  variant={p === page ? "contained" : "outlined"}
-                  onClick={() => setPage(p)}
-                  sx={{
-                    minWidth: 36,
-                    borderRadius: "10px",
-                    bgcolor: p === page ? "#1e3a8a" : "transparent",
-                    color: p === page ? "#fff" : "inherit",
-                    "&:hover": {
-                      bgcolor: p === page ? "#1e3a8a" : "#eef3ff",
-                    },
-                  }}
-                >
-                  {p}
-                </Button>
-              ))}
+            <Typography sx={{ mx: 2 }}>
+              Page {page} of {totalPages || 1}
+            </Typography>
 
-              <Button
-                size="small"
-                variant="outlined"
-                sx={{ minWidth: 36, borderRadius: "10px" }}
-                disabled={page === Math.ceil(count / 10)}
-                onClick={() =>
-                  setPage((p) =>
-                    Math.min(Math.ceil(count / 10), p + 1)
-                  )
-                }
-              >
-                →
-              </Button>
-            </Stack>
+            <Button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next →
+            </Button>
           </Stack>
         </Card>
 
@@ -433,9 +446,9 @@ useEffect(() => {
                   label="Wallet Balance"
                   value={formatCurrency(selected.wallet?.balance)}
                 />
-                <Row label="Total Transactions" value={selected.txn_count || 0} />
+                {/* <Row label="Total Transactions" value={selected.txn_count || 0} /> */}
                 <Row label="Onboarded" value={selected.created_at} />
-                <Row label="Last Active" value={selected.last_login} />
+                {/* <Row label="Last Active" value={selected.last_login} /> */}
 
                 <Row label="Api token" value={selected.token} />
               </Stack>
@@ -705,24 +718,6 @@ useEffect(() => {
           </ListItemIcon>
           Deactivate
         </MenuItem>
-        {/* <MenuItem>
-          <ListItemIcon>
-            <Visibility fontSize="small" />
-          </ListItemIcon>
-          View
-        </MenuItem>
-        <MenuItem>
-          <ListItemIcon>
-            <Edit fontSize="small" />
-          </ListItemIcon>
-          Edit
-        </MenuItem>
-        <MenuItem>
-          <ListItemIcon>
-            <Delete fontSize="small" color="error" />
-          </ListItemIcon>
-          Delete
-        </MenuItem> */}
       </Menu>
     </Box>
   );
