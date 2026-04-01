@@ -1,4 +1,4 @@
-import { get, post, patch, del } from './api';
+import { get, post, patch, del, put } from './api';
 
 // export interface Vendor {
 //     id: string;
@@ -253,20 +253,6 @@ const buildQuery = (params?: Record<string, unknown>) => {
     return query.toString() ? `?${query.toString()}` : '';
 };
 
-// export const fetchVendors = (params?: { tenant?: string; is_active?: boolean; is_verified?: boolean; search?: string }) =>
-//     // get<Vendor[]>(`/vendor/retrieve/${buildQuery(params)}`);
-//     get<Vendor[]>(`/vendor/retrieve/`);
-
-export const fetchVendors = (params?: {
-  page?: number;
-  tenant?: string;
-  is_active?: boolean;
-  is_verified?: boolean;
-  search?: string;
-}) =>
-  get<PaginatedVendorResponse>(
-    `/vendor/retrieve/${buildQuery(params)}`
-  );
 
 export const fetchTransactions = (params?: {
   start_date?: string
@@ -287,8 +273,24 @@ export const MeteringTypeS = () =>
 export const CustomerClass = () =>
     get<Class[]>(`/customer/class/`);
 
+export const fetchVendors = (params?: {
+  page?: number;
+  vendor_id?: number;
+  main_vendor?: boolean;
+  tenant?: string;
+  is_active?: boolean;
+  is_verified?: boolean;
+  search?: string;
+}) =>
+  get<PaginatedVendorResponse>(
+    `/vendor/retrieve/${buildQuery(params)}`
+  );
+
 export const fetchVendor = (id: string) =>
-    get<Vendor>(`/vendor/retrieve/${id}/`);
+    get<Vendor>(`/vendor/retrieve/?vendor_id=${id}/`);
+
+export const fetchVendorchildren = (id: string) =>
+    get<Vendor[]>(`/vendor/retrieve-children/?vendor_id=${id}`);
 
 export const fetchCustomer = (id: string) =>
     get<Customer>(`/customer/${id}/`);
@@ -318,6 +320,15 @@ export const createCustomer = (payload: CustomerForm) =>
 export const createVendor = (payload: VendorForm) =>
     post<Vendor>('/vendor/create/', payload);
 
+export const searchVendors = (keyword: string) =>
+  get<Vendor[] | PaginatedVendorResponse>(
+    `/vendor/search/?keyword=${keyword}`
+  );
+
+export const toggleVendorStatus = (vendorId: string) =>
+  put(`/vendor/activate-deactivate/`, {
+    vendor: vendorId,
+  });
 export const updateVendor = (id: string, payload: Partial<VendorForm>) =>
     patch<Vendor>(`/vendors/vendors/${id}/`, payload);
 

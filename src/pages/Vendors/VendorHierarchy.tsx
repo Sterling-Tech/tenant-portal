@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Button,
@@ -13,7 +13,7 @@ import {
   List,
 } from "@mui/material";
 import { Refresh, PersonAdd, Add, Search } from "@mui/icons-material";
-
+import { fetchVendors, type VendorForm, Vendor, fetchVendorchildren} from "../../services/vendorService";
 /* ================= MOCK DATA ================= */
 
 const now = new Date().toISOString();
@@ -31,11 +31,7 @@ const LEVEL_LABEL: any = {
   cashier: "Cashier",
   pos: "POS Terminal",
 };
-const MOCK_VENDORS = [
-  { id: "1", name: "Sterling Technology and Systems" },
-  { id: "2", name: "First Bank Vendor Group" },
-  { id: "3", name: "UBA Vendor Network" },
-];
+
 const MOCK_TREE: any[] = [
   {
     id: "vendor-1",
@@ -170,22 +166,59 @@ const TreeNode = ({ node, selectedId, onSelect }: any) => {
 const VendorHierarchy = () => {
   const [selected, setSelected] = useState<any>(null);
   const [search, setSearch] = useState("");
-  const [selectedVendor, setSelectedVendor] = useState(MOCK_VENDORS[0]);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [vendorschildren, setVendorschildren] = useState<Vendor[]>([]);
+  
+  const load = async () => {
+   const res = await fetchVendors({
+    main_vendor: true,
+   });
+
+   console.log(res, "yhhh");
+
+   setVendors(res.results); // ✅ now works
+};
+  
+    useEffect(() => {
+      load();
+    }, []);
+
+
+const mapToNode = (v: Vendor) => ({
+  id: v.id,
+  name: v.business_name,
+  level: v.hierachy === "sub_vendor" ? "vendor" : v.hierachy,
+  status: v.account_status,
+  email: v.email,
+  phone: v.phone_number,
+  children: [], // API doesn't return nested yet
+});
+
+const loadchildren = async (id: any) => {
+  try {
+    const res = await fetchVendorchildren(id);
+
+    console.log(res, "children");
+
+    setVendorschildren(Array.isArray(res) ? res : []); // ✅ SAFE
+  } catch (err) {
+    console.error(err);
+    setVendorschildren([]); // ✅ fallback
+  }
+};
+
 
   /* SEARCH FILTER */
   const filteredTree = useMemo(() => {
-    if (!search) return MOCK_TREE;
+  if (!Array.isArray(vendorschildren)) return [];
 
-    const filter = (node: any): any => {
-      const match = node.name.toLowerCase().includes(search.toLowerCase());
-      const children = node.children?.map(filter).filter(Boolean);
+  if (!search) return vendorschildren;
 
-      if (match || children.length) return { ...node, children };
-      return null;
-    };
-
-    return MOCK_TREE.map(filter).filter(Boolean);
-  }, [search]);
+  return vendorschildren.filter((v) =>
+    v.business_name?.toLowerCase().includes(search.toLowerCase())
+  );
+}, [search, vendorschildren]);
 
   return (
     <Box 
@@ -225,10 +258,14 @@ const VendorHierarchy = () => {
   <Autocomplete
     size="small"
     sx={{ width: 260 }}
-    options={MOCK_VENDORS}
+    options={vendors}
     value={selectedVendor}
-    onChange={(_, v) => v && setSelectedVendor(v)}
-    getOptionLabel={(o) => o.name}
+    onChange={(_, v) => {
+      if (!v) return;
+      setSelectedVendor(v);
+      loadchildren(v.id); // 🔥 LOAD CHILDREN HERE
+    }}
+    getOptionLabel={(o) => o.business_name}
     renderInput={(params) => (
       <TextField {...params} placeholder="Select vendor" />
     )}
@@ -263,15 +300,23 @@ const VendorHierarchy = () => {
             />
 
             <Box mt={2}>
-              {filteredTree.map((node) => (
-                <TreeNode
-                  key={node.id}
-                  node={node}
-                  selectedId={selected?.id}
-                  onSelect={setSelected}
-                />
-              ))}
-            </Box>
+  {Array.isArray(filteredTree) &&
+    filteredTree.map((node) => {
+      const mapped = mapToNode(node);
+
+      return (
+        <TreeNode
+          key={mapped.id}
+          node={mapped}
+          selectedId={selected?.id}
+          onSelect={(n: any) => {
+            setSelected(n);
+            loadchildren(n.id);
+          }}
+        />
+      );
+    })}
+</Box>
           </Paper>
         </Grid>
 
@@ -324,21 +369,22 @@ const VendorHierarchy = () => {
                   </Typography>
 
                   <Grid container spacing={2}>
-                    {selected.children?.map((c: any) => (
-                      <Grid item xs={4} key={c.id}>
-                        <Paper sx={{ p: 2, borderRadius: 2 }}>
-                          <Chip
-                            label={LEVEL_LABEL[c.level].slice(0, 2)}
-                            size="small"
-                            sx={{ mb: 1 }}
-                          />
-                          <Typography fontWeight={600}>{c.name}</Typography>
-                          <Typography fontSize={12} color="text.secondary">
-                            {countChildren(c)} below
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                    ))}
+                    {Array.isArray(vendorschildren) &&
+  vendorschildren.map((c: Vendor) => (
+    <Grid item xs={4} key={c.id}>
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Chip label={c.hierachy} size="small" sx={{ mb: 1 }} />
+
+        <Typography fontSize={12} fontWeight={600}>
+          {c.business_name}
+        </Typography>
+
+        <Typography fontSize={10} color="text.secondary">
+          {c.email}
+        </Typography>
+      </Paper>
+    </Grid>
+  ))}
                   </Grid>
                 </Box>
               </Box>

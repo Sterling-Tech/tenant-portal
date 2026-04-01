@@ -35,7 +35,7 @@ import {
   Edit,
   Delete,
 } from "@mui/icons-material";
-import { fetchVendors, createVendor, type VendorForm, Vendor} from "../../services/vendorService";
+import { fetchVendors, createVendor, type VendorForm, Vendor, searchVendors, toggleVendorStatus} from "../../services/vendorService";
 	
 const PAGE_SIZE = 10;
 
@@ -83,9 +83,27 @@ export default function VendorHub() {
   }, [search]);
 
   const load = async (pageNumber = 1) => {
+  try {
+    // 🔍 SEARCH MODE
+    if (debouncedSearch) {
+      const res = await searchVendors(debouncedSearch);
+
+      let data: Vendor[] = [];
+
+      if (Array.isArray(res)) {
+        data = res;
+      } else if (res && "results" in res) {
+        data = res.results;
+      }
+
+      setVendors(data);
+      setCount(data.length);
+                    return;
+                  }
+
+    // 📦 NORMAL MODE
     const res = await fetchVendors({
       page: pageNumber,
-      search: debouncedSearch,
       is_active:
         statusFilter === "all"
           ? undefined
@@ -96,12 +114,18 @@ export default function VendorHub() {
           : verifiedFilter === "verified",
     });
 
-    setVendors(res.results);
-    setCount(res.count);
+    setVendors(res?.results || []);
+    setCount(res?.count || 0);
 
-    if (res.results.length) setSelected(res.results[0]);
-    setSelectedIds([]); // reset selection on page change
-  };
+    if (res?.results?.length) {
+      setSelected(res.results[0]);
+    }
+  } catch (err) {
+    console.error("LOAD ERROR:", err);
+    setVendors([]);
+    setCount(0);
+  }
+};
 
   useEffect(() => {
     load(page);
@@ -165,6 +189,18 @@ export default function VendorHub() {
 //   if (res.results.length) setSelected(res.results[0]);
 // };
   
+  const handleToggleStatus = async (vendor: Vendor) => {
+  try {
+    await toggleVendorStatus(vendor.id);
+
+    await load(page); // wait for reload
+
+    setAnchorEl(null);
+  } catch (err) {
+    console.error("TOGGLE ERROR:", err);
+  }
+};
+
   const handleCreateVendor = async () => {
   if (!vendorForm.business_name || !vendorForm.email || !vendorForm.hierachy) {
     alert("Business name, email and hierarchy are required");
@@ -204,24 +240,7 @@ export default function VendorHub() {
 //     console.error(err);
 //   }
 // };
-useEffect(() => {
-  load(page);
-}, [page, search, statusFilter, verifiedFilter]);
 
-  const filtered = (Array.isArray(vendors) ? vendors : [])
-    .filter((v) =>
-      `${v.business_name} ${v.email}`
-        .toLowerCase()
-        .includes(search.toLowerCase())
-    )
-    .filter((v) =>
-      statusFilter === "all" ? true : v.account_status === statusFilter
-    )
-    .filter((v) =>
-      verifiedFilter === "all"
-        ? true
-        : verifiedFilter === "verified"
-    );
 
 
   return (
@@ -292,6 +311,7 @@ useEffect(() => {
 
             <FormControl size="small">
               <Select
+                fullWidth
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -324,7 +344,7 @@ useEffect(() => {
             </TableHead>
 
             <TableBody>
-              {vendors.map((v) => (
+              {(vendors || []).map((v) => (
                 <TableRow
                   key={v.id}
                   hover
@@ -380,13 +400,14 @@ useEffect(() => {
 
                   <TableCell>
                     <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setAnchorEl(e.currentTarget);
-                      }}
-                    >
-                      <MoreVert />
-                    </IconButton>
+  onClick={(e) => {
+    e.stopPropagation();
+    setAnchorEl(e.currentTarget);
+    setMenuVendor(v); // ✅ THIS WAS MISSING
+  }}
+>
+  <MoreVert />
+</IconButton>
                   </TableCell>
                 </TableRow>
               ))}
@@ -702,23 +723,26 @@ useEffect(() => {
 )}
       {/* MENU */}
       <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-      >
-        <MenuItem>
-          <ListItemIcon>
-            <CheckCircle fontSize="small" color="success" />
-          </ListItemIcon>
-          Activate
-        </MenuItem>
-        <MenuItem>
-          <ListItemIcon>
-            <Cancel fontSize="small" color="warning" />
-          </ListItemIcon>
-          Deactivate
-        </MenuItem>
-      </Menu>
+  anchorEl={anchorEl}
+  open={Boolean(anchorEl)}
+  onClose={() => setAnchorEl(null)}
+>
+  {menuVendor?.account_status === "active" ? (
+    <MenuItem onClick={() => handleToggleStatus(menuVendor)}>
+      <ListItemIcon>
+        <Cancel fontSize="small" color="warning" />
+      </ListItemIcon>
+      Deactivate
+    </MenuItem>
+  ) : (
+    <MenuItem onClick={() => handleToggleStatus(menuVendor)}>
+      <ListItemIcon>
+        <CheckCircle fontSize="small" color="success" />
+      </ListItemIcon>
+      Activate
+    </MenuItem>
+  )}
+</Menu>
     </Box>
   );
 }
