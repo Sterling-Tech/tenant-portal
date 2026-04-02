@@ -73,53 +73,44 @@ export default function VendorHub() {
   const totalPages = Math.ceil(count / PAGE_SIZE);
 
   // ✅ Debounce search
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-    }, 500);
+// Debounced search: wait until user stops typing for 500ms
+useEffect(() => {
+  const handler = setTimeout(() => {
+    setDebouncedSearch(search); // update debounced value
+    setPage(1); // reset to first page
+  }, 500); // 500ms delay
 
-    return () => clearTimeout(t);
-  }, [search]);
+  // cleanup: cancel previous timeout if user types again
+  return () => clearTimeout(handler);
+}, [search]);
 
-  const load = async (pageNumber = 1) => {
+// Debounced search: wait until user stops typing for 500ms
+const load = async (pageNumber = 1) => {
   try {
-    // 🔍 SEARCH MODE
-    if (debouncedSearch) {
+    // 🔍 SEARCH MODE: only if user has typed something
+    if (debouncedSearch.trim()) {
       const res = await searchVendors(debouncedSearch);
 
       let data: Vendor[] = [];
-
-      if (Array.isArray(res)) {
-        data = res;
-      } else if (res && "results" in res) {
-        data = res.results;
-      }
+      if (Array.isArray(res)) data = res;
+      else if (res && "results" in res) data = res.results;
 
       setVendors(data);
       setCount(data.length);
-                    return;
-                  }
+      return; // exit early
+    }
 
-    // 📦 NORMAL MODE
+    // 📦 NORMAL MODE (no search)
     const res = await fetchVendors({
       page: pageNumber,
-      is_active:
-        statusFilter === "all"
-          ? undefined
-          : statusFilter === "active",
-      is_verified:
-        verifiedFilter === "all"
-          ? undefined
-          : verifiedFilter === "verified",
+      is_active: statusFilter === "all" ? undefined : statusFilter === "active",
+      is_verified: verifiedFilter === "all" ? undefined : verifiedFilter === "verified",
     });
 
     setVendors(res?.results || []);
     setCount(res?.count || 0);
 
-    if (res?.results?.length) {
-      setSelected(res.results[0]);
-    }
+    if (res?.results?.length) setSelected(res.results[0]);
   } catch (err) {
     console.error("LOAD ERROR:", err);
     setVendors([]);

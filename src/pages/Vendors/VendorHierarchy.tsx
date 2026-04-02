@@ -164,13 +164,13 @@ const TreeNode = ({ node, selectedId, onSelect }: any) => {
 /* ================= MAIN ================= */
 
 const VendorHierarchy = () => {
-  const [selected, setSelected] = useState<any>(null);
+  const [selected, setSelected] = useState<any>();
   const [search, setSearch] = useState("");
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [vendorschildren, setVendorschildren] = useState<Vendor[]>([]);
   
-  const load = async () => {
+const load = async () => {
    const res = await fetchVendors({
     main_vendor: true,
    });
@@ -179,6 +179,15 @@ const VendorHierarchy = () => {
 
    setVendors(res.results); // ✅ now works
 };
+
+ const vendordetials = async (id: any) => {
+   const res = await fetchVendors({
+    vendor_id: id,
+   });
+
+   setSelected(res); // ✅ now works
+};
+  
   
     useEffect(() => {
       load();
@@ -310,8 +319,8 @@ const loadchildren = async (id: any) => {
           node={mapped}
           selectedId={selected?.id}
           onSelect={(n: any) => {
-            setSelected(n);
-            loadchildren(n.id);
+            // setSelected(n);
+            vendordetials(n.id);
           }}
         />
       );
@@ -331,7 +340,7 @@ const loadchildren = async (id: any) => {
                   sx={{ mb: 1, bgcolor: "#bbf7d0", color: "#065f46" }}
                 />
                 <Typography fontSize={24} fontWeight={700}>
-                  {selected.name}
+                  {selected.business_name}
                 </Typography>
                 <Typography fontSize={14}>
                   {selected.email || "No email"}
@@ -348,7 +357,7 @@ const loadchildren = async (id: any) => {
 
                   <Grid item xs={6}>
                     <Typography variant="caption">PHONE</Typography>
-                    <Typography>{selected.phone || "-"}</Typography>
+                    <Typography>{selected.phone_number || "-"}</Typography>
                   </Grid>
 
                   <Grid item xs={6}>

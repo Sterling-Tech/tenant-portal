@@ -1,596 +1,431 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from "react";
 import {
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Typography,
-    Stack,
-    Alert,
-    CircularProgress,
-    IconButton,
-    Menu,
-    MenuItem,
-    Chip,
-    Paper,
-    Divider,
-    FormControl,
-    InputLabel,
-    Select,
-    TextField,
-    InputAdornment,
-    Autocomplete,
-    Grid,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    Collapse,
-} from '@mui/material';
+  Box,
+  Card,
+  Typography,
+  Stack,
+  Grid,
+  Button,
+  TextField,
+  CircularProgress,
+  Chip,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  InputAdornment,
+} from "@mui/material";
 import {
-    Add,
-    Edit,
-    Delete,
-    MoreVert,
-    AccountTree,
-    PersonAdd,
-    Refresh,
-    Search,
-    Business,
-    Domain,
-    ExpandLess,
-    ExpandMore,
-} from '@mui/icons-material';
-import { useVendorHierarchy } from '../../contexts/VendorContext';
-import { useTenants } from '../../hooks/useTenants';
-import { useOrgBindings } from '../../hooks/useOrgBindings';
-import { useOrgWallets } from '../../hooks/useOrgWallets';
-import { VendorOrg, VendorOrgLevel, VendorOrgStatus, VendorRoleBinding, BindingForm } from '../../types/vendor';
-import { tenantService } from '../../services/tenantService';
-import type { Tenant } from '../../services/tenantService';
-import AddVendorAdminModal from '../../components/VendorHierarchy/AddVendorAdminModal';
-import AddChildOrgModal from '../../components/VendorHierarchy/AddChildOrgModal';
-import EditOrgModal from '../../components/VendorHierarchy/EditOrgModal';
-import DeleteOrgModal from '../../components/VendorHierarchy/DeleteOrgModal';
-import AssignUserModal from '../../components/VendorHierarchy/AssignUserModal';
-import { fetchTransactions, Ledger } from '../../services/vendorService';
+  Refresh,
+  Search,
+  FileDownload,
+  AccountBalanceWallet,
+  BarChart,
+} from "@mui/icons-material";
+import { useTenants } from "../../hooks/useTenants";
+import { fetchTransactions, fetchVendors, Ledger, PaginatedLedgerResponse, Vendor } from "../../services/vendorService";
+import { useOrgWallets } from "../../hooks/useOrgWallets";
+import {
+  BarChart as ReBarChart,
+  Bar,
+  XAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 const VendorTransactions: React.FC = () => {
-    const { tenants, selectedTenantId, selectTenant } = useTenants();
-    const {
-        tenantId,
-        setTenantId,
-        tree,
-        loading,
-        error,
-        selectedOrgId,
-        selectedOrg,
-        refresh,
-        selectOrg,
-        createOrg,
-        updateOrg,
-        removeOrg,
-    } = useVendorHierarchy();
-    const { bindings, loading: bindingsLoading, refresh: refreshBindings } = useOrgBindings(selectedOrgId);
-    const { wallets, loading: walletsLoading, totalBalance } = useOrgWallets(selectedOrgId);
+  const [selectedVendorId, selectVendor] = useState<string | null>(null);
+  const [vendorsId, setVendorId] = useState<string | null>(null);
+  const { totalBalance } = useOrgWallets(vendorsId);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [transactions, setTransactions] = useState<Ledger[]>([]);
+  const [summary, setSummary] = useState({
+    total_debits: 0,
+    total_credits: 0,
+  });
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"analytics" | "ledger">("analytics");
 
-    // Modal states
-    const [addAdminModalOpen, setAddAdminModalOpen] = useState(false);
-    const [addChildModalOpen, setAddChildModalOpen] = useState(false);
-    const [editModalOpen, setEditModalOpen] = useState(false);
-    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [assignUserModalOpen, setAssignUserModalOpen] = useState(false);
-    const [transactions, setTransactions] = useState<Ledger[]>([])
-    const [transactionsLoading, setTransactionsLoading] = useState(false)
+  const today = new Date();
+  const past = new Date();
+  past.setDate(today.getDate() - 14);
 
-    const today = new Date();
-    const past = new Date();
-    past.setDate(today.getDate() - 7);
+  const format = (d: Date) => d.toISOString().split("T")[0];
+  const [startDate, setStartDate] = useState(format(past));
+  const [endDate, setEndDate] = useState(format(today));
+  
+  const load = async () => {
+     const res = await fetchVendors({is_active: true});
+  
+     console.log(res, "yhhh");
+  
+     setVendors(res.results); // ✅ now works
+  };
 
-    const format = (d: Date) => d.toISOString().split("T")[0];
+  useEffect(() => {
+    load();
+  }, []);
 
-    const [startDate, setStartDate] = useState(format(past));
-    const [endDate, setEndDate] = useState(format(today));
+  const selectedVendor = useMemo(
+    () => vendors?.find((t) => t.id === vendorsId),
+    [vendorsId, vendors]
+  );
 
-    
-    // Context menu state
-    const [contextMenu, setContextMenu] = useState<{
-        mouseX: number;
-        mouseY: number;
-        org: VendorOrg | null;
-    } | null>(null);
+  const loadTransactions = async (id: string) => {
+    if (!id) return;
 
-    // Search state
-    const [tenantSearchTerm, setTenantSearchTerm] = useState('');
-    const [orgSearchTerm, setOrgSearchTerm] = useState('');
+    setLoading(true);
+    try {
+      const res = await fetchTransactions({
+        vendor_id: id,
+        start_date: startDate,
+        end_date: endDate,
+      });
 
-    const loadTransactions = async (vendorId: number) => {
-        try {
-            setTransactionsLoading(true)
-
-            const res = await fetchTransactions({
-                vendor_id: vendorId,
-                start_date: startDate,
-                end_date: endDate,
-            })
-
-            setTransactions(res)
-        } catch (err) {
-            console.error("Failed to fetch transactions", err)
-        } finally {
-            setTransactionsLoading(false)
-        }
-        }
-
-    useEffect(() => {
-     if (tenantId) {
-       loadTransactions(Number(tenantId))
-     }
-    }, [tenantId, startDate, endDate])
-    // Sync tenant selection - only when selectedTenantId changes
-    React.useEffect(() => {
-        if (selectedTenantId && selectedTenantId !== tenantId) {
-            console.log('[VendorHierarchy] Syncing tenant selection:', selectedTenantId);
-            setTenantId(selectedTenantId);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedTenantId]);
-
-    // Auto-Select Vendor if available but not set - run once on mount
-    React.useEffect(() => {
-        if (!tenantId && !selectedTenantId && tenants?.length > 0) {
-            console.log('[VendorHierarchy] Auto-selecting first tenant:', tenants[0].id);
-            selectTenant(tenants[0].id);
-            setTenantId(tenants[0].id);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tenants?.length]);
-
-    // Filtered tenants for search
-    const filteredTenants = useMemo(() => {
-        if (!tenants || !Array.isArray(tenants)) return [];
-        if (!tenantSearchTerm.trim()) return tenants;
-        const term = tenantSearchTerm.toLowerCase();
-        return tenants.filter(
-            (t) =>
-                t.business_name.toLowerCase().includes(term)
-            //  ||
-            //     t.domain.toLowerCase().includes(term) ||
-            //     t.slug.toLowerCase().includes(term)
-        );
-    }, [tenants, tenantSearchTerm]);
-
-    // Filtered tree for search
-    const filteredTree = useMemo(() => {
-        if (!tree || !Array.isArray(tree)) return [];
-        if (!orgSearchTerm.trim()) return tree;
-        const term = orgSearchTerm.toLowerCase();
-        const filterOrg = (org: VendorOrg): VendorOrg | null => {
-            const matches = org.name.toLowerCase().includes(term) || org.slug.toLowerCase().includes(term);
-            const filteredChildren = org.children?.map(filterOrg).filter((c): c is VendorOrg => c !== null) || [];
-            if (matches || filteredChildren.length > 0) {
-                return { ...org, children: filteredChildren };
-            }
-            return null;
-        };
-        return tree.map(filterOrg).filter((o): o is VendorOrg => o !== null);
-    }, [tree, orgSearchTerm]);
-
-    const handleContextMenu = (event: React.MouseEvent, org: VendorOrg) => {
-        event.preventDefault();
-        setContextMenu(
-            contextMenu === null
-                ? {
-                    mouseX: event.clientX - 2,
-                    mouseY: event.clientY - 4,
-                    org,
-                }
-                : null
-        );
-    };
-
-    const handleCloseContextMenu = () => {
-        setContextMenu(null);
-    };
-
-    const handleAddChild = (org: VendorOrg | null) => {
-        setContextMenu(null);
-        if (org) {
-            selectOrg(org.id);
-        }
-        setAddChildModalOpen(true);
-    };
-
-    const handleEdit = (org: VendorOrg) => {
-        setContextMenu(null);
-        selectOrg(org.id);
-        setEditModalOpen(true);
-    };
-
-    const handleDelete = (org: VendorOrg) => {
-        setContextMenu(null);
-        selectOrg(org.id);
-        setDeleteModalOpen(true);
-    };
-
-    const handleAddAdmin = (org: VendorOrg | null) => {
-        setContextMenu(null);
-        if (org) {
-            selectOrg(org.id);
-        }
-        setAddAdminModalOpen(true);
-    };
-
-    const handleAssignUser = (org: VendorOrg | null) => {
-        setContextMenu(null);
-        if (org) {
-            selectOrg(org.id);
-        }
-        setAssignUserModalOpen(true);
-    };
-
-    const [expanded, setExpanded] = useState<Set<string>>(new Set());
-
-    const toggleExpand = (orgId: string) => {
-        setExpanded((prev) => {
-            const next = new Set(prev);
-            if (next.has(orgId)) {
-                next.delete(orgId);
-            } else {
-                next.add(orgId);
-            }
-            return next;
-        });
-    };
-
-    const renderTreeItem = (org: VendorOrg, level: number = 0): React.ReactNode => {
-        const isSelected = selectedOrgId === org.id;
-        const isExpanded = expanded.has(org.id);
-        const hasChildren = org.children && org.children.length > 0;
-
-        return (
-            <React.Fragment key={org.id}>
-                <ListItem
-                    disablePadding
-                    sx={{
-                        pl: level * 2,
-                        bgcolor: isSelected ? 'action.selected' : 'transparent',
-                        '&:hover': {
-                            bgcolor: 'action.hover',
-                        },
-                    }}
-                    onContextMenu={(e) => handleContextMenu(e, org)}
-                >
-                    <ListItemButton
-                        onClick={() => selectOrg(org.id)}
-                        sx={{ py: 0.5 }}
-                    >
-                        {hasChildren && (
-                            <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleExpand(org.id);
-                                }}
-                                sx={{ mr: 0.5 }}
-                            >
-                                {isExpanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
-                            </IconButton>
-                        )}
-                        {!hasChildren && <Box sx={{ width: 24 }} />}
-                        <ListItemIcon sx={{ minWidth: 36 }}>
-                            <AccountTree fontSize="small" color={isSelected ? 'primary' : 'action'} />
-                        </ListItemIcon>
-                        <ListItemText
-                            primary={
-                                <Stack direction="row" spacing={1} alignItems="center">
-                                    <Typography variant="body2" fontWeight={isSelected ? 600 : 400}>
-                                        {org.name}
-                                    </Typography>
-                                    <Chip
-                                        label={org.level}
-                                        size="small"
-                                        variant="outlined"
-                                        sx={{ height: 20, fontSize: '0.65rem' }}
-                                    />
-                                    <Chip
-                                        label={org.status}
-                                        size="small"
-                                        color={org.status === 'active' ? 'success' : 'default'}
-                                        sx={{ height: 20, fontSize: '0.65rem' }}
-                                    />
-                                </Stack>
-                            }
-                        />
-                        <IconButton
-                            size="small"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleContextMenu(e, org);
-                            }}
-                        >
-                            <MoreVert fontSize="small" />
-                        </IconButton>
-                    </ListItemButton>
-                </ListItem>
-                {hasChildren && (
-                    <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding>
-                            {org.children?.map((child) => renderTreeItem(child, level + 1))}
-                        </List>
-                    </Collapse>
-                )}
-            </React.Fragment>
-        );
-    };
-
-    if (!tenantId) {
-        return (
-            <Box p={3}>
-                <Alert severity="info">Please select a tenant to view vendor hierarchy</Alert>
-            </Box>
-        );
+      setTransactions(res.results || []);
+      setSummary(res.summary || { total_debits: 0, total_credits: 0 });
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return (
-        <Box p={3}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h4">Vendor Transactions</Typography>
-                <Stack direction="row" spacing={2}>
-                    <Button variant="outlined" startIcon={<Refresh />} onClick={refresh} disabled={loading}>
-                        Refresh
-                    </Button>
-                    {/* <Button
-                        variant="contained"
-                        startIcon={<PersonAdd />}
-                        onClick={() => {
-                            if (!tenantId) {
-                                alert('Please select a tenant first');
-                                return;
-                            }
-                            handleAddAdmin(null);
-                        }}
-                        disabled={!tenantId || loading}
-                        title={!tenantId ? 'Please select a tenant first' : 'Add Vendor Admin'}
-                    >
-                        Add Vendor Admin
-                    </Button> */}
-                    {/* <Button
-                        variant="outlined"
-                        startIcon={<Add />}
-                        onClick={() => {
-                            if (!tenantId) {
-                                alert('Please select a tenant first');
-                                return;
-                            }
-                            handleAddChild(null);
-                        }}
-                        disabled={!tenantId || loading}
-                        title={!tenantId ? 'Please select a tenant first' : 'Add Root Organization'}
-                    >
-                        Add Root Organization
-                    </Button> */}
-                </Stack>
-            </Stack>
+  useEffect(() => {
+    if (selectedVendorId) setVendorId(selectedVendorId);
+  }, [selectedVendorId]);
 
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }} onClose={() => { }}>
-                    {error}
-                </Alert>
-            )}
+  useEffect(() => {
+    if (vendorsId) loadTransactions(vendorsId);
+  }, [vendorsId, startDate, endDate]);
 
-            <Grid container spacing={3}>
-                {/* Left Panel: Tenant & Organization Selection */}
-                <Grid item xs={12} md={4}>
-                    <Stack spacing={2}>
-                        {/* Tenant Selection */}
-                        <Card>
-                            <CardContent>
-                                <Stack spacing={2}>
-                                    <Typography variant="h6">Select Vendor</Typography>
-                                    <Autocomplete
-                                        options={filteredTenants}
-                                        getOptionLabel={(option) => `${option.business_name}`}
-                                        value={Array.isArray(tenants) ? tenants.find((t) => t.id === tenantId) : null}
-                                        onChange={(_, newValue) => {
-                                            if (newValue) {
-                                            selectTenant(newValue.id)
-                                            setTenantId(newValue.id)
+ const totalCredits = summary.total_credits;
+ const totalDebits = summary.total_debits;
 
-                                            // 🔥 fetch transactions
-                                            loadTransactions(Number(newValue.id))
-                                            }
-                                        }}
-                                        renderInput={(params) => (
-                                            <TextField
-                                                {...params}
-                                                placeholder="Search tenants..."
-                                                InputProps={{
-                                                    ...params.InputProps,
-                                                    startAdornment: (
-                                                        <>
-                                                            <InputAdornment position="start">
-                                                                <Domain />
-                                                            </InputAdornment>
-                                                            {params.InputProps.startAdornment}
-                                                        </>
-                                                    ),
-                                                }}
-                                            />
-                                        )}
-                                        loading={loading}
-                                    />
-                                </Stack>
-                            </CardContent>
-                        </Card>
-                    </Stack>
+  return (
+    <Box p={3} bgcolor="#f9fafb">
+      {/* HEADER */}
+      <Stack direction="row" justifyContent="space-between" mb={3}>
+        <Box>
+          <Typography fontSize={24} fontWeight={700}>
+            Vendor Transactions
+          </Typography>
+          <Typography fontSize={13} color="#6b7280">
+            Full ledger of all credits, debits, reversals and transfers per vendor
+          </Typography>
+        </Box>
+
+        <Stack direction="row" spacing={1}>
+          <Button size="small" variant="outlined" startIcon={<Refresh />}>
+            Refresh
+          </Button>
+          <Button size="small" variant="outlined" startIcon={<FileDownload />}>
+            Export CSV
+          </Button>
+          <Button size="small" variant="contained">
+            + Fund Wallet
+          </Button>
+        </Stack>
+      </Stack>
+
+      <Grid container spacing={3}>
+    {/* SUMMARY */}
+            <Grid container spacing={2}>
+              {[
+                { title: "Total Wallet Balance", value:  selectedVendor?.wallet?.balance, color: "#2563eb" },
+                { title: "Total Credits", value: totalCredits, color: "#16a34a" },
+                { title: "Total Debits", value: totalDebits, color: "#dc2626" },
+              ].map((item, i) => (
+                <Grid item xs={12} md={4} key={i}>
+                  <Card sx={{ p: 2, borderBottom: `3px solid ${item.color}`, borderRadius: 3 }}>
+                    <Typography fontSize={13} color="#6b7280">
+                      {item.title}
+                    </Typography>
+                    <Typography fontSize={22} fontWeight={700}>
+                      ₦{Number(item.value || 0).toLocaleString()}
+                    </Typography>
+                    <Typography fontSize={12} color="#16a34a">
+                      ↑ 9.2% this month
+                    </Typography>
+                  </Card>
                 </Grid>
-
-                {/* Right Panel: Organization Details */}
-                <Grid item xs={12} md={8}>
-                    {transactions ? (
-                         <Card>
-                            <CardContent>
-                                <Stack
-                                direction={{ xs: "column", md: "row" }}
-                                spacing={2}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={2}
-                                >
-                                <Typography variant="h6">Transactions</Typography>
-
-                                <Stack direction="row" spacing={2}>
-                                    <TextField
-                                    type="date"
-                                    size="small"
-                                    label="Start Date"
-                                    InputLabelProps={{ shrink: true }}
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    />
-
-                                    <TextField
-                                    type="date"
-                                    size="small"
-                                    label="End Date"
-                                    InputLabelProps={{ shrink: true }}
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    />
-
-                                    <Button
-                                    variant="contained"
-                                    onClick={() => tenantId && loadTransactions(Number(tenantId))}
-                                    >
-                                    Filter
-                                    </Button>
-                                </Stack>
-                                </Stack>
-
-                                {transactionsLoading ? (
-                                <CircularProgress />
-                                ) : transactions.length === 0 ? (
-                                <Alert severity="info">No transactions found</Alert>
-                                ) : (
-                                <Stack spacing={1}>
-                                    {transactions.map((tx) => (
-                                    <Paper key={tx.transaction_ref} sx={{ p: 2 }}>
-                                        <Stack direction="row" justifyContent="space-between">
-                                        <Typography variant="body2">{tx.transaction_ref}</Typography>
-                                        <Typography variant="body2">
-                                            ₦{Number(tx.debit_amount).toLocaleString()}
-                                        </Typography>
-                                        </Stack>
-                                        <Typography variant="caption">
-                                        {new Date(tx.timestamp).toLocaleString()}
-                                        </Typography>
-                                    </Paper>
-                                    ))}
-                                </Stack>
-                                )}
-                            </CardContent>
-                            </Card>
-                    ) : (
-                        <Stack spacing={2}>
-                            <Card>
-                                <CardContent>
-                                    <Typography color="text.secondary" align="center" p={4}>
-                                        No transactions found
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Stack>
-                    )}
-                </Grid>
+              ))}
             </Grid>
 
-            {/* Context Menu */}
-            <Menu
-                open={contextMenu !== null}
-                onClose={handleCloseContextMenu}
-                anchorReference="anchorPosition"
-                anchorPosition={
-                    contextMenu !== null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
-                }
-            >
-                <MenuItem onClick={() => contextMenu?.org && handleAddChild(contextMenu.org)}>
-                    <Add sx={{ mr: 1 }} fontSize="small" /> Add Child
-                </MenuItem>
-                <MenuItem onClick={() => contextMenu?.org && handleEdit(contextMenu.org)}>
-                    <Edit sx={{ mr: 1 }} fontSize="small" /> Edit
-                </MenuItem>
-                <MenuItem onClick={() => contextMenu?.org && handleAddAdmin(contextMenu.org)}>
-                    <PersonAdd sx={{ mr: 1 }} fontSize="small" /> Add Admin
-                </MenuItem>
-                <MenuItem onClick={() => contextMenu?.org && handleAssignUser(contextMenu.org)}>
-                    <PersonAdd sx={{ mr: 1 }} fontSize="small" /> Assign User
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={() => contextMenu?.org && handleDelete(contextMenu.org)}>
-                    <Delete sx={{ mr: 1 }} fontSize="small" color="error" /> Delete
-                </MenuItem>
-            </Menu>
 
-            {/* Modals */}
-            <AddVendorAdminModal
-                open={addAdminModalOpen}
-                onClose={() => {
-                    setAddAdminModalOpen(false);
-                }}
-                orgId={selectedOrgId}
-                onSuccess={async () => {
-                    // Refresh bindings list to show newly added admin
-                    console.log('[VendorHierarchy] Refreshing bindings after adding admin');
-                    await refreshBindings();
-                }}
-            />
+        {/* SIDEBAR */}
+        <Grid item xs={12} md={3}>
+          <Card sx={{ borderRadius: 3 }}>
+            <Box p={2}>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography fontWeight={600}>Select Vendor</Typography>
+                <Typography fontSize={12} color="gray">
+                  {vendors?.length || 0} total
+                </Typography>
+              </Stack>
 
-            <AddChildOrgModal
-                open={addChildModalOpen}
-                onClose={() => setAddChildModalOpen(false)}
-                parentOrg={selectedOrg || null}
-                tenantId={tenantId}
-                onSuccess={() => {
-                    refresh();
-                    setAddChildModalOpen(false);
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search by name or domain..."
+                sx={{ mt: 2 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search fontSize="small" />
+                    </InputAdornment>
+                  ),
                 }}
-            />
+              />
 
-            <EditOrgModal
-                open={editModalOpen}
-                onClose={() => setEditModalOpen(false)}
-                org={selectedOrg || null}
-                onSuccess={() => {
-                    refresh();
-                    setEditModalOpen(false);
-                }}
-            />
+              <Stack mt={2} spacing={1}>
+                {vendors?.map((v) => (
+                  <Box
+                    key={v.id}
+                    onClick={() => {
+                      setVendorId(v.id);
+                      selectVendor(v.id);
+                    }}
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      cursor: "pointer",
+                      bgcolor:
+                        vendorsId === v.id ? "#eff6ff" : "transparent",
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography fontSize={14} fontWeight={500}>
+                        {v.business_name}
+                      </Typography>
+                      <Typography fontSize={14} color="#10990b">
+                        ₦{Math.floor(Math.random() * 100000)}
+                      </Typography>
+                    </Stack>
+                   <Typography fontWeight={200}>{v.hierachy}</Typography>
+                    {/* <Chip
+                      label="Active"
+                      size="small"
+                      sx={{
+                        mt: 1,
+                        bgcolor: "#dcfce7",
+                        color: "#16a34a",
+                        fontSize: 11,
+                      }}
+                    /> */}
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+          </Card>
+        </Grid>
 
-            <DeleteOrgModal
-                open={deleteModalOpen}
-                onClose={() => setDeleteModalOpen(false)}
-                org={selectedOrg}
-                onSuccess={() => {
-                    refresh();
-                    selectOrg(null);
-                    setDeleteModalOpen(false);
-                }}
-            />
+        {/* MAIN */}
+        <Grid item xs={12} md={9}>
+          <Stack spacing={3}>
+        
 
-            <AssignUserModal
-                open={assignUserModalOpen}
-                onClose={() => setAssignUserModalOpen(false)}
-                orgId={selectedOrgId}
-                onSuccess={() => {
-                    refreshBindings();
-                    setAssignUserModalOpen(false);
-                }}
-            />
-        </Box>
-    );
+            {/* HEADER */}
+            <Card sx={{ p: 2, borderRadius: 3 }}>
+              <Stack direction="row" justifyContent="space-between">
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box
+                    sx={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 2,
+                      bgcolor: "#2563eb",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {selectedVendor?.business_name?.slice(0, 2)}
+                  </Box>
+
+                  <Box>
+                    <Typography fontWeight={700}>
+                      {selectedVendor?.business_name}
+                    </Typography>
+                    <Typography fontSize={12} color="#6b7280">
+                      ID: VND-{vendorsId}
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Stack direction="row" spacing={1}>
+                  <Button size="small" variant="outlined">
+                    View Profile
+                  </Button>
+                  <Button size="small" variant="contained">
+                    + Fund
+                  </Button>
+                </Stack>
+              </Stack>
+               {/* WALLET */}
+              <Card sx={{ p: 2, borderRadius: 3, width: 260 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <AccountBalanceWallet fontSize="small" />
+                  <Typography fontSize={12}>VENDING WALLET</Typography>
+                </Stack>
+
+                <Typography fontSize={22} fontWeight={700} color="#16a34a">
+                  ₦{Number(totalBalance || 0).toLocaleString()}
+                </Typography>
+
+                <Typography fontSize={12} color="#6b7280">
+                  Available balance
+                </Typography>
+
+                <Button size="small" variant="outlined" sx={{ mt: 1 }}>
+                  Fund
+                </Button>
+              </Card>
+            </Card>
+
+            {/* WALLET + TABS ROW */}
+            <Stack direction="row" spacing={3}>
+              {/* TABS + CONTENT */}
+              <Box flex={1}>
+                <Stack direction="row" spacing={3} borderBottom="1px solid #e5e7eb">
+                  {["ledger", "analytics"].map((tab) => (
+                    <Box
+                      key={tab}
+                      onClick={() => setActiveTab(tab as any)}
+                      sx={{
+                        pb: 1,
+                        cursor: "pointer",
+                        borderBottom:
+                          activeTab === tab
+                            ? "2px solid #2563eb"
+                            : "2px solid transparent",
+                        fontWeight: 600,
+                        fontSize: 14,
+                      }}
+                    >
+                      {tab === "ledger" ? "Transaction Ledger" : "Analytics"}
+                    </Box>
+                  ))}
+                </Stack>
+
+                {/* ANALYTICS */}
+                {activeTab === "analytics" && (
+                  <Card sx={{ mt: 2, p: 2, borderRadius: 3 }}>
+                    <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+                      <BarChart fontSize="small" />
+                      <Typography fontWeight={600}>
+                        Transaction Volume — Last 14 Days
+                      </Typography>
+                    </Stack>
+
+                    <ResponsiveContainer width="100%" height={220}>
+                      <ReBarChart data={transactions}>
+                        <XAxis dataKey="transaction_ref" hide />
+                        <Tooltip />
+                        <Bar dataKey="credit_amount" />
+                      </ReBarChart>
+                    </ResponsiveContainer>
+                  </Card>
+                )}
+
+                {/* LEDGER */}
+                {activeTab === "ledger" && (
+                  <Card sx={{ mt: 2, borderRadius: 3 }}>
+                    <Box p={2}>
+                      <Stack direction="row" spacing={2} mb={2}>
+                        <TextField
+                          size="small"
+                          placeholder="Search ref, description..."
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Search fontSize="small" />
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+
+                        <TextField type="date" size="small" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                        <TextField type="date" size="small" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+
+                        <Button variant="contained" onClick={() => vendorsId && loadTransactions(vendorsId)}>
+                          Filter
+                        </Button>
+                      </Stack>
+
+                      {loading ? (
+                        <CircularProgress />
+                      ) : (
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={{ bgcolor: "#f9fafb" }}>
+                              <TableCell>REFERENCE</TableCell>
+                              <TableCell>DESCRIPTION</TableCell>
+                              <TableCell>CREDIT</TableCell>
+                              <TableCell>DEBIT</TableCell>
+                              <TableCell>STATUS</TableCell>
+                              <TableCell>DATE & TIME</TableCell>
+                            </TableRow>
+                          </TableHead>
+
+                          <TableBody>
+  {transactions.map((tx) => (
+    <TableRow key={tx.transaction_ref} hover>
+      <TableCell>{tx.transaction_ref}</TableCell>
+
+      <TableCell>
+        <Typography fontWeight={500}>
+          Wallet Funding
+        </Typography>
+        <Typography fontSize={12} color="#6b7280">
+          Bank Transfer via NIBSS
+        </Typography>
+      </TableCell>
+
+      <TableCell sx={{ color: "#16a34a", fontWeight: 600 }}>
+        {tx.credit_amount
+          ? `+₦${Number(tx.credit_amount).toLocaleString()}`
+          : "—"}
+      </TableCell>
+
+      <TableCell sx={{ color: "#dc2626", fontWeight: 600 }}>
+        {tx.debit_amount
+          ? `-₦${Number(tx.debit_amount).toLocaleString()}`
+          : "—"}
+      </TableCell>
+
+      <TableCell>
+        <Chip
+          label="Success"
+          size="small"
+          sx={{
+            bgcolor: "#dcfce7",
+            color: "#16a34a",
+            fontWeight: 600,
+            fontSize: 11,
+          }}
+        />
+      </TableCell>
+
+      <TableCell>
+        {new Date(tx.timestamp).toLocaleString()}
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+                        </Table>
+                      )}
+                    </Box>
+                  </Card>
+                )}
+              </Box>
+            </Stack>
+          </Stack>
+        </Grid>
+      </Grid>
+    </Box>
+  );
 };
 
 export default VendorTransactions;
-

@@ -157,6 +157,16 @@ export interface Ledger {
   credit_amount: string
   timestamp: string
 }
+export interface PaginatedLedgerResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Ledger[];
+  summary: {
+    total_debits: number;
+    total_credits: number;
+  }
+}
 export interface AnalyticsCount {
   analytics: {
     total_revenue: number
@@ -255,11 +265,11 @@ const buildQuery = (params?: Record<string, unknown>) => {
 
 
 export const fetchTransactions = (params?: {
-  start_date?: string
-  end_date?: string
-  vendor_id?: number
+  start_date?: string;
+  end_date?: string;
+  vendor_id?: string;
 }) =>
-  get<Ledger[]>(`/vendor/ledger/${buildQuery(params)}`)
+  get<PaginatedLedgerResponse>(`/vendor/ledger/${buildQuery(params)}`)
 
 export const fetchCustomers = () =>
     get<Customer[]>(`/customer/`);
