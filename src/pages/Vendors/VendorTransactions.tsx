@@ -102,7 +102,9 @@ const VendorTransactions: React.FC = () => {
  const totalDebits = summary.total_debits;
 
   return (
-    <Box p={3} bgcolor="#f9fafb">
+    <Box
+    // /p={2}
+     bgcolor="#f9fafb">
       {/* HEADER */}
       <Stack direction="row" justifyContent="space-between" mb={3}>
         <Box>
@@ -115,21 +117,24 @@ const VendorTransactions: React.FC = () => {
         </Box>
 
         <Stack direction="row" spacing={1}>
-          <Button size="small" variant="outlined" startIcon={<Refresh />}>
-            Refresh
-          </Button>
-          <Button size="small" variant="outlined" startIcon={<FileDownload />}>
+          <Button
+              size="small"
+              variant="outlined"
+              startIcon={<Refresh />}
+              sx={{ height: 36, textTransform: "none", borderRadius: 2 }}
+            >
+              Refresh
+            </Button>
+          <Button size="small" variant="outlined" sx={{ height: 36, textTransform: "none", borderRadius: 2 }} startIcon={<FileDownload />}>
             Export CSV
           </Button>
-          <Button size="small" variant="contained">
+          <Button size="small" sx={{ height: 36, textTransform: "none", borderRadius: 2 }} variant="contained">
             + Fund Wallet
           </Button>
         </Stack>
       </Stack>
-
-      <Grid container spacing={3}>
-    {/* SUMMARY */}
-            <Grid container spacing={2}>
+      {/* SUMMARY */}
+          <Grid pb={2} container spacing={2}>
               {[
                 { title: "Total Wallet Balance", value:  selectedVendor?.wallet?.balance, color: "#2563eb" },
                 { title: "Total Credits", value: totalCredits, color: "#16a34a" },
@@ -150,8 +155,7 @@ const VendorTransactions: React.FC = () => {
                 </Grid>
               ))}
             </Grid>
-
-
+      <Grid container spacing={3}>
         {/* SIDEBAR */}
         <Grid item xs={12} md={3}>
           <Card sx={{ borderRadius: 3 }}>
