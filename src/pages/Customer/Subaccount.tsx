@@ -232,7 +232,7 @@ const Subaccount: React.FC = () => {
 						const data = await fetchCustomers()
 						console.error('TenantSwitcher ', data);
 
-						setCustomers(data);
+						setCustomers(data.results);
 				} catch (err: any) {
 						setError(err?.message || "Failed to load customers");
 				} finally {
@@ -266,7 +266,7 @@ const Subaccount: React.FC = () => {
 		const loadVendorDetails = async (customerId: string) => {
 				setDetailLoading(true);
 				try {
-						const customer = await fetchCustomer(customerId);
+						const customer = await fetchCustomer({ customer_id: customerId });
 						setSelectedCustomer(customer);
 					//	setVendorApiKeys(apiKeys);
 						//setVendorAdmins(admins);

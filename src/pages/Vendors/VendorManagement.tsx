@@ -282,9 +282,9 @@ const load = async (pageNumber = 1) => {
       
       <Stack direction={{ xs: "column", lg: "row" }} spacing={2}>
         {/* TABLE */}
-        <Card sx={{ flex: 2, p: 2, borderRadius: 3, overflowX: "auto" }}>
+        <Card sx={{ flex: 2,  borderRadius: 3, overflowX: "auto" }}>
           {/* SEARCH */}
-          <Stack direction="row" spacing={2} mb={2}>
+          <Stack sx={{p:2}} direction="row" spacing={2}>
             <TextField
               fullWidth
               size="small"
@@ -317,7 +317,7 @@ const load = async (pageNumber = 1) => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell padding="checkbox">
+                {/* <TableCell padding="checkbox">
                   <Checkbox
                     checked={allSelected}
                     indeterminate={isIndeterminate}
@@ -325,7 +325,7 @@ const load = async (pageNumber = 1) => {
                       handleSelectAll(e.target.checked)
                     }
                   />
-                </TableCell>
+                </TableCell> */}
                 <TableCell>Business</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Status</TableCell>
@@ -343,13 +343,13 @@ const load = async (pageNumber = 1) => {
                   onClick={() => setSelected(v)}
                   sx={{ cursor: "pointer" }}
                 >
-                  <TableCell padding="checkbox">
+                  {/* <TableCell padding="checkbox">
                     <Checkbox
                       checked={selectedIds.includes(Number(v.id))}
                       onClick={(e) => e.stopPropagation()}
                       onChange={() => toggleRow(Number(v.id))}
                     />
-                  </TableCell>
+                  </TableCell> */}
 
                   <TableCell>
                     <Stack direction="row" spacing={2}>
@@ -358,7 +358,7 @@ const load = async (pageNumber = 1) => {
                       </Avatar>
 
                       <Typography
-                        fontWeight={600}
+                        fontWeight={500}
                         sx={{
                           maxWidth: 150,
                           whiteSpace: "nowrap",
@@ -742,7 +742,7 @@ function Row({ label, value }: any) {
   return (
     <Box display="flex" justifyContent="space-between">
       <Typography color="text.secondary">{label}</Typography>
-      <Typography fontWeight={600}>{value || "-"}</Typography>
+      <Typography fontWeight={500}>{value || "-"}</Typography>
     </Box>
   );
 }

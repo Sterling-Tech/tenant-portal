@@ -133,6 +133,13 @@ export interface Customer {
     balance: string
   }
 }
+export interface PaginatedCustomerResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Customer[];
+}
+
 export interface VendorForm {
     tenant?: string | null;
     business_name: string;
@@ -272,7 +279,7 @@ export const fetchTransactions = (params?: {
   get<PaginatedLedgerResponse>(`/vendor/ledger/${buildQuery(params)}`)
 
 export const fetchCustomers = () =>
-    get<Customer[]>(`/customer/`);
+    get<PaginatedCustomerResponse>(`/customer/`);
 
 export const Customercategory = () =>
     get<Category[]>(`/customer/category/`);
@@ -302,8 +309,10 @@ export const fetchVendor = (id: string) =>
 export const fetchVendorchildren = (id: string) =>
     get<Vendor[]>(`/vendor/retrieve-children/?vendor_id=${id}`);
 
-export const fetchCustomer = (id: string) =>
-    get<Customer>(`/customer/${id}/`);
+export const fetchCustomer = (params?: {
+      customer_id?: string;
+    }) =>
+    get<Customer>(`/customer/${buildQuery(params)}`);
 
 export const fetchDebt = (id?: string) =>
     get<Debt[]>(`/customer/debt/?customer_id=${id}`);
