@@ -20,9 +20,13 @@ import {
   IconButton,
   Avatar,
   Divider,
+  Select,
+   FormControl,
+    MenuItem as SelectItem, 
+    Grid
 } from "@mui/material";
 import { Search, MoreVert, Refresh } from "@mui/icons-material";
-import { fetchCustomers, fetchCustomer, type Customer } from "../../services/vendorService";
+import { fetchCustomers, fetchCustomer, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers,	type CustomerForm } from "../../services/vendorService";
 
 const CustomerManagement = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -31,25 +35,83 @@ const CustomerManagement = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuRow, setMenuRow] = useState<Customer | null>(null);
   const detailRef = useRef<HTMLDivElement | null>(null);
+const [meteringTypes, setMeteringTypes] = useState<any[]>([]);
+const [classes, setClasses] = useState<any[]>([]);
+const [categories, setCategories] = useState<any[]>([]);
+const [customerForm, setCustomerForm] = useState<Partial<CustomerForm>>({});
+const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+const [openModal, setOpenModal] = useState(false);
+const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string;} | null>(null);
+const [saving, setSaving] = useState(false);
+const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
-  const load = async () => {
-    const data = await fetchCustomers();
-    setCustomers(data.results);
-  };
+const [filters, setFilters] = useState({
+  account_status: "",
+  metering_type_id: "",
+  class_id: "",
+  category_id: "",
+});
+
+const [page, setPage] = useState(1);
+const [count, setCount] = useState(0);
+const [loading, setLoading] = useState(false);
+  const load = async (params?: any) => {
+  setLoading(true);
+  try {
+    const res = await fetchCustomers({
+      ...filters,
+      page,
+      ...params,
+    });
+
+    setCustomers(res.results);
+    setCount(res.count);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
-    load();
-  }, []);
+  load();
+}, [filters, page]);
 
+const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+useEffect(() => {
+  if (!search) {
+    load();
+    return;
+  }
+
+  if (debounceRef.current) {
+    clearTimeout(debounceRef.current);
+  }
+
+  debounceRef.current = setTimeout(async () => {
+    const res = await searchCustomers(search);
+    setCustomers(res.results);
+    setCount(res.count);
+  }, 600); // waits 600ms after typing stops
+}, [search]);
+
+useEffect(() => {
+  const loadFilters = async () => {
+    const [m, c, cat] = await Promise.all([
+      MeteringTypeS(),
+      CustomerClass(),
+      Customercategory(),
+    ]);
+
+    setMeteringTypes(m);
+    setClasses(c);
+    setCategories(cat);
+  };
+
+  loadFilters();
+}, []);
   const getStatus = (c: Customer) =>
     Number(c.wallet?.balance) > 0 ? "inactive" : "active";
 
-  const filtered = useMemo(() => {
-    return customers.filter((c) =>
-      c.name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.account_number?.includes(search)
-    );
-  }, [customers, search]);
 
   const handleRowClick = async (c: Customer) => {
     const full = await fetchCustomer({customer_id: c.id});
@@ -58,9 +120,77 @@ const CustomerManagement = () => {
       detailRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
+  const handleCreateClick = () => {
+				setFormMode('create');
+				setCustomerForm({
+								name: '',
+								phone_number: '',
+								customer_category: undefined,
+								customer_class: undefined,
+								metering_type: undefined,
+							});
+		};
 
+  const handleSaveVendor = async () => {
+				if (
+							!customerForm.name ||
+							!customerForm.email ||
+							!customerForm.phone_number ||
+							!customerForm.customer_category ||
+							!customerForm.customer_class ||
+							!customerForm.metering_type
+						) {
+						setNotification({
+								type: "error",
+								message: "Business name, email and hierarchy are required",
+						});
+						return;
+				}
+
+				setSaving(true);
+
+				try {
+						if (formMode === "create") {
+								await createCustomer(customerForm as CustomerForm);
+
+								setNotification({
+										type: "success",
+										message: "Vendor created successfully",
+								});
+
+						} else if (selectedCustomer) {
+								// await updateVendor(String(selectedCustomer.id), customerForm);
+
+								setNotification({
+										type: "success",
+										message: "Vendor updated successfully",
+								});
+						}
+				
+						// loadVendors();
+
+						// if (selectedCustomer) {
+						// 		loadVendorDetails(String(selectedCustomer.id));
+						// }
+
+				} catch (err: any) {
+						setNotification({
+								type: "error",
+								message: err?.message || "Failed to save vendor",
+						});
+				} finally {
+						setSaving(false);
+				}
+		};
+const handleFilterChange = (key: string, value: string) => {
+  setFilters((prev) => ({
+    ...prev,
+    [key]: value === "all" ? "" : value,
+  }));
+  setPage(1);
+};
   return (
-    <Box p={4} sx={{ background: "#F8FAFC", minHeight: "100vh" }}>
+    <Box sx={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* HEADER */}
       <Stack direction="row" justifyContent="space-between" mb={4}>
         <Box>
@@ -76,40 +206,119 @@ const CustomerManagement = () => {
           <Button variant="outlined" startIcon={<Refresh />}sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
             Refresh
           </Button>
-          <Button variant="contained" sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
+          <Button onClick={() => setOpenModal(true)} variant="contained" sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
             + Register Customer
           </Button>
         </Stack>
       </Stack>
 
       {/* SEARCH BAR */}
-      <Card sx={{ p: 3, borderRadius: 4, mb: 3 }}>
-  <Stack spacing={2}>
-    
-    <Typography fontWeight={600}>Quick Search</Typography>
+      <Card
+  sx={{
+    p: 2,
+    borderRadius: 4,
+    mb: 3,
+    bgcolor: "#F1F5F9",
+  }}
+>
+  <Typography
+    fontSize={13}
+    fontWeight={700}
+    color="#64748B"
+    mb={1}
+    sx={{ letterSpacing: 1 }}
+  >
+    QUICK SEARCH
+  </Typography>
 
-    <Stack direction="row" spacing={2}>
+  <Stack direction="row" spacing={2} alignItems="center">
+    
+    {/* METER SEARCH */}
+    <Box sx={{ flex: 1, position: "relative" }}>
       <TextField
         fullWidth
         placeholder="Search by meter number..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
+        sx={{
+          bgcolor: "#E5E7EB",
+          borderRadius: 3,
+          "& fieldset": { border: "none" },
+        }}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <Search />
+              <Search sx={{ color: "#94A3B8" }} />
             </InputAdornment>
           ),
         }}
       />
 
+      {/* RIGHT TAG */}
+      <Chip
+        label="Meter No"
+        size="small"
+        sx={{
+          position: "absolute",
+          right: 10,
+          top: "50%",
+          transform: "translateY(-50%)",
+          bgcolor: "#E0E7FF",
+          color: "#1D4ED8",
+          fontWeight: 600,
+        }}
+      />
+    </Box>
+
+    {/* ACCOUNT SEARCH */}
+    <Box sx={{ flex: 1, position: "relative" }}>
       <TextField
         fullWidth
         placeholder="Search by account number..."
+        sx={{
+          bgcolor: "#E5E7EB",
+          borderRadius: 3,
+          "& fieldset": { border: "none" },
+        }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <Search sx={{ color: "#94A3B8" }} />
+            </InputAdornment>
+          ),
+        }}
       />
 
-      <Button variant="outlined">Clear</Button>
-    </Stack>
+      <Chip
+        label="Account No"
+        size="small"
+        sx={{
+          position: "absolute",
+          right: 10,
+          top: "50%",
+          transform: "translateY(-50%)",
+          bgcolor: "#E0E7FF",
+          color: "#1D4ED8",
+          fontWeight: 600,
+        }}
+      />
+    </Box>
+
+    {/* CLEAR BUTTON */}
+    <Button
+      variant="contained"
+      sx={{
+        bgcolor: "#E5E7EB",
+        color: "#334155",
+        boxShadow: "none",
+        borderRadius: 2,
+        textTransform: "none",
+        px: 3,
+        "&:hover": { bgcolor: "#CBD5F5" },
+      }}
+    >
+      Clear
+    </Button>
   </Stack>
 </Card>
 
@@ -117,9 +326,91 @@ const CustomerManagement = () => {
 			
       <Card sx={{ borderRadius: 4 }}>
         <TableContainer>
+         
+  <Box px={3} py={2}>
+
+    <Stack direction="row" justifyContent="space-between" alignItems="center">
+      
+      {/* LEFT TEXT */}
+      <Box>
+        <Typography fontWeight={700}>All Customers</Typography>
+        <Typography fontSize={13} color="#64748B">
+          Showing all customers
+        </Typography>
+      </Box>
+
+      {/* FILTERS */}
+      <Stack direction="row" spacing={2}>
+
+  {/* STATUS */}
+  <FormControl size="small">
+    <Select
+      value={filters.account_status || "all"}
+      sx={{ bgcolor: "#F8FAFC", borderRadius: 2, fontSize: 13, height: 36, "& fieldset": { borderColor: "#E2E8F0", }, }}
+      onChange={(e) => handleFilterChange("account_status", e.target.value)}
+    >
+      <SelectItem value="all">All Status</SelectItem>
+      <SelectItem value="true">Active</SelectItem>
+      <SelectItem value="false">Inactive</SelectItem>
+    </Select>
+  </FormControl>
+
+  {/* METERING */}
+  <FormControl size="small">
+    <Select
+      value={filters.metering_type_id || "all"}
+      sx={{ bgcolor: "#F8FAFC", borderRadius: 2, fontSize: 13, height: 36, "& fieldset": { borderColor: "#E2E8F0", }, }}
+      onChange={(e) => handleFilterChange("metering_type_id", e.target.value)}
+    >
+      <SelectItem value="all">All Metering</SelectItem>
+      {meteringTypes.map((m) => (
+        <SelectItem key={m.id} value={m.id}>
+          {m.name}
+        </SelectItem>
+      ))}
+    </Select>
+  </FormControl>
+
+  {/* CLASS */}
+  <FormControl size="small">
+    <Select
+      value={filters.class_id || "all"}
+      sx={{ bgcolor: "#F8FAFC", borderRadius: 2, fontSize: 13, height: 36, "& fieldset": { borderColor: "#E2E8F0", }, }}
+      onChange={(e) => handleFilterChange("class_id", e.target.value)}
+    >
+      <SelectItem value="all">All Classes</SelectItem>
+      {classes.map((c) => (
+        <SelectItem key={c.id} value={c.id}>
+          {c.name}
+        </SelectItem>
+      ))}
+    </Select>
+  </FormControl>
+
+  {/* CATEGORY */}
+  <FormControl size="small">
+    <Select
+      value={filters.category_id || "all"}
+      sx={{ bgcolor: "#F8FAFC", borderRadius: 2, fontSize: 13, height: 36, "& fieldset": { borderColor: "#E2E8F0", }, }}
+      onChange={(e) => handleFilterChange("category_id", e.target.value)}
+    >
+      <SelectItem value="all">All Categories</SelectItem>
+      {categories.map((c) => (
+        <SelectItem key={c.id} value={c.id}>
+          {c.name}
+        </SelectItem>
+      ))}
+    </Select>
+  </FormControl>
+
+</Stack>
+
+    </Stack>
+  </Box>
+        
           <Table>
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ "& td": { py: 2 } }}>
                 {[
                   "Customer",
                   "Account No",
@@ -131,7 +422,7 @@ const CustomerManagement = () => {
                   "Debt Balance",
                   "",
                 ].map((h) => (
-                  <TableCell key={h} sx={{ fontWeight: 700, color: "#94A3B8" }}>
+                  <TableCell key={h} sx={{ color: "#94A3B8", fontWeight: 600, fontSize: 12 }}>
                     {h}
                   </TableCell>
                 ))}
@@ -139,14 +430,14 @@ const CustomerManagement = () => {
             </TableHead>
 
             <TableBody>
-              {filtered.map((c) => (
+              {customers.map((c) => (
                 <TableRow
                   key={c.id}
                   hover
                   sx={{ cursor: "pointer" }}
                   onClick={() => handleRowClick(c)}
                 >
-                  <TableCell>
+                  <TableCell sx={{ color: "#94A3B8", fontWeight: 600, fontSize: 12 }}>
                     <Stack direction="row" spacing={2} alignItems="center">
                       <Avatar sx={{ bgcolor: "#E2E8F0", color: "#1E293B" }}>
                         {c.name?.slice(0, 2).toUpperCase()}
@@ -225,6 +516,27 @@ const CustomerManagement = () => {
               ))}
             </TableBody>
           </Table>
+          <Stack direction="row" justifyContent="space-between" p={2}>
+  <Typography fontSize={13}>
+    Showing {customers.length} of {count}
+  </Typography>
+
+  <Stack direction="row" spacing={1}>
+    <Button
+      disabled={page === 1}
+      onClick={() => setPage((p) => p - 1)}
+    >
+      Prev
+    </Button>
+
+    <Button
+      disabled={customers.length === 0}
+      onClick={() => setPage((p) => p + 1)}
+    >
+      Next
+    </Button>
+  </Stack>
+</Stack>
         </TableContainer>
       </Card>
 
@@ -294,6 +606,215 @@ const CustomerManagement = () => {
             </Stack>
           </Box>
         </Card>
+      )}
+
+
+        {openModal && (
+        <Box
+          sx={{
+            position: "fixed",
+            inset: 0,
+            backdropFilter: "blur(10px)",
+            bgcolor: "rgba(0,0,0,0.25)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1300,
+          }}
+        >
+          <Card
+            sx={{
+              width: 650,
+              borderRadius: 4,
+              overflow: "hidden",
+            }}
+          >
+            {/* HEADER */}
+            <Box
+              sx={{
+                bgcolor: "#1e3a8a",
+                color: "#fff",
+                px: 3,
+                py: 2.5,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Box>
+                <Typography fontWeight={700} fontSize={18}>
+                  {formMode === "create" ? "Onboard New Vendor" : "Edit Customer"}
+                </Typography>
+               
+                {/* <Typography fontSize={13} opacity={0.8}>
+                  Fill in the vendor's details to get them started
+                </Typography> */}
+              </Box>
+      
+              <IconButton
+                onClick={() => setOpenModal(false)}
+                sx={{ color: "#fff" }}
+              >
+                ✕
+              </IconButton>
+            </Box>
+      
+            {/* FORM */}
+            <Box px={3} py={3}>
+              <Grid container spacing={2}>
+  <Grid item xs={6}>
+    <TextField
+      fullWidth
+      label="Customer Name"
+      size="small"
+      value={customerForm.name || ""}
+      onChange={(e) =>
+        setCustomerForm({ ...customerForm, name: e.target.value })
+      }
+    />
+  </Grid>
+
+  <Grid item xs={6}>
+    <TextField
+      fullWidth
+      label="Email"
+      size="small"
+      value={customerForm.email || ""}
+      onChange={(e) =>
+        setCustomerForm({ ...customerForm, email: e.target.value })
+      }
+    />
+  </Grid>
+
+  <Grid item xs={6}>
+    <TextField
+      fullWidth
+      label="Phone"
+      size="small"
+      value={customerForm.phone_number || ""}
+      onChange={(e) =>
+        setCustomerForm({ ...customerForm, phone_number: e.target.value })
+      }
+    />
+  </Grid>
+
+  {/* CATEGORY */}
+  <Grid item xs={6}>
+    <FormControl fullWidth size="small">
+      <Select
+        value={customerForm.customer_category || ""}
+        displayEmpty
+        onChange={(e) =>
+          setCustomerForm({
+            ...customerForm,
+            customer_category: Number(e.target.value),
+          })
+        }
+      >
+        <MenuItem value="">Select Category</MenuItem>
+        {categories.map((cat) => (
+          <MenuItem key={cat.id} value={cat.id}>
+            {cat.name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  </Grid>
+
+  {/* CLASS */}
+  <Grid item xs={6}>
+    <FormControl fullWidth size="small">
+      <Select
+        value={customerForm.customer_class || ""}
+        displayEmpty
+        onChange={(e) =>
+          setCustomerForm({
+            ...customerForm,
+            customer_class: Number(e.target.value),
+          })
+        }
+      >
+        <MenuItem value="">Select Class</MenuItem>
+        {classes.map((cls) => (
+          <MenuItem key={cls.id} value={cls.id}>
+            {cls.name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  </Grid>
+
+  {/* METERING */}
+  <Grid item xs={6}>
+    <FormControl fullWidth size="small">
+      <Select
+        value={customerForm.metering_type || ""}
+        displayEmpty
+        onChange={(e) =>
+          setCustomerForm({
+            ...customerForm,
+            metering_type: Number(e.target.value),
+          })
+        }
+      >
+        <MenuItem value="">Select Metering Type</MenuItem>
+        {meteringTypes.map((m) => (
+          <MenuItem key={m.id} value={m.id}>
+            {m.name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  </Grid>
+
+  <Grid item xs={12}>
+    <TextField
+      fullWidth
+      label="Address"
+      multiline
+      rows={2}
+      size="small"
+      value={customerForm.address || ""}
+      onChange={(e) =>
+        setCustomerForm({ ...customerForm, address: e.target.value })
+      }
+    />
+  </Grid>
+</Grid>
+            </Box>
+      
+            {/* FOOTER */}
+            <Box
+              px={3}
+              py={2}
+              display="flex"
+              justifyContent="flex-end"
+              gap={2}
+              borderTop="1px solid #eee"
+            >
+              <Button
+                variant="outlined"
+                onClick={() => setOpenModal(false)}
+                sx={{ textTransform: "none", borderRadius: 2 }}
+              >
+                Cancel
+              </Button>
+      
+              <Button
+                variant="contained"
+                onClick={handleSaveVendor}
+                sx={{
+                  bgcolor: "#1e3a8a",
+                  textTransform: "none",
+                  borderRadius: 2,
+                  px: 3,
+                }}
+              >
+                Onboard Vendor
+              </Button>
+            </Box>
+          </Card>
+        </Box>
       )}
     </Box>
   );

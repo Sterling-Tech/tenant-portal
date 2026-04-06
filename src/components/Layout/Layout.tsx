@@ -281,10 +281,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <ListItemIcon>
                                 <History fontSize="small" />
                             </ListItemIcon>
-                            <ListItemText primary="Transactions" />
+                            <ListItemText primary="Wallet" />
                         </ListItemButton>
                         {/* Wallets */}
-                        <ListItemButton
+                        {/* <ListItemButton
                             selected={location.pathname === '/vendors/wallets'}
                             onClick={() => handleNavigation('/vendors/wallets')}
                             sx={{
@@ -305,7 +305,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 <AccountBalanceWallet fontSize="small" />
                             </ListItemIcon>
                             <ListItemText primary="Wallets" />
-                        </ListItemButton>
+                        </ListItemButton> */}
                     </List>
                 </Collapse>
                  {/* Customer Management Section - Collapsible */}

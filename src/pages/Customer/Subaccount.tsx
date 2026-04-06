@@ -1,978 +1,331 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState } from "react";
 import {
-		Box,
-		Button,
-		Card,
-		CardContent,
-		Chip,
-		CircularProgress,
-		Dialog,
-		DialogTitle,
-		DialogContent,
-		DialogActions,
-		FormControl,
-		Grid,
-		IconButton,
-		InputAdornment,
-		InputLabel,
-		MenuItem,
-		Paper,
-		Select,
-		Stack,
-		Tab,
-		Tabs,
-		Table,
-		TableBody,
-		TableCell,
-		TableContainer,
-		TableHead,
-		TableRow,
-		TextField,
-		Typography,
-		Alert,
-		Switch,
-		FormControlLabel,
-		Divider,
-		List,
-		ListItem,
-		ListItemText,
-		ListItemSecondaryAction,
-		Tooltip,
-		Autocomplete,
-		Snackbar,
-} from '@mui/material';
-import {
-		Add,
-		Edit,
-		Delete,
-		Search,
-		Refresh,
-		CheckCircle,
-		Cancel,
-		Key,
-		People,
-		Settings,
-		Visibility,
-		VisibilityOff,
-		ContentCopy,
-		VerifiedUser,
-		Domain,
-} from '@mui/icons-material';
-import {
-		fetchCustomers,
-		fetchDebtHistory,
-		fetchDebt,
-		fetchCustomer,
-		fetchVendor,
-		createVendor,
-		createCustomer,
-		updateVendor,
-		deleteVendor,
-		verifyVendor,
-		Customercategory,
-		CustomerClass,
-		MeteringTypeS,
-		fetchVendorApiKeys,
-		createVendorApiKey,
-		fetchVendorAdmins,
-		createVendorAdmin,
-		fetchVendorPermissions,
-		updateVendorPermissions,
-		type Vendor,
-		type Customer,
-		type VendorForm,
-		type CustomerForm,
-		type VendorAdminProfile,
-		type VendorPermissions,
-		Category,
-		Class,
-		type MeteringType,
-} from '../../services/vendorService';
-import { del } from '../../services/api';
-import { Tenant } from '../../services/tenantService';
+  Box, Grid, Card, Typography, TextField, Button,
+  InputAdornment, Paper, Stack, Chip, Divider,
+  LinearProgress, Avatar
+} from "@mui/material";
+import { Search } from "@mui/icons-material";
 
-interface TabPanelProps {
-		children?: React.ReactNode;
-		index: number;
-		value: number;
+const fmt = (n: number) =>
+  "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2 });
+
+/* ---------------- MOCK DATA ---------------- */
+
+const customers = [
+  {
+    id: "1",
+    name: "Chidi Nwosu",
+    account_number: "04201234567",
+    meter_number: "5416234590",
+    phone: "+2347031234567",
+    city: "Port Harcourt",
+    email: "chidi.nwosu@gmail.com",
+    category: "Standard",
+    debts: [
+      {
+        id: "d1",
+        type: "Commercial Arrears",
+        amount: 42000,
+        progress: 6,
+        status: "active"
+      }
+    ]
+  }
+];
+
+/* ---------------- COMPONENT ---------------- */
+
+export default function DebtManager() {
+  const [meter, setMeter] = useState("");
+  const [account, setAccount] = useState("");
+  const [customer, setCustomer] = useState<any>(null);
+
+  const detailsRef = useRef<any>(null);
+
+  /* ---------------- SEARCH ---------------- */
+
+  const handleSearch = () => {
+    const found = customers.find(
+      (c) =>
+        (meter && c.meter_number.includes(meter)) ||
+        (account && c.account_number.includes(account))
+    );
+
+    setCustomer(found || null);
+
+    if (found) {
+      setTimeout(() => {
+        detailsRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 200);
+    }
+  };
+
+  const quickFill = (val: string, type: "meter" | "account") => {
+    if (type === "meter") {
+      setMeter(val);
+      setAccount("");
+    } else {
+      setAccount(val);
+      setMeter("");
+    }
+    setTimeout(handleSearch, 200);
+  };
+
+  /* ---------------- UI ---------------- */
+
+  return (
+    <Box sx={{ p: 3, background: "#f4f6fb", minHeight: "100vh" }}>
+
+      {/* HEADER */}
+      <Stack direction="row" justifyContent="space-between" mb={3}>
+        <Box>
+          <Typography sx={{ fontSize: 28, fontWeight: 800 }}>
+            Customer Debt Manager
+          </Typography>
+          <Typography fontSize={13} color="#6b7a99">
+            Search for a customer by meter number or account number
+          </Typography>
+        </Box>
+
+        <Button variant="outlined" sx={{ borderRadius: 3 }}>
+          Refresh
+        </Button>
+      </Stack>
+
+      {/* KPI */}
+      <Grid container spacing={2} mb={3}>
+        {[
+          { label: "TOTAL CUSTOMERS WITH DEBT", value: "312,450", color: "#ef4444" },
+          { label: "TOTAL OUTSTANDING DEBT", value: "₦4.8B", color: "#f59e0b" },
+          { label: "RECOVERED THIS MONTH", value: "₦88.4M", color: "#10b981" },
+          { label: "DEBTS CREATED", value: "1,247", color: "#8b5cf6" }
+        ].map((k, i) => (
+          <Grid item xs={12} md={3} key={i}>
+            <Card sx={{ borderRadius: 4, border: "1px solid #e5e9f2" }}>
+              <Box sx={{ height: 5, background: k.color }} />
+              <Box p={2}>
+                <Typography fontSize={10} color="#6b7a99">
+                  {k.label}
+                </Typography>
+                <Typography fontSize={22} fontWeight={800}>
+                  {k.value}
+                </Typography>
+              </Box>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* SEARCH */}
+      <Card sx={{ p: 3, borderRadius: 4, mb: 3 }}>
+        <Typography fontSize={12} color="#6b7a99">
+          STEP 1 — FIND CUSTOMER
+        </Typography>
+
+        <Typography fontWeight={700} mb={2}>
+          Search by Meter Number or Account Number
+        </Typography>
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={5}>
+            <TextField
+              fullWidth
+              placeholder="e.g. 54160893710"
+              value={meter}
+              onChange={(e) => {
+                setMeter(e.target.value);
+                setAccount("");
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                )
+              }}
+              sx={{ background: "#f8f9fc", borderRadius: 3 }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={5}>
+            <TextField
+              fullWidth
+              placeholder="e.g. 04290193847"
+              value={account}
+              onChange={(e) => {
+                setAccount(e.target.value);
+                setMeter("");
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                )
+              }}
+              sx={{ background: "#f8f9fc", borderRadius: 3 }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={2}>
+            <Button
+              fullWidth
+              onClick={handleSearch}
+              sx={{
+                height: "100%",
+                borderRadius: 3,
+                background: "linear-gradient(135deg,#0a1628,#1e4fd8)",
+                color: "#fff"
+              }}
+            >
+              Find Customer
+            </Button>
+          </Grid>
+        </Grid>
+
+        {/* QUICK */}
+        <Stack direction="row" spacing={1} mt={2}>
+          {["54160893710", "04201234567"].map((v) => (
+            <Chip
+              key={v}
+              label={v}
+              onClick={() => quickFill(v, v.length > 10 ? "meter" : "account")}
+            />
+          ))}
+        </Stack>
+      </Card>
+
+      {/* EMPTY STATE */}
+      {!customer && (
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 4 }}>
+          <Typography fontSize={18} fontWeight={600}>
+            Search for a customer to begin
+          </Typography>
+          <Typography fontSize={13} color="#6b7a99">
+            Enter a meter number or account number above
+          </Typography>
+        </Paper>
+      )}
+
+      {/* RESULT */}
+      {customer && (
+        <Grid container spacing={3} ref={detailsRef}>
+
+          {/* LEFT */}
+          <Grid item xs={12} md={7}>
+            <Card sx={{ borderRadius: 4 }}>
+
+              {/* HEADER */}
+              <Box sx={{
+                p: 3,
+                color: "#fff",
+                background: "linear-gradient(135deg,#0a1628,#1e4fd8)"
+              }}>
+                <Stack direction="row" spacing={2}>
+                  <Avatar sx={{ bgcolor: "#1e4fd8" }}>CN</Avatar>
+
+                  <Box>
+                    <Typography fontWeight={800}>
+                      {customer.name}
+                    </Typography>
+                    <Typography fontSize={12}>
+                      Acct: {customer.account_number}
+                    </Typography>
+                    <Typography fontSize={12}>
+                      Meter: {customer.meter_number}
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Stack direction="row" spacing={1} mt={2}>
+                  <Chip label="active" color="success" size="small" />
+                  <Chip label="postpaid" size="small" />
+                  <Chip label="commercial" size="small" />
+                </Stack>
+              </Box>
+
+              {/* DETAILS */}
+              <Box p={3}>
+                <Typography fontSize={13}>Phone: {customer.phone}</Typography>
+                <Typography fontSize={13}>City: {customer.city}</Typography>
+                <Typography fontSize={13}>Email: {customer.email}</Typography>
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* ACTIVE DEBT */}
+                {customer.debts.map((d: any) => (
+                  <Card
+                    key={d.id}
+                    sx={{
+                      p: 2,
+                      borderRadius: 3,
+                      border: "1px solid #fee2e2",
+                      background: "#fff5f5"
+                    }}
+                  >
+                    <Stack spacing={1}>
+                      <Typography fontSize={24} fontWeight={800} color="#dc2626">
+                        {fmt(d.amount)}
+                      </Typography>
+
+                      <LinearProgress
+                        variant="determinate"
+                        value={d.progress}
+                      />
+
+                      <Typography fontSize={12}>
+                        {d.progress}% repaid
+                      </Typography>
+                    </Stack>
+                  </Card>
+                ))}
+              </Box>
+            </Card>
+          </Grid>
+
+          {/* RIGHT */}
+          <Grid item xs={12} md={5}>
+            <Card sx={{ p: 3, borderRadius: 4 }}>
+              <Typography fontWeight={700}>
+                Create New Debt Record
+              </Typography>
+
+              <TextField
+                fullWidth
+                label="Debt Amount"
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                fullWidth
+                label="Deduction Rate (%)"
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                fullWidth
+                label="Description"
+                multiline
+                rows={3}
+                sx={{ mt: 2 }}
+              />
+
+              <Button
+                fullWidth
+                sx={{
+                  mt: 3,
+                  background: "#ef4444",
+                  color: "#fff",
+                  borderRadius: 3
+                }}
+              >
+                Create Debt Record
+              </Button>
+            </Card>
+          </Grid>
+
+        </Grid>
+      )}
+    </Box>
+  );
 }
-
-function TabPanel(props: TabPanelProps) {
-		const { children, value, index, ...other } = props;
-		return (
-				<div role="tabpanel" hidden={value !== index} {...other}>
-						{value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-				</div>
-		);
-}
-
-const Subaccount: React.FC = () => {
-		const [tabValue, setTabValue] = useState(0);
-		const [customers, setCustomers] = useState<Customer[]>([]);
-		const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-		const [loading, setLoading] = useState(false);
-		const [error, setError] = useState<string | null>(null);
-		const [searchTerm, setSearchTerm] = useState('');
-		const [filterActive, setFilterActive] = useState<boolean | null>(null);
-		const [filterVerified, setFilterVerified] = useState<boolean | null>(null);
-		// Dialog states
-		const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
-		const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-		const [customerForm, setCustomerForm] = useState<Partial<CustomerForm>>({});
-		const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-		// Detail view states
-		const [categories, setCategories] = useState<Category[]>([])
-		const [classes, setClasses] = useState<Class[]>([])
-		const [meterTypes, setMeterTypes] = useState<MeteringType[]>([])
-
-		const [vendorAdmins, setVendorAdmins] = useState<VendorAdminProfile[]>([]);
-		const [vendorPermissions, setVendorPermissions] = useState<VendorPermissions | null>(null);
-		const [detailLoading, setDetailLoading] = useState(false);
-
-		// API Key management
-		const [saving, setSaving] = useState(false);
-
-		const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string;} | null>(null);
-
-		const [debtTab, setDebtTab] = useState<'debt' | 'history'>('debt');
-		const [customerId, setCustomerId] = useState<string | null>(null);
-
-		// data
-		const [debts, setDebts] = useState<any[]>([]);
-		const [debtHistory, setDebtHistory] = useState<any[]>([]);
-
-		// pagination
-		const [page, setPage] = useState(1);
-		const rowsPerPage = 5;
-
-		// date filter (history)
-		const [startDate, setStartDate] = useState('');
-		const [endDate, setEndDate] = useState('');
-
-		const loadDebts = async (id?: string) => {
-			try {
-				const data = await fetchDebt(id);
-
-				console.log('fetchDebt ', data);
-
-				// ✅ ensure it's always an array
-				const normalized = Array.isArray(data)
-					? data
-					: data || [];
-
-				setDebts(normalized);
-			} catch (err) {
-				console.error(err);
-				setDebts([]); // fallback
-			}
-		};
-
-		const loadDebtHistory = async () => {
-			try {
-				const res = await fetchDebtHistory();
-
-				console.log('fetchDebtHistory ', res);
-
-				const normalized = Array.isArray(res)
-					? res
-					: res || [];
-
-				setDebtHistory(normalized);
-			} catch (err) {
-				console.error(err);
-				setDebtHistory([]); // fallback
-			}
-		};
-		useEffect(() => {
-			if (customerId) {
-				loadDebts(customerId);
-			}
-		}, [customerId]);
-		// useEffect(() => {
-		// 	if (debtTab === 'debt') {
-		// 		loadDebts();
-		// 	} else {
-		// 		loadDebtHistory();
-		// 	}
-		// }, [debtTab]);
-
-		const paginatedDebts = useMemo(() => {
-			if (!Array.isArray(debts)) return [];
-
-			const start = (page - 1) * rowsPerPage;
-			return debts.slice(start, start + rowsPerPage);
-		}, [debts, page]);
-
-		const filteredHistory = useMemo(() => {
-			if (!Array.isArray(debtHistory)) return [];
-
-			return debtHistory.filter((item) => {
-				if (!startDate || !endDate) return true;
-				const date = new Date(item.timestamp);
-				return date >= new Date(startDate) && date <= new Date(endDate);
-			});
-		}, [debtHistory, startDate, endDate]);
-
-		const paginatedHistory = useMemo(() => {
-			if (!Array.isArray(filteredHistory)) return [];
-
-			const start = (page - 1) * rowsPerPage;
-			return filteredHistory.slice(start, start + rowsPerPage);
-		}, [filteredHistory, page]);
-
-		///Load customers
-		const loadcustomer = async () => {
-				// if (!selectedTenantId) return;
-
-				setLoading(true);
-				setError(null);
-
-				try {
-
-						const data = await fetchCustomers()
-						console.error('TenantSwitcher ', data);
-
-						setCustomers(data.results);
-				} catch (err: any) {
-						setError(err?.message || "Failed to load customers");
-				} finally {
-						setLoading(false);
-				}
-		};
-		// const loadCustomerMeta = async () => {
-		// 	try {
-		// 		const [categoryData, classData, meterTypeData] = await Promise.all([
-		// 			Customercategory(),
-		// 			CustomerClass(),
-		// 			MeteringTypeS(),
-		// 		]);
-
-		// 		setCategories(Array.isArray(categoryData) ? categoryData : []);
-		// 		setClasses(Array.isArray(classData) ? classData : []);
-		// 		setMeterTypes(Array.isArray(meterTypeData) ? meterTypeData : []);
-
-		// 	} catch (err: any) {
-		// 		setError(err?.message || "Failed to load customer metadata");
-		// 	}
-		// };
-		useEffect(() => {
-				// if (!selectedTenantId) return;
-				loadcustomer();
-				// loadCustomerMeta();
-		}, []);
-
-		// Load vendor details
-		
-		const loadVendorDetails = async (customerId: string) => {
-				setDetailLoading(true);
-				try {
-						const customer = await fetchCustomer({ customer_id: customerId });
-						setSelectedCustomer(customer);
-					//	setVendorApiKeys(apiKeys);
-						//setVendorAdmins(admins);
-						//setVendorPermissions(permissions);
-				} catch (err: any) {
-						setError(err?.message || 'Failed to load vendor details');
-				} finally {
-						setDetailLoading(false);
-				}
-		};
-
-		const handleCreateClick = () => {
-				setFormMode('create');
-				setCustomerForm({
-								name: '',
-								phone_number: '',
-								customer_category: undefined,
-								customer_class: undefined,
-								metering_type: undefined,
-							});
-				setVendorDialogOpen(true);
-		};
-
-		const handleEditClick = (customer: Customer) => {
-				setFormMode('edit');
-				setCustomerForm({
-					name: customer.name,
-					phone_number: customer.phone_number || '',
-					customer_category: customer.customer_category?.id,
-					customer_class: customer.customer_class?.id,
-					metering_type: customer.metering_type?.id,
-				});
-				setSelectedCustomer(customer);
-				setVendorDialogOpen(true);
-		};
-
-		const handleSaveVendor = async () => {
-				if (
-							!customerForm.name ||
-							!customerForm.email ||
-							!customerForm.phone_number ||
-							!customerForm.customer_category ||
-							!customerForm.customer_class ||
-							!customerForm.metering_type
-						) {
-						setNotification({
-								type: "error",
-								message: "Business name, email and hierarchy are required",
-						});
-						return;
-				}
-
-				setSaving(true);
-
-				try {
-						if (formMode === "create") {
-								await createCustomer(customerForm as CustomerForm);
-
-								setNotification({
-										type: "success",
-										message: "Vendor created successfully",
-								});
-
-						} else if (selectedCustomer) {
-								await updateVendor(String(selectedCustomer.id), customerForm);
-
-								setNotification({
-										type: "success",
-										message: "Vendor updated successfully",
-								});
-						}
-
-						setVendorDialogOpen(false);
-						// loadVendors();
-
-						if (selectedCustomer) {
-								loadVendorDetails(String(selectedCustomer.id));
-						}
-
-				} catch (err: any) {
-						setNotification({
-								type: "error",
-								message: err?.message || "Failed to save vendor",
-						});
-				} finally {
-						setSaving(false);
-				}
-		};
-	
-		const filteredcustomers = useMemo(() => {
-				if (!customers || !Array.isArray(customers)) return [];
-
-				return customers.filter((v) => {
-						const term = searchTerm.toLowerCase();
-
-						return (
-							v.name?.toLowerCase().includes(term) ||
-							v.phone_number?.includes(term) ||
-							v.account_number?.includes(term) ||
-							v.meter_number?.includes(term)
-						);
-				});
-		}, [customers, searchTerm]);
-
-
-		return (
-				<Box p={3}>
-						<Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-								<Typography variant="h4">Subaccount Management</Typography>
-								<Stack direction="row" spacing={2}>
-											<Button
-												variant={debtTab === 'debt' ? 'outlined' : 'contained'}
-												onClick={() => setDebtTab('debt')}
-											>
-												Customer debt
-											</Button>
-
-											<Button
-												variant={debtTab === 'history' ? 'outlined' : 'contained'}
-												onClick={() => setDebtTab('history')}
-											>
-												Customer debt history
-										</Button>
-										<Button
-												variant="outlined"
-												startIcon={<Refresh />}
-												// onClick={loadVendors}
-												disabled={loading}
-										>
-												Refresh
-										</Button>
-								</Stack>
-						</Stack>
-
-						{error && (
-								<Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-										{error}
-								</Alert>
-						)}
-						<Grid container spacing={3}>
-								{/* Customer List */}
-									{/* Left Panel: Tenant & Organization Selection */}
-																<Grid item xs={12} md={4}>
-																		<Stack spacing={2}>
-																				{/* Tenant Selection */}
-																				<Card>
-																						<CardContent>
-																								<Stack spacing={2}>
-																										<Typography variant="h6">Select Customer</Typography>
-																										<Autocomplete
-																												options={filteredcustomers || []}
-																												getOptionLabel={(option) => option.name || ''} // ✅ FIXED
-																												value={
-																													customerId
-																														? filteredcustomers.find((c) => c.id === customerId) || null
-																														: null
-																												}
-																												onChange={(_, newValue) => {
-																													if (newValue) {
-																														setCustomerId(newValue.id);           // ✅ store id
-																														setSelectedCustomer(newValue);        // ✅ optional (for UI)
-
-																														loadDebts(newValue.id);               // ✅ fetch debt for selected
-																													} else {
-																														setCustomerId(null);
-																														setSelectedCustomer(null);
-																														setDebts([]);
-																													}
-																												}}
-																												renderInput={(params) => (
-																													<TextField
-																														{...params}
-																														placeholder="Search customers..."
-																														InputProps={{
-																															...params.InputProps,
-																															startAdornment: (
-																																<>
-																																	<InputAdornment position="start">
-																																		<Domain />
-																																	</InputAdornment>
-																																	{params.InputProps.startAdornment}
-																																</>
-																															),
-																														}}
-																													/>
-																												)}
-																												loading={loading}
-																											/>
-																								</Stack>
-																						</CardContent>
-																				</Card>
-
-																					{/* Vendor Details */}
-								{selectedCustomer && (
-												<Card>
-														<CardContent>
-																<Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-																		<Typography variant="h6">{selectedCustomer?.name}</Typography>
-																		<Stack direction="row" spacing={1}>
-																				<IconButton size="small" onClick={() => handleEditClick(selectedCustomer)}>
-																						<Edit />
-																				</IconButton>
-																		</Stack>
-																</Stack>
-
-																<Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
-																		<Tab label="Details" />
-																		<Tab label="API Keys" />
-																</Tabs>
-
-																{detailLoading ? (
-																		<Box display="flex" justifyContent="center" p={4}>
-																				<CircularProgress />
-																		</Box>
-																) : (
-																		<>
-																				<TabPanel value={tabValue} index={0}>
-																						<Grid container spacing={2}>
-																								{/* <Grid item xs={12} sm={6}>
-																										<Typography variant="caption" color="text.secondary">Email</Typography>
-																										<Typography>{selectedCustomer.email}</Typography>
-																								</Grid> */}
-																								<Grid item xs={12} sm={6}>
-																										<Typography variant="caption" color="text.secondary">Phone</Typography>
-																										<Typography>{selectedCustomer?.phone_number || 'N/A'}</Typography>
-																								</Grid>
-																								<Grid item xs={12} sm={6}>
-																									<Typography variant="caption">Meter Number</Typography>
-																									<Typography>{selectedCustomer?.meter_number}</Typography>
-																								</Grid>
-
-																								<Grid item xs={12} sm={6}>
-																									<Typography variant="caption">Customer Category</Typography>
-																									<Typography>{selectedCustomer?.customer_category?.name}</Typography>
-																								</Grid>
-
-																								<Grid item xs={12} sm={6}>
-																									<Typography variant="caption">Customer Class</Typography>
-																									<Typography>{selectedCustomer?.customer_class?.name}</Typography>
-																								</Grid>
-
-																								<Grid item xs={12} sm={6}>
-																									<Typography variant="caption">Metering Type</Typography>
-																									<Typography>{selectedCustomer?.metering_type?.name}</Typography>
-																								</Grid>
-
-																								<Grid item xs={12} sm={6}>
-																									<Typography variant="caption">Wallet Balance</Typography>
-																									<Typography>₦{selectedCustomer?.wallet?.balance}</Typography>
-																								</Grid>
-																								{/* {selectedCustomer.address && (
-																										<Grid item xs={12}>
-																												<Typography variant="caption" color="text.secondary">Address</Typography>
-																												<Typography>
-																														{[
-																																selectedCustomer.address,
-																																selectedCustomer.city,
-																																selectedCustomer.state,
-																																selectedCustomer.country,
-																																selectedCustomer.postal_code,
-																														].filter(Boolean).join(', ')}
-																												</Typography>
-																										</Grid>
-																								)} */}
-																								{/* <Grid item xs={12} sm={6}>
-																										<Typography variant="caption" color="text.secondary">Organisations</Typography>
-																										<Typography>{0}</Typography>
-																								</Grid>
-																								<Grid item xs={12} sm={6}>
-																										<Typography variant="caption" color="text.secondary">Admins</Typography>
-																										<Typography>{0}</Typography>
-																								</Grid> */}
-																						</Grid>
-																				</TabPanel>
-																				<TabPanel value={tabValue} index={2}>
-																						<Stack spacing={2}>
-																								<Stack direction="row" justifyContent="space-between" alignItems="center">
-																										<Typography variant="subtitle1">Vendor Admins</Typography>
-																										<Button
-																												size="small"
-																												variant="outlined"
-																												startIcon={<Add />}
-																												onClick={() => {
-																														// TODO: Implement add admin dialog
-																														setError('Add admin functionality coming soon');
-																												}}
-																										>
-																												Add Admin
-																										</Button>
-																								</Stack>
-																								{!vendorAdmins?.length ? (
-																										<Typography color="text.secondary">No admins assigned</Typography>
-																								) : (
-																										<List>
-																												{(vendorAdmins || []).map((admin) => (
-																														<ListItem key={admin.id}>
-																																<ListItemText
-																																		primary={admin.user_email || admin.user_name}
-																																		secondary={
-																																				<Stack spacing={0.5}>
-																																						<Typography variant="caption">
-																																								{admin.title || 'Admin'}
-																																						</Typography>
-																																						{admin.department && (
-																																								<Typography variant="caption" color="text.secondary">
-																																										{admin.department}
-																																								</Typography>
-																																						)}
-																																						<Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
-																																								{admin.can_manage_users && (
-																																										<Chip label="Manage Users" size="small" variant="outlined" />
-																																								)}
-																																								{admin.can_manage_organisations && (
-																																										<Chip label="Manage Orgs" size="small" variant="outlined" />
-																																								)}
-																																								{admin.can_view_analytics && (
-																																										<Chip label="Analytics" size="small" variant="outlined" />
-																																								)}
-																																						</Stack>
-																																				</Stack>
-																																		}
-																																/>
-																																<ListItemSecondaryAction>
-																																		<IconButton
-																																				size="small"
-																																				color="error"
-																																				onClick={async () => {
-																																						if (window.confirm('Are you sure you want to remove this admin?')) {
-																																								try {
-																																										await del(`/vendors/vendor-admins/${admin.id}/`);
-																																										loadVendorDetails(selectedCustomer.id);
-																																								} catch (err: any) {
-																																										setError(err?.message || 'Failed to remove admin');
-																																								}
-																																						}
-																																				}}
-																																		>
-																																				<Delete />
-																																		</IconButton>
-																																</ListItemSecondaryAction>
-																														</ListItem>
-																												))}
-																										</List>
-																								)}
-																						</Stack>
-																				</TabPanel>
-
-																				<TabPanel value={tabValue} index={3}>
-																						{vendorPermissions && (
-																								<Stack spacing={2}>
-																										<FormControlLabel
-																												control={
-																														<Switch
-																																checked={vendorPermissions.is_active}
-																																onChange={async (e) => {
-																																		const updated = {
-																																				...vendorPermissions,
-																																				is_active: e.target.checked,
-																																		};
-																																		try {
-																																				await updateVendorPermissions(selectedCustomer.id, updated);
-																																				setVendorPermissions(updated);
-																																		} catch (err: any) {
-																																				setError(err?.message || 'Failed to update permissions');
-																																		}
-																																}}
-																														/>
-																												}
-																												label="Active"
-																										/>
-																										<FormControlLabel
-																												control={
-																														<Switch
-																																checked={vendorPermissions.is_verified}
-																																onChange={async (e) => {
-																																		const updated = {
-																																				...vendorPermissions,
-																																				is_verified: e.target.checked,
-																																		};
-																																		try {
-																																				await updateVendorPermissions(selectedCustomer.id, updated);
-																																				setVendorPermissions(updated);
-																																		} catch (err: any) {
-																																				setError(err?.message || 'Failed to update permissions');
-																																		}
-																																}}
-																														/>
-																												}
-																												label="Verified"
-																										/>
-																										<Divider />
-																										<Typography variant="subtitle2">Metadata</Typography>
-																										<Paper variant="outlined" sx={{ p: 2 }}>
-																												<TextField
-																														fullWidth
-																														multiline
-																														rows={8}
-																														value={JSON.stringify(vendorPermissions.metadata, null, 2)}
-																														onChange={async (e) => {
-																																try {
-																																		const parsed = JSON.parse(e.target.value);
-																																		const updated = {
-																																				...vendorPermissions,
-																																				metadata: parsed,
-																																		};
-																																		await updateVendorPermissions(selectedCustomer.id, updated);
-																																		setVendorPermissions(updated);
-																																} catch (err) {
-																																		// Invalid JSON, don't update
-																																}
-																														}}
-																														helperText="Edit JSON metadata (must be valid JSON)"
-																														sx={{ fontFamily: 'monospace' }}
-																												/>
-																										</Paper>
-																										<Button
-																												variant="outlined"
-																												size="small"
-																												onClick={() => {
-																														const newMetadata = { ...vendorPermissions.metadata, updated_at: new Date().toISOString() };
-																														const updated = { ...vendorPermissions, metadata: newMetadata };
-																														updateVendorPermissions(selectedCustomer.id, updated).then(() => {
-																																setVendorPermissions(updated);
-																														}).catch((err: any) => {
-																																setError(err?.message || 'Failed to update metadata');
-																														});
-																												}}
-																										>
-																												Save Metadata
-																										</Button>
-																								</Stack>
-																						)}
-																				</TabPanel>
-																		</>
-																)}
-														</CardContent>
-												</Card>
-								)}
-																		</Stack>
-																</Grid>
-																
-								{/* <Grid item xs={12} md={selectedCustomer ? 5 : 8}> */}
-								<Grid item xs={12} md={8}>
-									{debtTab === 'debt' && (
-										<Card sx={{ mt: 2 }}>
-											<CardContent>
-												<Typography variant="h6">Customer Debt</Typography>
-
-												<TableContainer>
-													<Table>
-														<TableHead>
-															<TableRow>
-																<TableCell>Name</TableCell>
-																<TableCell>Description</TableCell>
-																<TableCell>Plan</TableCell>
-																<TableCell>Rate</TableCell>
-																<TableCell>Balance</TableCell>
-															</TableRow>
-														</TableHead>
-
-														<TableBody>
-															{paginatedDebts.map((d) => (
-																<TableRow key={d.id}>
-																	<TableCell>{d.customer.name}</TableCell>
-																	<TableCell>{d.description}</TableCell>
-																	<TableCell>{d.payment_plan.name}</TableCell>
-																	<TableCell>{d.rate}</TableCell>
-																	<TableCell>₦{d.balance}</TableCell>
-																</TableRow>
-															))}
-														</TableBody>
-													</Table>
-												</TableContainer>
-												<Stack direction="row" justifyContent="center" mt={2} spacing={2}>
-												<Button
-													disabled={page === 1}
-													onClick={() => setPage((p) => p - 1)}
-												>
-													Prev
-												</Button>
-
-												<Typography>Page {page}</Typography>
-
-												<Button
-													onClick={() => setPage((p) => p + 1)}
-												>
-													Next
-												</Button>
-											</Stack>
-											</CardContent>
-										</Card>
-									)}
-
-									{debtTab === 'history' && (
-										<Card sx={{ mt: 2 }}>
-											<CardContent>
-												<Typography variant="h6">Customer Debt History</Typography>
-
-												{/* DATE FILTER */}
-												<Stack direction="row" spacing={2} sx={{ my: 2 }}>
-													<TextField
-														type="date"
-														label="Start Date"
-														InputLabelProps={{ shrink: true }}
-														value={startDate}
-														onChange={(e) => setStartDate(e.target.value)}
-													/>
-
-													<TextField
-														type="date"
-														label="End Date"
-														InputLabelProps={{ shrink: true }}
-														value={endDate}
-														onChange={(e) => setEndDate(e.target.value)}
-													/>
-												</Stack>
-
-												<TableContainer>
-													<Table>
-														<TableHead>
-															<TableRow>
-																<TableCell>Transaction Ref</TableCell>
-																<TableCell>Amount</TableCell>
-																<TableCell>Date</TableCell>
-															</TableRow>
-														</TableHead>
-
-														<TableBody>
-															{paginatedHistory.map((h, index) => (
-																<TableRow key={index}>
-																	<TableCell>{h.transaction_ref}</TableCell>
-																	<TableCell>{h.amount_paid}</TableCell>
-																	<TableCell>
-																		{new Date(h.timestamp).toLocaleString()}
-																	</TableCell>
-																</TableRow>
-															))}
-														</TableBody>
-													</Table>
-
-													
-												</TableContainer><Stack direction="row" justifyContent="center" mt={2} spacing={2}>
-												<Button
-													disabled={page === 1}
-													onClick={() => setPage((p) => p - 1)}
-												>
-													Prev
-												</Button>
-
-												<Typography>Page {page}</Typography>
-
-												<Button
-													onClick={() => setPage((p) => p + 1)}
-												>
-													Next
-												</Button>
-											</Stack>
-											</CardContent>
-										</Card>
-									)}
-								</Grid>
-
-							
-						</Grid>
-
-						{/* Create/Edit Vendor Dialog */}
-						<Dialog open={vendorDialogOpen} onClose={() => setVendorDialogOpen(false)} maxWidth="sm" fullWidth>
-								<DialogTitle>
-									{formMode === "create" ? "Create Customer" : "Edit Customer"}
-								</DialogTitle>
-
-								<DialogContent>
-									<Stack spacing={2} sx={{ mt: 1 }}>
-
-										<TextField
-											label="Customer Name"
-											value={customerForm.name || ""}
-											onChange={(e) =>
-												setCustomerForm({ ...customerForm, name: e.target.value })
-											}
-											fullWidth
-											required
-										/>
-
-										<TextField
-											label="Email"
-											type="email"
-											value={customerForm.email || ""}
-											onChange={(e) =>
-												setCustomerForm({ ...customerForm, email: e.target.value })
-											}
-											fullWidth
-											required
-										/>
-
-										<TextField
-											label="Phone Number"
-											value={customerForm.phone_number || ""}
-											onChange={(e) =>
-												setCustomerForm({ ...customerForm, phone_number: e.target.value })
-											}
-											fullWidth
-											required
-										/>
-
-										<TextField
-											label="Address"
-											value={customerForm.address || ""}
-											onChange={(e) =>
-												setCustomerForm({ ...customerForm, address: e.target.value })
-											}
-											fullWidth
-											multiline
-											rows={2}
-										/>
-
-										{/* CUSTOMER CATEGORY */}
-
-										<FormControl fullWidth>
-											<InputLabel>Customer Category</InputLabel>
-											<Select
-												value={customerForm.customer_category || ""}
-												label="Customer Category"
-												onChange={(e) =>
-													setCustomerForm({
-														...customerForm,
-														customer_category: Number(e.target.value),
-													})
-												}
-											>
-												{(categories || []).map((cat) => (
-													<MenuItem key={cat.id} value={cat.id}>
-														{cat.name}
-													</MenuItem>
-												))}
-											</Select>
-										</FormControl>
-
-										{/* CUSTOMER CLASS */}
-
-										<FormControl fullWidth>
-											<InputLabel>Customer Class</InputLabel>
-											<Select
-												value={customerForm.customer_class || ""}
-												label="Customer Class"
-												onChange={(e) =>
-													setCustomerForm({
-														...customerForm,
-														customer_class: Number(e.target.value),
-													})
-												}
-											>
-												{(classes || []).map((cls) => (
-													<MenuItem key={cls.id} value={cls.id}>
-														{cls.name}
-													</MenuItem>
-												))}
-											</Select>
-										</FormControl>
-
-										{/* METERING TYPE */}
-
-										<FormControl fullWidth>
-											<InputLabel>Metering Type</InputLabel>
-											<Select
-												value={customerForm.metering_type || ""}
-												label="Metering Type"
-												onChange={(e) =>
-													setCustomerForm({
-														...customerForm,
-														metering_type: Number(e.target.value),
-													})
-												}
-											>
-												{(meterTypes || []).map((meter) => (
-													<MenuItem key={meter.id} value={meter.id}>
-														{meter.name}
-													</MenuItem>
-												))}
-											</Select>
-										</FormControl>
-
-									</Stack>
-								</DialogContent>
-								<DialogActions>
-										<Button onClick={() => setVendorDialogOpen(false)}>Cancel</Button>
-										<Button
-												variant="contained"
-												onClick={handleSaveVendor}
-												disabled={saving}
-												startIcon={saving ? <CircularProgress size={20} color="inherit" /> : null}>
-												{saving
-														? formMode === "create"
-																? "Creating..."
-																: "Saving..."
-														: formMode === "create"
-														? "Create"
-														: "Save"}
-										</Button>
-								</DialogActions>
-						</Dialog>
-
-		
-			
-				</Box>
-		);
-};
-
-export default Subaccount;
