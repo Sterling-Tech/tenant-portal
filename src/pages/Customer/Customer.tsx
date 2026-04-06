@@ -129,59 +129,61 @@ useEffect(() => {
 								customer_class: undefined,
 								metering_type: undefined,
 							});
+        setOpenModal(true);
 		};
 
   const handleSaveVendor = async () => {
-				if (
-							!customerForm.name ||
-							!customerForm.email ||
-							!customerForm.phone_number ||
-							!customerForm.customer_category ||
-							!customerForm.customer_class ||
-							!customerForm.metering_type
-						) {
-						setNotification({
-								type: "error",
-								message: "Business name, email and hierarchy are required",
-						});
-						return;
-				}
+  if (
+    !customerForm.name ||
+    !customerForm.email ||
+    !customerForm.phone_number ||
+    !customerForm.customer_category ||
+    !customerForm.customer_class ||
+    !customerForm.metering_type
+  ) {
+    setNotification({
+      type: "error",
+      message: "All fields are required",
+    });
+    return;
+  }
 
-				setSaving(true);
+  setSaving(true);
 
-				try {
-						if (formMode === "create") {
-								await createCustomer(customerForm as CustomerForm);
+  try {
+    const payload: CustomerForm = {
+      name: customerForm.name!,
+      email: customerForm.email!,
+      phone_number: customerForm.phone_number!,
+      address: customerForm.address || "",
+      customer_category: Number(customerForm.customer_category),
+      customer_class: Number(customerForm.customer_class),
+      metering_type: Number(customerForm.metering_type),
+    };
 
-								setNotification({
-										type: "success",
-										message: "Vendor created successfully",
-								});
+    await createCustomer(payload);
 
-						} else if (selectedCustomer) {
-								// await updateVendor(String(selectedCustomer.id), customerForm);
+    // ✅ SUCCESS FLOW
+    setNotification({
+      type: "success",
+      message: "Customer created successfully",
+    });
 
-								setNotification({
-										type: "success",
-										message: "Vendor updated successfully",
-								});
-						}
-				
-						// loadVendors();
+    setOpenModal(false);       // 🔥 CLOSE MODAL
+    setCustomerForm({});       // 🔥 RESET FORM
+    load();                    // 🔥 REFRESH TABLE
 
-						// if (selectedCustomer) {
-						// 		loadVendorDetails(String(selectedCustomer.id));
-						// }
+  } catch (err: any) {
+    console.error(err); // 🔥 SEE REAL ERROR
 
-				} catch (err: any) {
-						setNotification({
-								type: "error",
-								message: err?.message || "Failed to save vendor",
-						});
-				} finally {
-						setSaving(false);
-				}
-		};
+    setNotification({
+      type: "error",
+      message: err?.response?.data?.message || "Failed to create customer",
+    });
+  } finally {
+    setSaving(false);
+  }
+};
 const handleFilterChange = (key: string, value: string) => {
   setFilters((prev) => ({
     ...prev,
@@ -206,7 +208,7 @@ const handleFilterChange = (key: string, value: string) => {
           <Button variant="outlined" startIcon={<Refresh />}sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
             Refresh
           </Button>
-          <Button onClick={() => setOpenModal(true)} variant="contained" sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
+          <Button onClick={handleCreateClick} variant="contained" sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
             + Register Customer
           </Button>
         </Stack>
@@ -275,6 +277,8 @@ const handleFilterChange = (key: string, value: string) => {
       <TextField
         fullWidth
         placeholder="Search by account number..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
         sx={{
           bgcolor: "#E5E7EB",
           borderRadius: 3,
@@ -315,6 +319,10 @@ const handleFilterChange = (key: string, value: string) => {
         textTransform: "none",
         px: 3,
         "&:hover": { bgcolor: "#CBD5F5" },
+      }}
+      onClick={() => {
+       setSearch("");
+       load();
       }}
     >
       Clear
@@ -643,7 +651,7 @@ const handleFilterChange = (key: string, value: string) => {
             >
               <Box>
                 <Typography fontWeight={700} fontSize={18}>
-                  {formMode === "create" ? "Onboard New Vendor" : "Edit Customer"}
+                  {formMode === "create" ? "Onboard New Customer" : "Edit Customer"}
                 </Typography>
                
                 {/* <Typography fontSize={13} opacity={0.8}>
@@ -810,7 +818,7 @@ const handleFilterChange = (key: string, value: string) => {
                   px: 3,
                 }}
               >
-                Onboard Vendor
+                {saving ? "Creating..." : "Create Customer"}
               </Button>
             </Box>
           </Card>
