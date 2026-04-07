@@ -55,7 +55,8 @@ const VendorTransactions: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"analytics" | "ledger">("analytics");
-
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const today = new Date();
   const past = new Date();
   past.setDate(today.getDate() - 14);
@@ -65,7 +66,7 @@ const VendorTransactions: React.FC = () => {
   const [endDate, setEndDate] = useState(format(today));
   
   const load = async () => {
-     const res = await fetchVendors({is_active: true});
+     const res = await fetchVendors();
   
      console.log(res, "yhhh");
   
@@ -164,6 +165,22 @@ const chartData = useMemo(() => {
     if (vendorsId) loadTransactions(vendorsId);
   }, [vendorsId, startDate, endDate]);
 
+const filteredVendors = useMemo(() => {
+  return vendors.filter((v) => {
+    const nameMatch = v.business_name
+      ?.toLowerCase()
+      .includes(search.toLowerCase());
+
+    const isActive = v?.account_status === "active";
+
+    const statusMatch =
+      statusFilter === "all" ||
+      (statusFilter === "active" && isActive) ||
+      (statusFilter === "inactive" && !isActive);
+
+    return nameMatch && statusMatch;
+  });
+}, [vendors, search, statusFilter]);
 
 const handleFundWallet = async () => {
   if (!vendorsId || !amount) return;
@@ -273,6 +290,8 @@ const getColor = (name: string = "") => {
   fullWidth
   size="small"
   placeholder="Search by name or domain..."
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
   sx={{
     mt: 2,
     "& .MuiOutlinedInput-root": {
@@ -291,18 +310,20 @@ const getColor = (name: string = "") => {
   }}
 />
                <Stack direction="row" spacing={1} mt={2}>
-  {["All", "Active", "Inactive"].map((tab) => (
+  {["all", "active", "inactive"].map((tab) => (
     <Box
       key={tab}
+      onClick={() => setStatusFilter(tab as any)}
       sx={{
         px: 2,
         py: 0.5,
         borderRadius: 20,
         fontSize: 12,
         cursor: "pointer",
-        bgcolor: tab === "All" ? "#eff6ff" : "#f3f4f6",
-        color: tab === "All" ? "#2563eb" : "#6b7280",
+        bgcolor: statusFilter === tab ? "#eff6ff" : "#f3f4f6",
+        color: statusFilter === tab ? "#2563eb" : "#6b7280",
         fontWeight: 600,
+        textTransform: "capitalize",
       }}
     >
       {tab}
@@ -311,7 +332,7 @@ const getColor = (name: string = "") => {
 </Stack>
               <Stack mt={2} spacing={1.2}>
 
-  {vendors?.map((v) => {
+  {filteredVendors?.map((v) => {
     const isActive = v?.account_status === "active";
 
     return (
