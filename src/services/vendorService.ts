@@ -357,6 +357,12 @@ export const searchVendors = (keyword: string) =>
   get<Vendor[] | PaginatedVendorResponse>(
     `/vendor/search/?keyword=${keyword}`
   );
+  
+export const fundVendorWallet = (payload: {
+  vendor: string;
+  amount: number;
+}) =>
+  put(`/vendor/wallet/load/`, payload);
 
 export const toggleVendorStatus = (vendorId: string) =>
   put(`/vendor/activate-deactivate/`, {

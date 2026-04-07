@@ -15,6 +15,12 @@ import {
   TableCell,
   TableBody,
   InputAdornment,
+  Avatar,
+	Dialog,
+		DialogTitle,
+		DialogContent,
+		DialogActions,
+  MenuItem,
 } from "@mui/material";
 import {
   Refresh,
@@ -24,7 +30,7 @@ import {
   BarChart,
 } from "@mui/icons-material";
 import { useTenants } from "../../hooks/useTenants";
-import { fetchTransactions, fetchVendors, Ledger, PaginatedLedgerResponse, Vendor } from "../../services/vendorService";
+import { fetchTransactions, fetchVendors, fundVendorWallet, Ledger, PaginatedLedgerResponse, Vendor } from "../../services/vendorService";
 import { useOrgWallets } from "../../hooks/useOrgWallets";
 import {
   BarChart as ReBarChart,
@@ -40,6 +46,9 @@ const VendorTransactions: React.FC = () => {
   const { totalBalance } = useOrgWallets(vendorsId);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [transactions, setTransactions] = useState<Ledger[]>([]);
+  const [openFund, setOpenFund] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [funding, setFunding] = useState(false);
   const [summary, setSummary] = useState({
     total_debits: 0,
     total_credits: 0,
@@ -72,23 +81,80 @@ const VendorTransactions: React.FC = () => {
     [vendorsId, vendors]
   );
 
+  const handleExport = () => {
+  if (!transactions.length) {
+    alert("No data to export");
+    return;
+  }
+
+  if (startDate > endDate) {
+    alert("Invalid date range");
+    return;
+  }
+
+  const headers = ["Reference", "Credit", "Debit", "Date"];
+
+  const rows = transactions.map((tx) => [
+    tx.transaction_ref,
+    tx.credit_amount || "0",
+    tx.debit_amount || "0",
+    new Date(tx.timestamp).toLocaleString(),
+  ]);
+
+  const csvContent =
+    [headers, ...rows].map((row) => row.join(",")).join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv" });
+  const url = window.URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `transactions_${startDate}_${endDate}.csv`;
+  link.click();
+};
+
   const loadTransactions = async (id: string) => {
-    if (!id) return;
+  if (!id) return;
 
-    setLoading(true);
-    try {
-      const res = await fetchTransactions({
-        vendor_id: id,
-        start_date: startDate,
-        end_date: endDate,
-      });
+  // ✅ prevent bad date range
+  if (startDate > endDate) {
+    alert("Start date cannot be after end date");
+    return;
+  }
 
-      setTransactions(res.results || []);
-      setSummary(res.summary || { total_debits: 0, total_credits: 0 });
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+
+  try {
+    const res = await fetchTransactions({
+      vendor_id: id,
+      start_date: startDate,
+      end_date: endDate,
+    });
+
+    setTransactions(res?.results || []);
+    setSummary(res?.summary || { total_debits: 0, total_credits: 0 });
+
+  } catch (err: any) {
+    console.error("Transaction error:", err);
+
+    alert(
+      err?.response?.data?.message ||
+      err?.message ||
+      "Failed to load transactions"
+    );
+
+    setTransactions([]); // prevent crash
+
+  } finally {
+    setLoading(false);
+  }
+};
+const chartData = useMemo(() => {
+  return transactions.map((tx) => ({
+    date: new Date(tx.timestamp).toLocaleDateString(),
+    amount: Number(tx.credit_amount || tx.debit_amount || 0),
+  }));
+}, [transactions]);
 
   useEffect(() => {
     if (selectedVendorId) setVendorId(selectedVendorId);
@@ -98,9 +164,45 @@ const VendorTransactions: React.FC = () => {
     if (vendorsId) loadTransactions(vendorsId);
   }, [vendorsId, startDate, endDate]);
 
+
+const handleFundWallet = async () => {
+  if (!vendorsId || !amount) return;
+
+  setFunding(true);
+
+  try {
+    await fundVendorWallet({
+      vendor: vendorsId,
+      amount: Number(amount),
+    });
+
+    alert("✅ Wallet funded successfully");
+
+    setOpenFund(false);
+    setAmount("");
+    loadTransactions(vendorsId); // refresh
+
+  } catch (err: any) {
+    alert(
+  err?.response?.data?.message ||
+  err?.message ||
+  "❌ Funding failed"
+);
+  } finally {
+    setFunding(false);
+  }
+};
+
  const totalCredits = summary.total_credits;
  const totalDebits = summary.total_debits;
-
+const getColor = (name: string = "") => {
+  const colors = [
+    "#2563eb", "#16a34a", "#dc2626",
+    "#7c3aed", "#ea580c", "#0891b2"
+  ];
+  const index = name.charCodeAt(0) % colors.length;
+  return colors[index];
+};
   return (
     <Box
     // /p={2}
@@ -128,9 +230,9 @@ const VendorTransactions: React.FC = () => {
           <Button size="small" variant="outlined" sx={{ height: 36, textTransform: "none", borderRadius: 2 }} startIcon={<FileDownload />}>
             Export CSV
           </Button>
-          <Button size="small" sx={{ height: 36, textTransform: "none", borderRadius: 2 }} variant="contained">
+          {/* <Button size="small" onClick={() => setOpenFund(true)} sx={{ height: 36, textTransform: "none", borderRadius: 2 }} variant="contained">
             + Fund Wallet
-          </Button>
+          </Button> */}
         </Stack>
       </Stack>
       {/* SUMMARY */}
@@ -168,57 +270,132 @@ const VendorTransactions: React.FC = () => {
               </Stack>
 
               <TextField
-                fullWidth
-                size="small"
-                placeholder="Search by name or domain..."
-                sx={{ mt: 2 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+  fullWidth
+  size="small"
+  placeholder="Search by name or domain..."
+  sx={{
+    mt: 2,
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 2,
+      fontSize: 13,
+      height: 36,
+      bgcolor: "#f9fafb",
+    },
+  }}
+  InputProps={{
+    startAdornment: (
+      <InputAdornment position="start">
+        <Search sx={{ fontSize: 16, color: "#9ca3af" }} />
+      </InputAdornment>
+    ),
+  }}
+/>
+               <Stack direction="row" spacing={1} mt={2}>
+  {["All", "Active", "Inactive"].map((tab) => (
+    <Box
+      key={tab}
+      sx={{
+        px: 2,
+        py: 0.5,
+        borderRadius: 20,
+        fontSize: 12,
+        cursor: "pointer",
+        bgcolor: tab === "All" ? "#eff6ff" : "#f3f4f6",
+        color: tab === "All" ? "#2563eb" : "#6b7280",
+        fontWeight: 600,
+      }}
+    >
+      {tab}
+    </Box>
+  ))}
+</Stack>
+              <Stack mt={2} spacing={1.2}>
 
-              <Stack mt={2} spacing={1}>
-                {vendors?.map((v) => (
-                  <Box
-                    key={v.id}
-                    onClick={() => {
-                      setVendorId(v.id);
-                      selectVendor(v.id);
-                    }}
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      cursor: "pointer",
-                      bgcolor:
-                        vendorsId === v.id ? "#eff6ff" : "transparent",
-                    }}
-                  >
-                    <Stack direction="row" justifyContent="space-between">
-                      <Typography fontSize={14} fontWeight={500}>
-                        {v.business_name}
-                      </Typography>
-                      <Typography fontSize={14} color="#10990b">
-                        ₦{Math.floor(Math.random() * 100000)}
-                      </Typography>
-                    </Stack>
-                   <Typography fontWeight={200}>{v.hierachy}</Typography>
-                    {/* <Chip
-                      label="Active"
-                      size="small"
-                      sx={{
-                        mt: 1,
-                        bgcolor: "#dcfce7",
-                        color: "#16a34a",
-                        fontSize: 11,
-                      }}
-                    /> */}
-                  </Box>
-                ))}
-              </Stack>
+  {vendors?.map((v) => {
+    const isActive = v?.account_status === "active";
+
+    return (
+      <Box
+        key={v.id}
+        onClick={() => {
+          setVendorId(v.id);
+          selectVendor(v.id);
+        }}
+        sx={{
+          p: 1,
+          borderRadius: 2,
+          cursor: "pointer",
+          transition: "0.2s",
+          border: vendorsId === v.id ? "1px solid #dbeafe" : "1px solid transparent",
+          bgcolor: vendorsId === v.id ? "#eff6ff" : "#fff",
+          "&:hover": { bgcolor: "#f9fafb" },
+        }}
+      >
+       
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          
+          {/* LEFT */}
+          <Stack direction="row" spacing={1.2} alignItems="center">
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 2,
+                bgcolor: getColor(v.business_name),
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              {v.business_name?.slice(0, 2)}
+            </Box>
+
+            <Box>
+              <Typography
+  fontSize={13}
+  fontWeight={600}
+  sx={{
+    maxWidth: 120,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  }}
+>
+  {v.business_name}
+</Typography>
+
+              <Typography fontSize={11} color="#6b7280">
+                Vendor
+              </Typography>
+            </Box>
+          </Stack>
+
+          {/* RIGHT */}
+          <Box textAlign="right">
+            <Typography fontSize={13} fontWeight={600} color="#111827">
+              ₦{Number(v.wallet?.balance || 0).toLocaleString()}
+            </Typography>
+
+            <Chip
+              label={isActive ? "Active" : "Inactive"}
+              size="small"
+              sx={{
+                mt: 0.5,
+                height: 18,
+                fontSize: 10,
+                bgcolor: isActive ? "#dcfce7" : "#e5e7eb",
+                color: isActive ? "#16a34a" : "#6b7280",
+              }}
+            />
+          </Box>
+        </Stack>
+      </Box>
+    );
+  })}
+</Stack>
             </Box>
           </Card>
         </Grid>
@@ -259,11 +436,11 @@ const VendorTransactions: React.FC = () => {
                 </Stack>
 
                 <Stack direction="row" spacing={1}>
-                  <Button size="small" variant="outlined">
+                  {/* <Button size="small" variant="outlined">
                     View Profile
-                  </Button>
-                  <Button size="small" variant="contained">
-                    + Fund
+                  </Button> */}
+                  <Button size="small" onClick={() => setOpenFund(true)} variant="contained">
+                    + Fund Wallet
                   </Button>
                 </Stack>
               </Stack>
@@ -282,9 +459,10 @@ const VendorTransactions: React.FC = () => {
                   Available balance
                 </Typography>
 
-                <Button size="small" variant="outlined" sx={{ mt: 1 }}>
+                <Button size="small" variant="outlined" sx={{ mt: 1 }} onClick={() => setOpenFund(true)}>
                   Fund
                 </Button>
+              
               </Card>
             </Card>
 
@@ -323,11 +501,19 @@ const VendorTransactions: React.FC = () => {
                       </Typography>
                     </Stack>
 
-                    <ResponsiveContainer width="100%" height={220}>
+                    {/* <ResponsiveContainer width="100%" height={220}>
                       <ReBarChart data={transactions}>
                         <XAxis dataKey="transaction_ref" hide />
                         <Tooltip />
                         <Bar dataKey="credit_amount" />
+                      </ReBarChart>
+                    </ResponsiveContainer> */}
+
+                    <ResponsiveContainer width="100%" height={220}>
+                      <ReBarChart data={chartData}>
+                        <XAxis dataKey="date" />
+                        <Tooltip />
+                        <Bar dataKey="amount" fill="#2563eb" radius={[6, 6, 0, 0]} />
                       </ReBarChart>
                     </ResponsiveContainer>
                   </Card>
@@ -337,41 +523,95 @@ const VendorTransactions: React.FC = () => {
                 {activeTab === "ledger" && (
                   <Card sx={{ mt: 2, borderRadius: 3 }}>
                     <Box p={2}>
-                      <Stack direction="row" spacing={2} mb={2}>
-                        <TextField
-                          size="small"
-                          placeholder="Search ref, description..."
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <Search fontSize="small" />
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
+                      <Stack direction="row" spacing={1.5} mb={2} alignItems="center">
+  
+  <TextField
+    size="small"
+    placeholder="Search ref, description..."
+    sx={{
+      width: 260,
+      "& .MuiOutlinedInput-root": {
+        height: 34,
+        fontSize: 12,
+        bgcolor: "#f9fafb",
+      },
+    }}
+    InputProps={{
+      startAdornment: (
+        <InputAdornment position="start">
+          <Search sx={{ fontSize: 14 }} />
+        </InputAdornment>
+      ),
+    }}
+  />
 
-                        <TextField type="date" size="small" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                        <TextField type="date" size="small" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+  <TextField
+    size="small"
+    select
+    SelectProps={{ native: true }}
+    sx={{
+      width: 120,
+      "& .MuiOutlinedInput-root": {
+        height: 34,
+        fontSize: 12,
+        bgcolor: "#f9fafb",
+      },
+    }}
+  >
+    <option>All Types</option>
+  </TextField>
 
-                        <Button variant="contained" onClick={() => vendorsId && loadTransactions(vendorsId)}>
-                          Filter
-                        </Button>
-                      </Stack>
+ <TextField
+  size="small"
+  type="date"
+  value={startDate}
+  onChange={(e) => {
+    if (e.target.value <= endDate) {
+      setStartDate(e.target.value);
+    } else {
+      alert("Start date cannot be after end date");
+    }
+  }}
+/>
+
+<TextField
+  size="small"
+  type="date"
+  value={endDate}
+  onChange={(e) => {
+    if (e.target.value >= startDate) {
+      setEndDate(e.target.value);
+    } else {
+      alert("End date cannot be before start date");
+    }
+  }}
+/>
+
+  <Button
+  startIcon={<FileDownload />}
+  variant="outlined"
+  size="small"
+  onClick={handleExport}
+>
+  Export
+</Button>
+</Stack>
 
                       {loading ? (
                         <CircularProgress />
                       ) : (
                         <Table size="small">
                           <TableHead>
-                            <TableRow sx={{ bgcolor: "#f9fafb" }}>
-                              <TableCell>REFERENCE</TableCell>
-                              <TableCell>DESCRIPTION</TableCell>
-                              <TableCell>CREDIT</TableCell>
-                              <TableCell>DEBIT</TableCell>
-                              <TableCell>STATUS</TableCell>
-                              <TableCell>DATE & TIME</TableCell>
-                            </TableRow>
-                          </TableHead>
+  <TableRow sx={{ bgcolor: "#f9fafb" }}>
+    <TableCell>REFERENCE</TableCell>
+    <TableCell>DESCRIPTION</TableCell>
+    <TableCell>CREDIT</TableCell>
+    <TableCell>DEBIT</TableCell>
+    {/* <TableCell>BALANCE AFTER</TableCell> */}
+    <TableCell>STATUS</TableCell>
+    <TableCell>DATE & TIME</TableCell>
+  </TableRow>
+</TableHead>
 
                           <TableBody>
   {transactions.map((tx) => (
@@ -398,7 +638,9 @@ const VendorTransactions: React.FC = () => {
           ? `-₦${Number(tx.debit_amount).toLocaleString()}`
           : "—"}
       </TableCell>
-
+      {/* <TableCell sx={{ fontWeight: 600 }}>
+  ₦{Number(tx.balance_after || 0).toLocaleString()}
+</TableCell> */}
       <TableCell>
         <Chip
           label="Success"
@@ -428,6 +670,84 @@ const VendorTransactions: React.FC = () => {
           </Stack>
         </Grid>
       </Grid>
+
+      <Dialog
+  open={openFund}
+  onClose={() => setOpenFund(false)}
+  fullWidth
+  maxWidth="sm"
+  PaperProps={{
+    sx: {
+      borderRadius: 3,
+      p: 1,
+      animation: "fadeIn 0.3s ease",
+    },
+  }}
+>
+  <DialogTitle>
+    Fund Vendor Wallet
+  </DialogTitle>
+
+  <DialogContent>
+    <Stack spacing={2} mt={1}>
+
+      <TextField
+        label="Vendor"
+        value={selectedVendor?.business_name}
+        fullWidth
+        size="small"
+        disabled
+      />
+
+      <TextField select label="Wallet Type" fullWidth size="small">
+        <MenuItem value="vending">⚡ Vending Wallet</MenuItem>
+      </TextField>
+
+      <TextField
+  label="Amount (₦)"
+  fullWidth
+  size="small"
+  value={amount}
+  onChange={(e) => setAmount(e.target.value)}
+/>
+
+      <TextField select label="Funding Source" fullWidth size="small">
+        <MenuItem>Bank Transfer (NIBSS)</MenuItem>
+      </TextField>
+
+      <TextField
+        label="Transaction Note"
+        fullWidth
+        size="small"
+        placeholder="e.g. Monthly float top-up"
+      />
+
+      <Box
+        sx={{
+          bgcolor: "#eff6ff",
+          p: 1.5,
+          borderRadius: 2,
+          fontSize: 12,
+          color: "#2563eb",
+        }}
+      >
+        This action will be logged and attributed to your admin account.
+        Funds are credited instantly.
+      </Box>
+    </Stack>
+  </DialogContent>
+
+  <DialogActions>
+    <Button onClick={() => setOpenFund(false)}>Cancel</Button>
+   <Button
+  variant="contained"
+  onClick={handleFundWallet}
+  disabled={funding}
+>
+  {funding ? <CircularProgress size={18} /> : "Confirm Funding"}
+</Button>
+  </DialogActions>
+</Dialog>
     </Box>
   );
 };
