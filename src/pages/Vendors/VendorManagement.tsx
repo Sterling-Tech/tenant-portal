@@ -344,7 +344,7 @@ const load = async (pageNumber = 1) => {
       </Stack>
     </MenuItem>
 
-    <MenuItem value="inactive">
+    <MenuItem value="suspended">
       <Stack direction="row" spacing={1} alignItems="center">
         <Chip size="small" label="Inactive" />
       </Stack>
