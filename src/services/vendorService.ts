@@ -88,10 +88,19 @@ export interface Debt {
     balance: string
     last_debit: string
 }
+
+
 export interface DebtHistory {
   transaction_ref: string
   amount_paid: string
   timestamp: string
+}
+
+export interface PaginatedDebtHistory {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: DebtHistory[];
 }
 
 export interface Customer {
@@ -301,7 +310,7 @@ export const fetchVendors = (params?: {
   vendor_id?: number;
   main_vendor?: boolean;
   tenant?: string;
-  is_active?: boolean;
+  account_status?: string;
   is_verified?: boolean;
   search?: string;
 }) =>
@@ -332,11 +341,50 @@ export const fetchDebt = (id?: string) =>
     get<Debt[]>(`/customer/debt/?customer_id=${id}`);
 
 export const fetchDebtHistory = (id?: string) =>
-  get<DebtHistory[]>(
+  get<PaginatedDebtHistory>(
     id
       ? `/customer/debt/history/?debt_id=${id}`
       : `/customer/debt/history/`
   );
+
+export interface PaymentPlan {
+  name: string;
+  description: string;
+  code: string;
+}
+
+export const fetchPaymentPlans = () =>
+  get<PaymentPlan[]>(`/customer/debt-plan/`);
+
+// 🔹 Debt Analytics (GLOBAL KPI)
+export const fetchDebtAnalytics = () =>
+  get<{
+    debt_summary: {
+      customers_with_debt: number;
+      total_outstanding_debts: number;
+      recovered_this_month: number | null;
+      total_debts: number;
+    };
+  }>("/customer/dashboard/analytics/");
+
+// 🔹 Single Customer Debt Analytic
+export const fetchCustomerDebtAnalytic = (customerId: string) =>
+  get<{
+    recovered_debt: number;
+    remaining_debt: number;
+    last_deduction: string;
+  }>(`/customer/debt/analytic/?customer_id=${customerId}`);
+
+// 🔹 Create Debt
+export const createDebt = (payload: {
+  customer: string;
+  description: string;
+  payment_plan: number;
+  effective_date: string;
+  rate: number;
+  debt_type: string;
+  amount: number;
+}) => post("/customer/debt/", payload);
 
 export const fetchanalytics = (params?: {
   start_date?: string

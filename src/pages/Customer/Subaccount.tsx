@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box, Grid, Card, Typography, TextField, Button,
   InputAdornment, Paper, Stack, Chip, Divider,
@@ -8,101 +8,185 @@ import {
   InputLabel,
   RadioGroup,
   FormControlLabel,
+  Snackbar,
+  Alert,
   Radio
 } from "@mui/material";
 import { CalendarToday, Search } from "@mui/icons-material";
+import { createDebt, fetchCustomerDebtAnalytic, fetchDebt, fetchDebtAnalytics, fetchDebtHistory, fetchPaymentPlans, searchCustomers } from "../../services/vendorService";
 
 const fmt = (n: number) =>
   "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2 });
 
-/* ---------------- MOCK DATA ---------------- */
-
-const customers = [
-  {
-    id: "1",
-    name: "Chidi Nwosu",
-    account_number: "04201234567",
-    meter_number: "5416234590",
-    phone: "+2347031234567",
-    city: "Port Harcourt",
-    email: "chidi.nwosu@gmail.com",
-    category: "Standard",
-    debts: [
-  {
-    id: "d1",
-    title: "MD Industrial Arrears",
-    amount: 50500,
-    original: 59500,
-    recovered: 9000,
-    progress: 15,
-    status: "active",
-    plan: "Bi-Monthly Instalment",
-    code: "BMI-IND",
-    effective: "2025-09-01",
-    rate: "2.5% per cycle",
-    lastDeduction: "Mar 1, 2026",
-    description: "Manufacturing plant MD arrears",
-		recent: [
-    {
-      title: "Bi-monthly deduction",
-      code: "DBT-20260301-005",
-      amount: -3000,
-      date: "Mar 1, 2026"
-    },
-    {
-      title: "Bi-monthly deduction",
-      code: "DBT-20260101-005",
-      amount: -3000,
-      date: "Jan 1, 2026"
-    },
-    {
-      title: "First deduction — plan activation",
-      code: "DBT-20251101-005",
-      amount: -3000,
-      date: "Nov 1, 2025"
-    }
-  ]
-  },
-  {
-    id: "d2",
-    title: "Meter Tamper Fine",
-    amount: 25000,
-    status: "suspended",
-    plan: "Monthly Instalment",
-    code: "MI-STD",
-    effective: "2026-03-01"
-  }
-]
-  }
-];
-
 /* ---------------- COMPONENT ---------------- */
+const DEBT_TYPES = [
+  { label: "Arrears", value: "ARREAR" },
+  { label: "Main Arrears", value: "MANARR" },
+  { label: "Arrears Merged", value: "ARRMER" },
+  { label: "Debt Migration", value: "DEBMIG" },
+  { label: "Debt Migration Percentage", value: "DEBPCT" },
+  { label: "Risk Debt Migration", value: "RISKDM" },
+  { label: "Reconnection Charge Initial Payment", value: "RECCIP" },
+  { label: "Penalty Monthly Instalment", value: "PENAMI" },
+  { label: "Penalty Initial Payment", value: "PENAIP" },
+  { label: "Accumulated FC Migration", value: "AFCMIG" },
+  { label: "Meter Fees", value: "METFEE" },
+  { label: "Accumulated Fixed Charge", value: "ACCUFC" },
+  { label: "Loss of Revenue Monthly Instalment", value: "LOSSRM" },
+  { label: "Loss of Revenue Initial Payment", value: "LOSSRI" },
+  { label: "Fixed Charge", value: "FIXEDC" },
+  { label: "Tariff Difference", value: "TARDIF" },
+  { label: "Administrative Charges", value: "ADMCHA" },
+  { label: "Reversal Debt", value: "REVDBT" },
 
+  // reversals
+  { label: "Debt Refund", value: "DEBREF" },
+  { label: "Meter Cost Refund", value: "MECREF" },
+  { label: "MAP Refund", value: "MAPREF" }
+];
 export default function DebtManager() {
   const [meter, setMeter] = useState("");
   const [account, setAccount] = useState("");
   const [customer, setCustomer] = useState<any>(null);
-
+  const [loading, setLoading] = useState(false);
+  const [debts, setDebts] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [customerAnalytic, setCustomerAnalytic] = useState<any>(null);
   const detailsRef = useRef<any>(null);
-
+  const [historyMap, setHistoryMap] = useState<any>({});
+  const [paymentPlans, setPaymentPlans] = useState<any[]>([]);
+  const [creating, setCreating] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   /* ---------------- SEARCH ---------------- */
-const [debtType, setDebtType] = useState("");
-const [paymentPlan, setPaymentPlan] = useState("monthly");
-const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
+  const [debtType, setDebtType] = useState("");
+  const [paymentPlan, setPaymentPlan] = useState("");
+  const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
+  const [amount, setAmount] = useState("");
+  const [rate, setRate] = useState("");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState("");
 
-  const handleSearch = () => {
-    const found = customers.find(
-      (c) =>
-        (meter && c.meter_number.includes(meter)) ||
-        (account && c.account_number.includes(account))
-    );
 
-    setCustomer(found || null);
+const loadAnalytics = async () => {
+  try {
+    const res = await fetchDebtAnalytics();
+    setAnalytics(res?.debt_summary);
+  } catch (err) {
+    console.error(err);
+  }
+};
+const loadPaymentPlans = async () => {
+  try {
+    const res = await fetchPaymentPlans();
+    setPaymentPlans(res || []);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
-    if (found) {
+useEffect(() => {
+  loadAnalytics();
+  loadPaymentPlans();
+}, []);
+
+const loadHistory = async (debtId: string) => {
+  if (historyMap[debtId]) return;
+
+  const res = await fetchDebtHistory(debtId);
+
+  setHistoryMap((prev: any) => ({
+    ...prev,
+    [debtId]: res?.results || []
+  }));
+};
+
+useEffect(() => {
+  loadAnalytics();
+}, []);
+
+
+
+const handleCreateDebt = async () => {
+  try {
+    if (!customer) return;
+
+    setCreating(true);
+
+    await createDebt({
+      customer: customer.id,
+      description,
+      payment_plan: Number(paymentPlan), // now using code
+      effective_date: date,
+      rate: Number(rate),
+      debt_type: debtType,
+      amount: Number(amount),
+    });
+
+    setSuccessMsg("Debt created successfully");
+
+    const debtRes = await fetchDebt(customer.id);
+    setDebts(debtRes || []);
+
+  } catch (err) {
+    console.error(err);
+    setErrorMsg("Failed to create debt");
+  } finally {
+    setCreating(false);
+  }
+};
+  // const handleSearch = () => {
+  //   const found = customers.find(
+  //     (c) =>
+  //       (meter && c.meter_number.includes(meter)) ||
+  //       (account && c.account_number.includes(account))
+  //   );
+
+  //   setCustomer(found || null);
+
+  //   if (found) {
+  //     setTimeout(() => {
+  //       detailsRef.current?.scrollIntoView({ behavior: "smooth" });
+  //     }, 200);
+  //   }
+  // };
+
+  
+  const handleSearch = async () => {
+    try {
+      setLoading(true);
+
+      const keyword = meter || account;
+
+      if (!keyword) return;
+
+      // 🔹 search customer
+      const res = await searchCustomers(keyword);
+      const found = res?.results?.[0];
+
+      if (!found) {
+        setCustomer(null);
+        return;
+      }
+
+      setCustomer(found);
+
+      // 🔹 fetch debts
+      const debtRes = await fetchDebt(found.id);
+      setDebts(debtRes || []);
+
+      // 🔹 fetch analytic
+      const analyticRes = await fetchCustomerDebtAnalytic(found.id);
+      setCustomerAnalytic(analyticRes);
+
       setTimeout(() => {
         detailsRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 200);
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -141,11 +225,27 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
       {/* KPI */}
       <Grid container spacing={2} mb={3}>
         {[
-          { label: "TOTAL CUSTOMERS WITH DEBT", value: "312,450", color: "#ef4444" },
-          { label: "TOTAL OUTSTANDING DEBT", value: "₦4.8B", color: "#f59e0b" },
-          { label: "RECOVERED THIS MONTH", value: "₦88.4M", color: "#10b981" },
-          { label: "DEBTS CREATED", value: "1,247", color: "#8b5cf6" }
-        ].map((k, i) => (
+  {
+    label: "TOTAL CUSTOMERS WITH DEBT",
+    value: analytics?.customers_with_debt || 0,
+    color: "#ef4444"
+  },
+  {
+    label: "TOTAL OUTSTANDING DEBT",
+    value: fmt(analytics?.total_outstanding_debts || 0),
+    color: "#f59e0b"
+  },
+  {
+    label: "RECOVERED THIS MONTH",
+    value: fmt(analytics?.recovered_this_month || 0),
+    color: "#10b981"
+  },
+  {
+    label: "DEBTS CREATED",
+    value: analytics?.total_debts || 0,
+    color: "#8b5cf6"
+  }
+].map((k, i) => (
           <Grid item xs={12} md={3} key={i}>
             <Card sx={{ borderRadius: 4, border: "1px solid #e5e9f2" }}>
               <Box sx={{ height: 5, background: k.color }} />
@@ -244,7 +344,7 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
             <Button
               onClick={handleSearch}
               sx={{
-								top:36,
+								top:39,
                 height: 36,
                 borderRadius: 2,
                 background: "linear-gradient(135deg,#0a1628,#1e4fd8)",
@@ -253,12 +353,12 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
             >
               Find Customer
             </Button>
-						<div style={{marginTop:36,fontSize: "10.5px", color: "var(--text-light)"}}> Press <kbd>Enter</kbd> to search</div>
+						<div style={{marginTop:39,fontSize: "10.5px", color: "var(--text-light)"}}> Press <kbd>Enter</kbd> to search</div>
           </Grid>
         </Grid>
 
         {/* QUICK */}
-        <Stack direction="row" spacing={1} mt={2}>
+        {/* <Stack direction="row" spacing={1} mt={2}>
           {["54160893710", "04201234567"].map((v) => (
             <Chip
               key={v}
@@ -266,7 +366,7 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
               onClick={() => quickFill(v, v.length > 10 ? "meter" : "account")}
             />
           ))}
-        </Stack>
+        </Stack> */}
       </Card>
 
       {/* EMPTY STATE */}
@@ -339,7 +439,7 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
           <Divider sx={{ my: 2 }} />
 
           {/* ACTIVE DEBT */}
-          {customer.debts.map((d: any) => (
+          {debts.map((d: any) => (
             <Card
               key={d.id}
               sx={{
@@ -355,12 +455,19 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
                 </Typography>
 
                 <Typography fontSize={30} fontWeight={900} color="#dc2626">
-                  {fmt(d.amount)}
+                   {fmt(Number(d.balance))}
                 </Typography>
 
                 <LinearProgress
                   variant="determinate"
-                  value={d.progress}
+                  value={
+    customerAnalytic
+      ? (customerAnalytic.recovered_debt /
+          (customerAnalytic.recovered_debt +
+            customerAnalytic.remaining_debt)) *
+        100
+      : 0
+  }
                   sx={{
                     height: 6,
                     borderRadius: 10,
@@ -373,11 +480,22 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
 
                 <Stack direction="row" justifyContent="space-between">
                   <Typography fontSize={12} color="#10b981">
-                    {d.progress}% repaid
+                    {
+    customerAnalytic
+      ? (customerAnalytic.recovered_debt /
+          (customerAnalytic.recovered_debt +
+            customerAnalytic.remaining_debt)) *
+        100
+      : 0
+  }% repaid
                   </Typography>
-                  <Typography fontSize={12} color="#94a3b8">
-                    {fmt((d.progress / 100) * d.amount)} recovered
-                  </Typography>
+                  <Typography fontSize={12} color="#10b981">
+  {customerAnalytic?.recovered_debt || 0} recovered
+</Typography>
+
+<Typography fontSize={12} color="#94a3b8">
+  {fmt(customerAnalytic?.remaining_debt || 0)} remaining
+</Typography>
                 </Stack>
 
                 <Divider />
@@ -385,21 +503,23 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
                 <Stack direction="row" justifyContent="space-between">
                   <Typography fontSize={12}>Plan</Typography>
                   <Typography fontSize={12} fontWeight={600}>
-                    Bi-Monthly Instalment
+                     {d.payment_plan?.name}
                   </Typography>
                 </Stack>
 
                 <Stack direction="row" justifyContent="space-between">
                   <Typography fontSize={12}>Rate</Typography>
                   <Typography fontSize={12} fontWeight={600}>
-                    2.5% per cycle
+                    {d.rate}% per cycle
                   </Typography>
                 </Stack>
 
                 <Stack direction="row" justifyContent="space-between">
                   <Typography fontSize={12}>Last Deduction</Typography>
                   <Typography fontSize={12} color="#dc2626" fontWeight={600}>
-                    Mar 1, 2026
+                    {d.last_debit
+    ? new Date(d.last_debit).toLocaleDateString()
+    : "—"}
                   </Typography>
                 </Stack>
               </Stack>
@@ -429,13 +549,13 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
   <Stack direction="row" justifyContent="space-between" mb={2}>
     <Typography fontWeight={700}>All Debt Records</Typography>
     <Typography fontSize={12} color="#6b7a99">
-      {customer.debts.length} records
+      {debts.length} records
     </Typography>
   </Stack>
 
   {/* LIST */}
   <Stack spacing={2}>
-    {customer.debts.map((d: any) => {
+    {debts.map((d: any) => {
       const isOpen = expandedDebt === d.id;
 
       return (
@@ -449,9 +569,10 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
         >
           {/* TOP ROW */}
           <Box
-            onClick={() =>
-              setExpandedDebt(isOpen ? null : d.id)
-            }
+            onClick={() => {
+              setExpandedDebt(isOpen ? null : d.id);
+              if (!isOpen) loadHistory(d.id);
+            }}
             sx={{
               p: 2,
               cursor: "pointer"
@@ -460,10 +581,10 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
             <Stack direction="row" justifyContent="space-between">
               <Box>
                 <Typography fontWeight={600}>
-                  {d.title}
+                  {d.description}
                 </Typography>
                 <Typography fontSize={12} color="#6b7a99">
-                  {d.plan} • {d.code} • Effective: {d.effective}
+                  {d.payment_plan?.name} • {d.payment_plan?.code} • Effective: {d.effective_date}
                 </Typography>
               </Box>
 
@@ -472,7 +593,7 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
                   fontWeight={800}
                   color="#dc2626"
                 >
-                  {fmt(d.amount)}
+                  {fmt(Number(d.balance))}
                 </Typography>
 
                 <Chip
@@ -495,18 +616,32 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
           </Box>
 
           {/* EXPANDED */}
-          {isOpen && d.original && (
+          {isOpen && (
             <Box sx={{ p: 2, pt: 0 }}>
               <Grid container spacing={2} mt={1}>
 
-                {[
-                  ["ORIGINAL BALANCE", fmt(d.original)],
-                  ["RECOVERED", `${fmt(d.recovered)} (${d.progress}%)`, "#10b981"],
-                  ["REMAINING", fmt(d.amount), "#dc2626"],
-                  ["DEDUCTION RATE", d.rate],
-                  ["LAST DEDUCTION", d.lastDeduction, "#dc2626"],
-                  ["DESCRIPTION", d.description]
-                ].map(([label, val, color], i) => (
+                {
+//                 [
+//   ["BALANCE", fmt(Number(d.balance))],
+//   ["RATE", `${d.rate}%`],
+//   ["PAYMENT PLAN", d.payment_plan?.name],
+//   ["CODE", d.payment_plan?.code],
+//   ["LAST DEBIT", d.last_debit
+//     ? new Date(d.last_debit).toLocaleDateString()
+//     : "—"],
+//   ["DESCRIPTION", d.description]
+// ]
+[
+  ["BALANCE", fmt(Number(d.balance))],
+  ["RATE", `${d.rate}%`],
+  ["PAYMENT PLAN", d.payment_plan?.name],
+  ["CODE", d.payment_plan?.code],
+  ["RECOVERED", fmt(customerAnalytic?.recovered_debt || 0)],
+  ["REMAINING", fmt(customerAnalytic?.remaining_debt || 0)],
+  ["LAST DEDUCTION", customerAnalytic?.last_deduction
+    ? new Date(customerAnalytic.last_deduction).toLocaleDateString()
+    : "—"],
+].map(([label, val, color], i) => (
                   <Grid item xs={12} md={4} key={i}>
                     <Box
                       sx={{
@@ -536,7 +671,7 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
   </Typography>
 
   <Stack spacing={0}>
-    {d.recent?.map((r: any, i: number) => (
+    {/* {d.recent?.map((r: any, i: number) => (
       <Stack
         key={i}
         direction="row"
@@ -570,7 +705,33 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
           </Typography>
         </Box>
       </Stack>
-    ))}
+    ))} */}
+
+    {historyMap[d.id]?.map((r: any, i: number) => (
+  <Stack
+    key={i}
+    direction="row"
+    justifyContent="space-between"
+    sx={{
+          py: 1,
+          borderBottom:
+            i !== d.recent.length - 1 ? "1px solid #f1f5f9" : "none"
+        }}
+  >
+    <Box>
+      <Typography fontSize={12} fontWeight={500}>
+        {r.transaction_ref}
+      </Typography>
+      <Typography fontSize={10} color="#6b7a99">
+        {new Date(r.timestamp).toLocaleString()}
+      </Typography>
+    </Box>
+
+    <Typography fontWeight={700} color="#dc2626">
+      {fmt(Number(r.amount_paid))}
+    </Typography>
+  </Stack>
+))}
   </Stack>
 </Box>
 
@@ -650,21 +811,25 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
   }}>
           <InputLabel>Select debt type</InputLabel>
           <Select
-					  
-            value={debtType}
-            label="Debt Type"
-            onChange={(e) => setDebtType(e.target.value)}
-          >
-            <MenuItem value="arrears">Industrial Arrears</MenuItem>
-            <MenuItem value="meter">Meter Debt</MenuItem>
-          </Select>
+  value={debtType}
+  label="Debt Type"
+  onChange={(e) => setDebtType(e.target.value)}
+>
+  {DEBT_TYPES.map((d) => (
+    <MenuItem key={d.value} value={d.value}>
+      {d.label} ({d.value})
+    </MenuItem>
+  ))}
+</Select>
         </FormControl>
 
         {/* AMOUNT + RATE */}
         <Stack direction="row" spacing={2}>
           <TextField
             fullWidth
-            label="Debt Amount (₦)"
+            value={amount}
+  onChange={(e) => setAmount(e.target.value)}
+  label="Debt Amount (₦)"
             placeholder="e.g. 15000"
 						 sx={{
  
@@ -679,6 +844,8 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
           <TextField
             fullWidth
             label="Deduction Rate (%)"
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
             placeholder="e.g. 5"
 						 sx={{
     
@@ -697,6 +864,8 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
           fullWidth
           type="date"
           label="Effective Date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
           InputLabelProps={{ shrink: true }}
            sx={{
     mt: 2,
@@ -717,6 +886,8 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
           fullWidth
           multiline
           rows={3}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
           label="Description / Notes"
           sx={{
     mt: 2,
@@ -749,50 +920,7 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
     value={paymentPlan}
     onChange={(e) => setPaymentPlan(e.target.value)}
   >
-    {[
-      {
-        id: "mintrx",
-        title: "Minimum Payment per Transaction",
-        tag: "MINTRX",
-        type: "Fixed",
-        desc: "The minimum amount that will be charged on a transaction."
-      },
-      {
-        id: "pctpay",
-        title: "Percentage Payment on Transaction",
-        tag: "PCTPAY",
-        type: "Percentage",
-        desc: "A percentage of the vending amount is taken at each transaction."
-      },
-      {
-        id: "minmth",
-        title: "Minimum Monthly Refund",
-        tag: "MINRFD",
-        type: "Fixed",
-        desc: "Minimum amount to refund monthly."
-      },
-      {
-        id: "mintrxrefund",
-        title: "Minimum Refund per Transaction",
-        tag: "RFDTX",
-        type: "Fixed",
-        desc: "Minimum refund applied per transaction."
-      },
-      {
-        id: "oneoff",
-        title: "Once-Off Full Refund",
-        tag: "TOTRFD",
-        type: "Fixed",
-        desc: "Once-off full refund applied on the first transaction."
-      },
-      {
-        id: "debtpct",
-        title: "Debt Amount Percentage Payment",
-        tag: "DAPPMT",
-        type: "New Credit Policy",
-        desc: "Step payments on amount range in percentage."
-      }
-    ].map((p) => {
+    {paymentPlans.map((p) => {
       const selected = paymentPlan === p.id;
 
       return (
@@ -829,12 +957,12 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
 
             <Box>
               <Typography fontSize={13} fontWeight={600}>
-                {p.title}
+                {p.name}
               </Typography>
 
               <Stack direction="row" spacing={0.5} mt={0.5} alignItems="center">
                 <Chip
-                  label={p.tag}
+                  label={p.code}
                   size="small"
                   sx={{
                     height: 18,
@@ -843,7 +971,7 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
                     color: "#2563eb"
                   }}
                 />
-                <Chip
+                {/* <Chip
                   label={p.type}
                   size="small"
                   sx={{
@@ -852,15 +980,14 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
                     bgcolor: "#fef3c7",
                     color: "#92400e"
                   }}
-                />
+                /> */}
                 <Typography fontSize={10} color="#6b7a99">
                   Per Transaction
                 </Typography>
               </Stack>
-
               <Typography fontSize={11} color="#6b7a99" mt={0.3}>
-                {p.desc}
-              </Typography>
+              {p.description}
+            </Typography>
             </Box>
           </Stack>
         </Box>
@@ -872,6 +999,8 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
         {/* BUTTON */}
         <Button
           fullWidth
+          onClick={handleCreateDebt}
+          disabled={creating}
           sx={{
             mt: 3,
             background: "#dc2626",
@@ -884,13 +1013,28 @@ const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
             }
           }}
         >
-          + Create Debt Record
+           {creating ? <LinearProgress /> : "+ Create Debt Record"}
         </Button>
       </Card>
     </Grid>
 
   </Grid>
 )}
+<Snackbar
+  open={!!successMsg}
+  autoHideDuration={3000}
+  onClose={() => setSuccessMsg("")}
+>
+  <Alert severity="success">{successMsg}</Alert>
+</Snackbar>
+
+<Snackbar
+  open={!!errorMsg}
+  autoHideDuration={3000}
+  onClose={() => setErrorMsg("")}
+>
+  <Alert severity="error">{errorMsg}</Alert>
+</Snackbar>
     </Box>
   );
 }

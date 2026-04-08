@@ -52,7 +52,6 @@ export default function VendorHub() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
-
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuVendor, setMenuVendor] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -72,6 +71,19 @@ export default function VendorHub() {
 
   const totalPages = Math.ceil(count / PAGE_SIZE);
 
+const formatDateTime = (date: string) => {
+  if (!date) return "-";
+
+  return new Intl.DateTimeFormat("en-NG", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(date));
+};
+
+const truncate = (text: string, max = 25) => {
+  if (!text) return "-";
+  return text.length > max ? text.slice(0, max) + "..." : text;
+};
   // ✅ Debounce search
 // Debounced search: wait until user stops typing for 500ms
 useEffect(() => {
@@ -97,20 +109,30 @@ const load = async (pageNumber = 1) => {
 
       setVendors(data);
       setCount(data.length);
+
+      if (data.length) {
+        setSelected(data[0]);
+      } else {
+        setSelected(null);
+      }
       return; // exit early
     }
 
     // 📦 NORMAL MODE (no search)
     const res = await fetchVendors({
       page: pageNumber,
-      is_active: statusFilter === "all" ? undefined : statusFilter === "active",
+      account_status: statusFilter === "all" ? undefined : statusFilter,
       is_verified: verifiedFilter === "all" ? undefined : verifiedFilter === "verified",
     });
 
     setVendors(res?.results || []);
     setCount(res?.count || 0);
 
-    if (res?.results?.length) setSelected(res.results[0]);
+    if (res?.results?.length) {
+      setSelected(res.results[0]);
+    } else {
+      setSelected(null); // 🔥 THIS FIXES YOUR ISSUE
+    }
   } catch (err) {
     console.error("LOAD ERROR:", err);
     setVendors([]);
@@ -236,9 +258,9 @@ const load = async (pageNumber = 1) => {
 
   return (
     <Box
-      // /p={2}
+      // p={2}
       bgcolor="#f5f7fb"
-      minHeight="100vh"
+      //minHeight="100vh"
       sx={{ fontFamily: "Inter, Roboto, sans-serif" }}
     >
       {/* HEADER */}
@@ -300,17 +322,35 @@ const load = async (pageNumber = 1) => {
               }}
             />
 
-            <FormControl size="small">
-              <Select
-                fullWidth
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
-              </Select>
-            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 160 }}>
+  <Select
+    value={statusFilter}
+    onChange={(e) => setStatusFilter(e.target.value)}
+    displayEmpty
+    sx={{
+      height: 40,
+      borderRadius: 2,
+      bgcolor: "#fff",
+      fontSize: 14,
+    }}
+  >
+    <MenuItem value="all">
+      <Typography fontSize={14}>All Status</Typography>
+    </MenuItem>
+
+    <MenuItem value="active">
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Chip size="small" color="success" label="Active" />
+      </Stack>
+    </MenuItem>
+
+    <MenuItem value="inactive">
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Chip size="small" label="Inactive" />
+      </Stack>
+    </MenuItem>
+  </Select>
+</FormControl>
           </Stack>
 
           {/* TABLE */}
@@ -406,79 +446,176 @@ const load = async (pageNumber = 1) => {
           </Table>
 
           {/* PAGINATION (ONLY ARROWS) */}
-          <Stack direction="row" justifyContent="center" mt={2}>
-            <Button
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              ← Prev
-            </Button>
+          <Stack
+  direction="row"
+  justifyContent="space-between"
+  alignItems="center"
+  px={2}
+  py={2}
+>
+  {/* LEFT SIDE */}
+  <Typography fontSize={13} color="text.secondary">
+    Page {page} of {totalPages || 1} • {count} total
+  </Typography>
 
-            <Typography sx={{ mx: 2 }}>
-              Page {page} of {totalPages || 1}
-            </Typography>
+  {/* RIGHT SIDE */}
+  <Stack direction="row" spacing={1}>
+    <Button
+      //variant="outlined"
+      size="small"
+      disabled={page === 1}
+      onClick={() => setPage((p) => p - 1)}
+    >
+      Prev
+    </Button>
 
-            <Button
-              disabled={page === totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next →
-            </Button>
-          </Stack>
+    <Button
+      //variant="outlined"
+      size="small"
+      disabled={page === totalPages}
+      onClick={() => setPage((p) => p + 1)}
+    >
+      Next
+    </Button>
+  </Stack>
+</Stack>
+         
         </Card>
 
         {/* DETAILS */}
-        {selected && (
-          <Card
-            sx={{
-              flex: 1,
-              borderRadius: 3,
-              height: 500,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Box bgcolor="#1e3a8a" color="#fff" p={2}>
-              <Typography fontWeight={700}>
-                {selected.business_name}
+       <Card
+  sx={{
+    flex: 1,
+    borderRadius: 3,
+    height: 500,
+    display: "flex",
+    flexDirection: "column",
+  }}
+>
+  {!selected ? (
+    <Box display="flex" flex={1} alignItems="center" justifyContent="center">
+      <Typography color="text.secondary">
+        No data selected / clicked
+      </Typography>
+    </Box>
+  ) : (
+    <>
+      {/* HEADER */}
+      <Box bgcolor="#1e3a8a" color="#fff" p={2}>
+        <Typography fontWeight={700}>
+          {selected.business_name}
+        </Typography>
+        <Typography fontSize={12}>{selected.email}</Typography>
+
+        <Stack direction="row" spacing={1} mt={1}>
+          <Chip
+            label={selected.account_status}
+            size="small"
+            color={
+              selected.account_status === "active"
+                ? "success"
+                : "default"
+            }
+          />
+          <Chip label="verified" size="small" />
+        </Stack>
+      </Box>
+
+      {/* BODY */}
+      <Box
+  p={2}
+  sx={{
+    flex: 1,
+    overflowY: "auto",
+    display: "flex",
+    flexDirection: "column",
+  }}
+>
+        <Stack spacing={2}>
+          <Row label="Phone" value={selected.phone_number} />
+          <Row label="Address" value={selected.address} />
+         <Row
+  label="Location"
+  value={`${selected.city || ""}, ${selected.state || ""}, ${selected.country || ""}`}
+/>
+          <Row label="Postal Code" value={selected.postal_code} />
+
+          <Row label="Hierarchy" value={selected.hierachy} />
+
+          <Row
+            label="Wallet Balance"
+            value={formatCurrency(selected.wallet?.balance)}
+          />
+
+          <Row
+            label="Wallet Type"
+            value={selected.wallet?.wallet_type?.name}
+          />
+
+          <Row
+            label="Onboarded"
+            value={formatDateTime(selected.created_at)}
+          />
+
+          {/* TOKEN WITH COPY */}
+          <Box>
+            <Typography color="text.secondary" fontSize={13}>
+              API Token
+            </Typography>
+
+            <Box
+              mt={0.5}
+              px={1.5}
+              py={1}
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+              sx={{
+                border: "1px solid #eee",
+                borderRadius: 2,
+                bgcolor: "#fafafa",
+              }}
+            >
+              <Typography
+                fontSize={13}
+                sx={{
+                  maxWidth: "75%",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {truncate(selected.token, 40)}
               </Typography>
-              <Typography fontSize={12}>{selected.email}</Typography>
 
-              <Stack direction="row" spacing={1} mt={1}>
-                <Chip label="active" size="small" color="success" />
-                <Chip label="verified" size="small" />
-              </Stack>
+              <Button
+                size="small"
+                onClick={() => {
+                  navigator.clipboard.writeText(selected.token);
+                }}
+              >
+                Copy
+              </Button>
             </Box>
+          </Box>
+        </Stack>
 
-            <Box p={2} sx={{ flex: 1, overflow: "hidden" }}>
-              <Stack spacing={2}>
-                <Row label="Phone" value={selected.phone_number} />
-                <Row label="Address" value={selected.address} />
-                <Row
-                  label="Wallet Balance"
-                  value={formatCurrency(selected.wallet?.balance)}
-                />
-                {/* <Row label="Total Transactions" value={selected.txn_count || 0} /> */}
-                <Row label="Onboarded" value={selected.created_at} />
-                {/* <Row label="Last Active" value={selected.last_login} /> */}
-
-                <Row label="Api token" value={selected.token} />
-              </Stack>
-
-              <Stack direction="row" spacing={1} mt={3}>
-                <Button fullWidth variant="outlined">
-                  Full Profile
-                </Button>
-                <Button fullWidth color="warning" variant="contained">
-                  Edit
-                </Button>
-                <Button fullWidth color="error" variant="contained">
-                  Delete
-                </Button>
-              </Stack>
-            </Box>
-          </Card>
-        )}
+        {/* ACTIONS */}
+        <Stack direction="row" spacing={1} mt={3}>
+          <Button fullWidth variant="outlined">
+            Full Profile
+          </Button>
+          <Button fullWidth color="warning" variant="contained">
+            Edit
+          </Button>
+          <Button fullWidth color="error" variant="contained">
+            Delete
+          </Button>
+        </Stack>
+      </Box>
+    </>
+  )}
+</Card>
       </Stack>
 
   {openModal && (
@@ -740,9 +877,22 @@ const load = async (pageNumber = 1) => {
 
 function Row({ label, value }: any) {
   return (
-    <Box display="flex" justifyContent="space-between">
-      <Typography color="text.secondary">{label}</Typography>
-      <Typography fontWeight={500}>{value || "-"}</Typography>
+    <Box
+      display="flex"
+      justifyContent="space-between"
+      alignItems="center"
+       sx={{
+         borderBottom: "1px solid #f1f1f1",
+         pb: 1,
+       }}
+    >
+      <Typography color="text.secondary" fontSize={13}>
+        {label}
+      </Typography>
+
+      <Typography fontWeight={600} fontSize={14} textAlign="right">
+        {value || "-"}
+      </Typography>
     </Box>
   );
 }
