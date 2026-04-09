@@ -67,7 +67,14 @@ export default function DebtManager() {
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
 
-
+const infoBox = {
+  fontSize: 12,
+  color: "#374151",
+  background: "#f1f5f9",
+  padding: "10px 12px",
+  borderRadius: 8,
+  textAlign: "left"
+};
 const loadAnalytics = async () => {
   try {
     const res = await fetchDebtAnalytics();
@@ -370,16 +377,61 @@ const handleCreateDebt = async () => {
       </Card>
 
       {/* EMPTY STATE */}
-      {!customer && (
-        <Paper sx={{ p: 6, py:20, alignSelf:"center", textAlign: "center", borderRadius: 4 }}>
-          <Stack maxWidth={400} alignItems={'center'}><Typography fontSize={18} fontWeight={600}>
-            Search for a customer to begin
-          </Typography>
-          <Typography fontSize={13} color="#6b7a99">
-            Enter a meter number or account number above. Once a customer is found, you can view, create or manage their debt records.
-          </Typography></Stack>
-        </Paper>
-      )}
+      {/* EMPTY STATE */}
+{!customer && (
+  <Paper
+    sx={{
+      p: 8,
+      textAlign: "center",
+      borderRadius: 4,
+      background: "#f8fafc",
+      border: "1px solid #e5e9f2"
+    }}
+  >
+    <Stack alignItems="center" spacing={2}>
+      {/* ICON BOX */}
+      <Box
+        sx={{
+          width: 60,
+          height: 60,
+          borderRadius: 3,
+          background: "#e5e7eb",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}
+      >
+        <Search sx={{ fontSize: 28, color: "#6b7280" }} />
+      </Box>
+
+      {/* TITLE */}
+      <Typography fontSize={18} fontWeight={700}>
+        Search to begin
+      </Typography>
+
+      {/* DESCRIPTION */}
+      <Typography fontSize={13} color="#6b7280" maxWidth={420}>
+        Enter a meter number or account number above to pull up a customer's
+        complete financial record from the 1.7 million registered accounts.
+      </Typography>
+
+      {/* INFO CARDS */}
+      <Stack spacing={1.5} mt={2} width="100%" maxWidth={420}>
+        <Box sx={infoBox}>
+          Use the <b>meter number (KCT1 or KCT2)</b> — fastest and most direct lookup
+        </Box>
+
+        <Box sx={infoBox}>
+          Use the <b>account number</b> if the customer has misplaced their meter card
+        </Box>
+
+        <Box sx={infoBox}>
+          The ledger shows the full payment story — every vend, debt deduction and refund by date and time
+        </Box>
+      </Stack>
+    </Stack>
+  </Paper>
+)}
 
       {/* RESULT */}
       {customer && (

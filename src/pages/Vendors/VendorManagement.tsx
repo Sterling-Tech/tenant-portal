@@ -886,7 +886,7 @@ function Row({ label, value }: any) {
          pb: 1,
        }}
     >
-      <Typography color="text.secondary" fontSize={13}>
+      <Typography color="text.secondary" fontSize={15}>
         {label}
       </Typography>
 

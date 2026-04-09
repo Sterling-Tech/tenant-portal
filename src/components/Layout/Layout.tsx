@@ -373,7 +373,31 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <ListItemIcon>
                                 <People fontSize="small" />
                             </ListItemIcon>
-                            <ListItemText primary="customer" />
+                            <ListItemText primary="Customer" />
+                        </ListItemButton>
+
+                        {/* /customer transaction */}
+                        <ListItemButton
+                            selected={location.pathname === '/customer/transaction'}
+                            onClick={() => handleNavigation('/customer/transaction')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <History fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Transactions" />
                         </ListItemButton>
                     </List>
                 </Collapse>
