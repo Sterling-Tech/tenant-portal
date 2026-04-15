@@ -573,7 +573,7 @@ const handleFilterChange = (key: string, value: string) => {
                 </Stack>
               </Box>
 
-              <Button variant="outlined" sx={{ color: "white", borderColor: "white" }}>
+              <Button variant="outlined" sx={{ height: 36, textTransform: "none", borderRadius: 2, color: "white", borderColor: "white"}}>
                 Close
               </Button>
             </Stack>

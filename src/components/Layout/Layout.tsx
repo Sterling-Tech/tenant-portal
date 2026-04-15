@@ -329,7 +329,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Collapse in={customerMenuOpen} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
                         {/* Customer admin */}
-                        <ListItemButton
+                        {/* <ListItemButton
                             selected={location.pathname === '/customer/admin'}
                             onClick={() => handleNavigation('/customer/admin')}
                             sx={{
@@ -351,7 +351,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </ListItemIcon>
                             <ListItemText primary="analytics" />
                         </ListItemButton>
-                      
+                       */}
                         {/* Customer */}
                         <ListItemButton
                             selected={location.pathname === '/customer'}

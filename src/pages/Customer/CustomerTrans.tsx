@@ -203,10 +203,10 @@ const handleCreateDebt = async () => {
 			<Stack direction="row" justifyContent="space-between" mb={3}>
 				<Box>
 					<Typography sx={{ fontSize: 28, fontWeight: 800 }}>
-						Customer Debt Manager
+						Customer Transaction Ledger
 					</Typography>
 					<Typography fontSize={13} color="#6b7a99">
-						Search for a customer by meter number or account number
+						Search any of the 1.7 million registered customers by meter number or account number to view their complete payment history — every vend, debt deduction and refund.
 					</Typography>
 				</Box>
 
@@ -219,23 +219,23 @@ const handleCreateDebt = async () => {
 			<Grid container spacing={2} mb={3}>
 				{[
 	{
-		label: "TOTAL CUSTOMERS WITH DEBT",
+		label: "Total Customers",
 		value: analytics?.customers_with_debt || 0,
 		color: "#ef4444"
 	},
 	{
-		label: "TOTAL OUTSTANDING DEBT",
+		label: "Active Accounts",
 		value: fmt(analytics?.total_outstanding_debts || 0),
 		color: "#f59e0b"
 	},
 	{
-		label: "RECOVERED THIS MONTH",
+		label: "Vended This Month",
 		value: fmt(analytics?.recovered_this_month || 0),
 		color: "#10b981"
 	},
 	{
-		label: "DEBTS CREATED",
-		value: analytics?.total_debts || 0,
+		label: "Debt Recovered (Month)",
+		value: fmt(analytics?.total_outstanding_debts || 0),
 		color: "#8b5cf6"
 	}
 ].map((k, i) => (

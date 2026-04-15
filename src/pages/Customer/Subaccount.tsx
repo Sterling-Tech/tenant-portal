@@ -15,35 +15,41 @@ import {
 import { CalendarToday, Search } from "@mui/icons-material";
 import { createDebt, fetchCustomerDebtAnalytic, fetchDebt, fetchDebtAnalytics, fetchDebtHistory, fetchPaymentPlans, searchCustomers } from "../../services/vendorService";
 
-const fmt = (n: number) =>
+const fmt = (n: Number) =>
   "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2 });
 
 /* ---------------- COMPONENT ---------------- */
 const DEBT_TYPES = [
-  { label: "Arrears", value: "ARREAR" },
-  { label: "Main Arrears", value: "MANARR" },
-  { label: "Arrears Merged", value: "ARRMER" },
-  { label: "Debt Migration", value: "DEBMIG" },
-  { label: "Debt Migration Percentage", value: "DEBPCT" },
-  { label: "Risk Debt Migration", value: "RISKDM" },
-  { label: "Reconnection Charge Initial Payment", value: "RECCIP" },
-  { label: "Penalty Monthly Instalment", value: "PENAMI" },
-  { label: "Penalty Initial Payment", value: "PENAIP" },
-  { label: "Accumulated FC Migration", value: "AFCMIG" },
-  { label: "Meter Fees", value: "METFEE" },
-  { label: "Accumulated Fixed Charge", value: "ACCUFC" },
-  { label: "Loss of Revenue Monthly Instalment", value: "LOSSRM" },
-  { label: "Loss of Revenue Initial Payment", value: "LOSSRI" },
-  { label: "Fixed Charge", value: "FIXEDC" },
-  { label: "Tariff Difference", value: "TARDIF" },
-  { label: "Administrative Charges", value: "ADMCHA" },
-  { label: "Reversal Debt", value: "REVDBT" },
-
+ 
+  { label: "Payment", value: "payment" },
   // reversals
-  { label: "Debt Refund", value: "DEBREF" },
-  { label: "Meter Cost Refund", value: "MECREF" },
-  { label: "MAP Refund", value: "MAPREF" }
+  { label: "Rreversal", value: "reversal" },
 ];
+// const DEBT_TYPES = [
+//   { label: "Arrears", value: "ARREAR" },
+//   { label: "Main Arrears", value: "MANARR" },
+//   { label: "Arrears Merged", value: "ARRMER" },
+//   { label: "Debt Migration", value: "DEBMIG" },
+//   { label: "Debt Migration Percentage", value: "DEBPCT" },
+//   { label: "Risk Debt Migration", value: "RISKDM" },
+//   { label: "Reconnection Charge Initial Payment", value: "RECCIP" },
+//   { label: "Penalty Monthly Instalment", value: "PENAMI" },
+//   { label: "Penalty Initial Payment", value: "PENAIP" },
+//   { label: "Accumulated FC Migration", value: "AFCMIG" },
+//   { label: "Meter Fees", value: "METFEE" },
+//   { label: "Accumulated Fixed Charge", value: "ACCUFC" },
+//   { label: "Loss of Revenue Monthly Instalment", value: "LOSSRM" },
+//   { label: "Loss of Revenue Initial Payment", value: "LOSSRI" },
+//   { label: "Fixed Charge", value: "FIXEDC" },
+//   { label: "Tariff Difference", value: "TARDIF" },
+//   { label: "Administrative Charges", value: "ADMCHA" },
+//   { label: "Reversal Debt", value: "REVDBT" },
+
+//   // reversals
+//   { label: "Debt Refund", value: "DEBREF" },
+//   { label: "Meter Cost Refund", value: "MECREF" },
+//   { label: "MAP Refund", value: "MAPREF" }
+// ];
 export default function DebtManager() {
   const [meter, setMeter] = useState("");
   const [account, setAccount] = useState("");
