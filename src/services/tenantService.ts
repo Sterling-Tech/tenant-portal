@@ -49,6 +49,13 @@ export interface Tenant {
 
     created_at: string; // ISO datetime
 }
+
+export interface PaginatedVendorResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Tenant[];
+}
 export interface TenantSummary {
     total_tenants: number;
     active_tenants: number;

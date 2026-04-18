@@ -220,6 +220,24 @@ export interface AnalyticsBreakdown {
   }[],
     
 }
+export interface AnalyticsDashboad {
+  vendor_summary: {
+    all: string,
+    inactive: string,
+    active: string,
+    aggregated_wallet_balance: string
+  },
+  user_summary: {
+    customer_count: string,
+    inactive_users: string
+  },
+  customer_summary: {
+    total_customers: number,
+    active_customers: string
+  },
+  transactions_today: string
+}
+
 export interface Class {
     id: number;
     category: {
@@ -392,6 +410,10 @@ export const fetchanalytics = (params?: {
 }) =>
   get<AnalyticsCount>(`/user/dashboard/analytics/${buildQuery(params)}`)
 
+export const fetchAnalyticsDashboad = () =>
+  get<AnalyticsDashboad>(`/user/dashboard-summary/`)
+
+  
 export const fetchAnalyticsBreakdown = () =>
     get<AnalyticsBreakdown>(`/user/dashboard/classification/`);
 
