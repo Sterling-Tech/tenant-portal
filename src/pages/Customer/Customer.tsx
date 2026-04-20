@@ -44,6 +44,8 @@ const [openModal, setOpenModal] = useState(false);
 const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string;} | null>(null);
 const [saving, setSaving] = useState(false);
 const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+const [openViewModal, setOpenViewModal] = useState(false);
+const [openDeleteModal, setOpenDeleteModal] = useState(false);
 
 const [filters, setFilters] = useState({
   account_status: "",
@@ -116,9 +118,10 @@ useEffect(() => {
   const handleRowClick = async (c: Customer) => {
     const full = await fetchCustomer({customer_id: c.id});
     setSelected(full);
-    setTimeout(() => {
-      detailRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+    setOpenViewModal(true);
+    // setTimeout(() => {
+    //   detailRef.current?.scrollIntoView({ behavior: "smooth" });
+    // }, 100);
   };
   const handleCreateClick = () => {
 				setFormMode('create');
@@ -428,7 +431,7 @@ const handleFilterChange = (key: string, value: string) => {
                   "Metering",
                   "Status",
                   "Debt Balance",
-                  "",
+                  "Actions",
                 ].map((h) => (
                   <TableCell key={h} sx={{ color: "#94A3B8", fontWeight: 600, fontSize: 12 }}>
                     {h}
@@ -549,74 +552,226 @@ const handleFilterChange = (key: string, value: string) => {
       </Card>
 
       {/* MENU */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <MenuItem>View</MenuItem>
-        <MenuItem>Edit</MenuItem>
-        <MenuItem sx={{ color: "red" }}>Delete</MenuItem>
-      </Menu>
+      <Menu
+  anchorEl={anchorEl}
+  open={Boolean(anchorEl)}
+  onClose={() => setAnchorEl(null)}
+>
+  <MenuItem
+    onClick={async () => {
+      const full = await fetchCustomer({ customer_id: menuRow!.id });
+      setSelected(full);
+      setOpenViewModal(true);
+      setAnchorEl(null);
+    }}
+  >
+    View
+  </MenuItem>
+
+  <MenuItem
+    onClick={async () => {
+      const full = await fetchCustomer({ customer_id: menuRow!.id });
+
+      setFormMode("edit");
+      setCustomerForm({
+        name: full.name,
+       // email: full.email,
+        phone_number: full.phone_number,
+        address: (full as any).address,
+        customer_category: full.customer_category?.id,
+        customer_class: full.customer_class?.id,
+        metering_type: full.metering_type?.id,
+      });
+
+      setOpenModal(true);
+      setAnchorEl(null);
+    }}
+  >
+    Edit
+  </MenuItem>
+
+  <MenuItem
+    sx={{ color: "red" }}
+    onClick={() => {
+      setSelected(menuRow);
+      setOpenDeleteModal(true);
+      setAnchorEl(null);
+    }}
+  >
+    Delete
+  </MenuItem>
+</Menu>
 
       {/* DETAIL PANEL */}
-      {selected && (
-        <Card ref={detailRef} sx={{ mt: 4, borderRadius: 4, overflow: "hidden" }}>
-          <Box sx={{ bgcolor: "#1E3A8A", color: "white", p: 3 }}>
-            <Stack direction="row" justifyContent="space-between">
-              <Box>
-                <Typography fontWeight={700} fontSize={20}>
-                  {selected.name}
-                </Typography>
-                <Typography fontSize={14}>{selected.phone_number}</Typography>
-
-                <Stack direction="row" spacing={1} mt={1}>
-                  <Chip label={getStatus(selected)} size="small" sx={{ bgcolor: "#FEE2E2", color: "#991B1B" }} />
-                  <Chip label={selected.metering_type?.name} size="small" />
-                  <Chip label={`Debt: ₦${selected.wallet?.balance}`} size="small" />
-                </Stack>
-              </Box>
-
-              <Button variant="outlined" sx={{ height: 36, textTransform: "none", borderRadius: 2, color: "white", borderColor: "white"}}>
-                Close
-              </Button>
-            </Stack>
+     {openViewModal && selected && (
+  <Box
+    sx={{
+      position: "fixed",
+      inset: 0,
+      bgcolor: "rgba(0,0,0,0.4)",
+      backdropFilter: "blur(6px)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1400,
+      animation: "fadeIn 0.3s ease",
+    }}
+  >
+    <Card
+      sx={{
+        width: 800,
+        borderRadius: 4,
+        overflow: "hidden",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+      }}
+    >
+      {/* HEADER */}
+      <Box sx={{ bgcolor: "#1E3A8A", color: "#fff", p: 3 }}>
+        <Stack direction="row" justifyContent="space-between">
+          <Box>
+            <Typography fontSize={20} fontWeight={700}>
+              {selected.name}
+            </Typography>
+            <Typography fontSize={13}>
+              {selected.phone_number}
+            </Typography>
           </Box>
 
-          <Box p={3}>
-            <Stack spacing={3}>
-              <Stack direction="row" spacing={6}>
-                <Box>
-                  <Typography fontSize={12} color="#94A3B8">ACCOUNT NO</Typography>
-                  <Typography fontWeight={600}>{selected.account_number}</Typography>
-                </Box>
-                <Box>
-                  <Typography fontSize={12} color="#94A3B8">METER NO</Typography>
-                  <Typography fontWeight={600}>{selected.meter_number}</Typography>
-                </Box>
-                <Box>
-                  <Typography fontSize={12} color="#94A3B8">CLASS</Typography>
-                  <Typography fontWeight={600}>{selected.customer_class?.name}</Typography>
-                </Box>
-                <Box>
-                  <Typography fontSize={12} color="#94A3B8">CATEGORY</Typography>
-                  <Typography fontWeight={600}>{selected.customer_category?.name}</Typography>
-                </Box>
-              </Stack>
+          <Button
+            onClick={() => setOpenViewModal(false)}
+            sx={{ color: "#fff" }}
+          >
+            Close
+          </Button>
+        </Stack>
+      </Box>
 
-              <Divider />
+      {/* BODY */}
+      <Box p={3}>
+        <Grid container spacing={3}>
+          <Grid item xs={6}>
+            <Typography fontSize={12} color="#94A3B8">Account No</Typography>
+            <Typography fontWeight={600}>{selected.account_number}</Typography>
+          </Grid>
 
-              <Box>
-                <Typography fontSize={12} color="#94A3B8">ADDRESS</Typography>
-                <Typography fontWeight={600}>{(selected as any).address || "N/A"}</Typography>
-              </Box>
+          <Grid item xs={6}>
+            <Typography fontSize={12} color="#94A3B8">Meter No</Typography>
+            <Typography fontWeight={600}>{selected.meter_number}</Typography>
+          </Grid>
 
-              <Stack direction="row" spacing={2}>
-                <Button variant="contained">Edit</Button>
-                <Button variant="outlined" color="error">Delete</Button>
-              </Stack>
-            </Stack>
-          </Box>
-        </Card>
-      )}
+          <Grid item xs={6}>
+            <Typography fontSize={12} color="#94A3B8">Class</Typography>
+            <Typography fontWeight={600}>{selected.customer_class?.name}</Typography>
+          </Grid>
 
+          <Grid item xs={6}>
+            <Typography fontSize={12} color="#94A3B8">Category</Typography>
+            <Typography fontWeight={600}>{selected.customer_category?.name}</Typography>
+          </Grid>
 
+          <Grid item xs={6}>
+            <Typography fontSize={12} color="#94A3B8">Metering</Typography>
+            <Typography fontWeight={600}>{selected.metering_type?.name}</Typography>
+          </Grid>
+
+          <Grid item xs={6}>
+            <Typography fontSize={12} color="#94A3B8">Balance</Typography>
+            <Typography fontWeight={600}>₦{selected.wallet?.balance}</Typography>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Typography fontSize={12} color="#94A3B8">Address</Typography>
+            <Typography fontWeight={600}>
+              {(selected as any).address || "N/A"}
+            </Typography>
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: 3 }} />
+
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setOpenViewModal(false);
+              setFormMode("edit");
+              setCustomerForm({
+                name: selected.name,
+               // email: selected.email,
+                phone_number: selected.phone_number,
+                address: (selected as any).address,
+                customer_category: selected.customer_category?.id,
+                customer_class: selected.customer_class?.id,
+                metering_type: selected.metering_type?.id,
+              });
+              setOpenModal(true);
+            }}
+          >
+            Edit
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => {
+              setOpenViewModal(false);
+              setOpenDeleteModal(true);
+            }}
+          >
+            Delete
+          </Button>
+        </Stack>
+      </Box>
+    </Card>
+  </Box>
+)}
+
+{openDeleteModal && selected && (
+  <Box
+    sx={{
+      position: "fixed",
+      inset: 0,
+      bgcolor: "rgba(0,0,0,0.4)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1500,
+    }}
+  >
+    <Card sx={{ width: 400, p: 3, borderRadius: 4 }}>
+      <Typography fontWeight={700} fontSize={18} color="error">
+        Delete Customer
+      </Typography>
+
+      <Typography mt={1} color="#64748B">
+        Are you sure you want to delete this customer?
+      </Typography>
+
+      <Stack direction="row" spacing={2} mt={3}>
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={() => setOpenDeleteModal(false)}
+        >
+          Cancel
+        </Button>
+
+        <Button
+          fullWidth
+          variant="contained"
+          color="error"
+          onClick={async () => {
+            // 🔥 CALL DELETE API HERE
+            setOpenDeleteModal(false);
+            load();
+          }}
+        >
+          Yes, Delete
+        </Button>
+      </Stack>
+    </Card>
+  </Box>
+)}
         {openModal && (
         <Box
           sx={{

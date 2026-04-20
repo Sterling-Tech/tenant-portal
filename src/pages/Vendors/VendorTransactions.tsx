@@ -731,10 +731,16 @@ const getColor = (name: string = "") => {
   value={amount}
   onChange={(e) => setAmount(e.target.value)}
 />
-
-      <TextField select label="Funding Source" fullWidth size="small">
+<TextField
+  label="Funding Source"
+  fullWidth
+  size="small"
+  value="Tenant Wallet"
+  disabled
+/>
+      {/* <TextField select label="Funding Source" fullWidth size="small">
         <MenuItem>Bank Transfer (NIBSS)</MenuItem>
-      </TextField>
+      </TextField> */}
 
       <TextField
         label="Transaction Note"
