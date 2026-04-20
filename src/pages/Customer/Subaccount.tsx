@@ -10,10 +10,15 @@ import {
   FormControlLabel,
   Snackbar,
   Alert,
-  Radio
+  Radio,
+  Checkbox
 } from "@mui/material";
 import { CalendarToday, Search } from "@mui/icons-material";
 import { createDebt, fetchCustomerDebtAnalytic, fetchDebt, fetchDebtAnalytics, fetchDebtHistory, fetchPaymentPlans, searchCustomers } from "../../services/vendorService";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
 
 const fmt = (n: Number) =>
   "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2 });
@@ -66,7 +71,7 @@ export default function DebtManager() {
   const [errorMsg, setErrorMsg] = useState("");
   /* ---------------- SEARCH ---------------- */
   const [debtType, setDebtType] = useState("");
-  const [paymentPlan, setPaymentPlan] = useState("");
+  const [paymentPlan, setPaymentPlan] = useState<number[]>([]);
   const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
   const [amount, setAmount] = useState("");
   const [rate, setRate] = useState("");
@@ -411,18 +416,19 @@ const handleCreateDebt = async () => {
       </Box>
 
       {/* TITLE */}
-      <Typography fontSize={18} fontWeight={700}>
+      {/* <Typography fontSize={18} fontWeight={700}>
         Search to begin
-      </Typography>
+      </Typography> */}
 
       {/* DESCRIPTION */}
-      <Typography fontSize={13} color="#6b7280" maxWidth={420}>
+      {/* <Typography fontSize={13} color="#6b7280" maxWidth={420}>
         Enter a meter number or account number above to pull up a customer's
         complete financial record from the 1.7 million registered accounts.
-      </Typography>
+      </Typography> */}
 
       {/* INFO CARDS */}
       <Stack spacing={1.5} mt={2} width="100%" maxWidth={420}>
+        {/* 
         <Box sx={infoBox}>
           Use the <b>meter number (KCT1 or KCT2)</b> — fastest and most direct lookup
         </Box>
@@ -430,11 +436,11 @@ const handleCreateDebt = async () => {
         <Box sx={infoBox}>
           Use the <b>account number</b> if the customer has misplaced their meter card
         </Box>
-
+*/}
         <Box sx={infoBox}>
           The ledger shows the full payment story — every vend, debt deduction and refund by date and time
         </Box>
-      </Stack>
+      </Stack> 
     </Stack>
   </Paper>
 )}
@@ -482,10 +488,10 @@ const handleCreateDebt = async () => {
         <Box p={3}>
           <Stack spacing={1.5}>
             {[
-              ["Phone", customer.phone],
-              ["City", customer.city],
+              // ["Phone", customer.phone],
+              // ["City", customer.city],
               ["Category", customer.category],
-              ["Email", customer.email],
+              ["Token", customer.token],
             ].map(([label, value]) => (
               <Stack direction="row" justifyContent="space-between" key={label}>
                 <Typography fontSize={13} color="#6b7a99">{label}</Typography>
@@ -584,7 +590,7 @@ const handleCreateDebt = async () => {
             </Card>
           ))}
 
-					<Button
+					{/* <Button
           fullWidth
           sx={{
             mt: 3,
@@ -599,7 +605,7 @@ const handleCreateDebt = async () => {
           }}
         >
           + Create New Debt Record
-        </Button>
+        </Button> */}
 
         <Box mt={4}>
 
@@ -819,7 +825,7 @@ const handleCreateDebt = async () => {
     ⏸ Suspend
   </Button>
 
-  <Button
+  {/* <Button
     size="small"
     sx={{
       bgcolor: "#fee2e2",
@@ -829,7 +835,7 @@ const handleCreateDebt = async () => {
     }}
   >
     ✓ Mark Settled
-  </Button>
+  </Button> */}
 </Stack>
               
              
@@ -918,45 +924,56 @@ const handleCreateDebt = async () => {
         </Stack>
 
         {/* DATE */}
-        <TextField
-          fullWidth
-          type="date"
-          label="Effective Date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-           sx={{
-    mt: 2,
-    "& .MuiOutlinedInput-root": {
-      borderRadius: 2,
-      fontSize: 13,
-      height: 50,
-      bgcolor: "#f9fafb",
-    },
-  }}
-          // InputProps={{
-          //   endAdornment: <CalendarToday fontSize="small" />
-          // }}
-        />
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+  <DatePicker
+    label="Effective Date"
+    value={date ? dayjs(date) : null}
+    onChange={(newValue) => {
+      setDate(newValue ? newValue.format("YYYY-MM-DD") : "");
+    }}
+    slotProps={{
+      textField: {
+        fullWidth: true,
+        sx: {
+          mt: 2,
+          "& .MuiOutlinedInput-root": {
+            borderRadius: 2,
+            height: 50,
+            fontSize: 13,
+            bgcolor: "#f9fafb",
+          },
+        },
+      },
+    }}
+  />
+</LocalizationProvider>
 
         {/* DESCRIPTION */}
         <TextField
-          fullWidth
-          multiline
-          rows={3}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          label="Description / Notes"
-          sx={{
+  fullWidth
+  multiline
+  rows={4}
+  value={description}
+  onChange={(e) => setDescription(e.target.value)}
+  label="Description / Notes"
+  InputLabelProps={{ shrink: true }}
+  sx={{
     mt: 2,
     "& .MuiOutlinedInput-root": {
       borderRadius: 2,
       fontSize: 13,
-      height: 50,
       bgcolor: "#f9fafb",
+      alignItems: "center", // 🔥 centers text vertically
+      paddingTop: "8px",
+      paddingBottom: "8px",
+    },
+    "& textarea": {
+      textAlign: "left",
+      display: "flex",
+      alignItems: "center",
     },
   }}
-        />
+/>
 
         {/* PAYMENT PLAN (SINGLE SELECT) */}
         <FormControl sx={{
@@ -974,84 +991,77 @@ const handleCreateDebt = async () => {
     Payment Plan
   </Typography>
 
-  <RadioGroup
-    value={paymentPlan}
-    onChange={(e) => setPaymentPlan(e.target.value)}
-  >
-    {paymentPlans.map((p) => {
-      const selected = paymentPlan === p.id;
+  {paymentPlans.map((p) => {
+    const selected = paymentPlan.includes(p.id);
 
-      return (
-        <Box
-          key={p.id}
-          sx={{
-            border: selected
-              ? "2px solid #2563eb"
-              : "1px solid #e5e7eb",
-            borderRadius: 3,
-            px: 1.5,
-            py: 1.2,
-            mb: 1,
-            cursor: "pointer",
-            bgcolor: selected ? "#f0f7ff" : "#fff",
-            transition: "all 0.2s"
-          }}
-          onClick={() => setPaymentPlan(p.id)}
-        >
-          <Stack direction="row" spacing={1.5} alignItems="flex-start">
-            
-            <Radio
-              value={p.id}
-              checked={selected}
-              sx={{
-                mt: "-2px",
-                p: 0.5,
-                color: "#94a3b8",
-                "&.Mui-checked": {
-                  color: "#2563eb"
-                }
-              }}
-            />
+    const togglePlan = () => {
+      setPaymentPlan((prev) =>
+        prev.includes(p.id)
+          ? prev.filter((id) => id !== p.id)
+          : [...prev, p.id]
+      );
+    };
 
-            <Box>
-              <Typography fontSize={13} fontWeight={600}>
-                {p.name}
+    return (
+      <Box
+        key={p.id}
+        onClick={togglePlan}
+        sx={{
+          border: selected
+            ? "2px solid #2563eb"
+            : "1px solid #e5e7eb",
+          borderRadius: 3,
+          px: 1.5,
+          py: 1.2,
+          mb: 1,
+          cursor: "pointer",
+          bgcolor: selected ? "#f0f7ff" : "#fff",
+          transition: "all 0.2s",
+        }}
+      >
+        <Stack direction="row" spacing={1.5} alignItems="flex-start">
+          <Checkbox
+            checked={selected}
+            onChange={togglePlan}
+            sx={{
+              mt: "-2px",
+              p: 0.5,
+              color: "#94a3b8",
+              "&.Mui-checked": {
+                color: "#2563eb",
+              },
+            }}
+          />
+
+          <Box>
+            <Typography fontSize={13} fontWeight={600}>
+              {p.name}
+            </Typography>
+
+            <Stack direction="row" spacing={0.5} mt={0.5}>
+              <Chip
+                label={p.code}
+                size="small"
+                sx={{
+                  height: 18,
+                  fontSize: 9,
+                  bgcolor: "#e6f0ff",
+                  color: "#2563eb",
+                }}
+              />
+              <Typography fontSize={10} color="#6b7a99">
+                Per Transaction
               </Typography>
+            </Stack>
 
-              <Stack direction="row" spacing={0.5} mt={0.5} alignItems="center">
-                <Chip
-                  label={p.code}
-                  size="small"
-                  sx={{
-                    height: 18,
-                    fontSize: 9,
-                    bgcolor: "#e6f0ff",
-                    color: "#2563eb"
-                  }}
-                />
-                {/* <Chip
-                  label={p.type}
-                  size="small"
-                  sx={{
-                    height: 18,
-                    fontSize: 9,
-                    bgcolor: "#fef3c7",
-                    color: "#92400e"
-                  }}
-                /> */}
-                <Typography fontSize={10} color="#6b7a99">
-                  Per Transaction
-                </Typography>
-              </Stack>
-              <Typography fontSize={11} color="#6b7a99" mt={0.3}>
+            <Typography fontSize={11} color="#6b7a99" mt={0.3}>
               {p.description}
             </Typography>
-            </Box>
-          </Stack>
-        </Box>
-      );
-    })}
-  </RadioGroup>
+          </Box>
+        </Stack>
+      </Box>
+    );
+  })}
 </FormControl>
 
         {/* BUTTON */}
