@@ -464,17 +464,17 @@ const handleCreateDebt = async () => {
 
       {/* TITLE */}
       <Typography fontSize={18} fontWeight={700}>
-        Search to begin
+        Search
       </Typography>
 
       {/* DESCRIPTION */}
-      <Typography fontSize={13} color="#6b7280" maxWidth={420}>
+      {/* <Typography fontSize={13} color="#6b7280" maxWidth={420}>
         Enter a meter number or account number above to pull up a customer's
         complete financial record from the 1.7 million registered accounts.
-      </Typography>
+      </Typography> */}
 
       {/* INFO CARDS */}
-      <Stack spacing={1.5} mt={2} width="100%" maxWidth={420}>
+      {/* <Stack spacing={1.5} mt={2} width="100%" maxWidth={420}>
         <Box sx={infoBox}>
           Use the <b>meter number (KCT1 or KCT2)</b> — fastest and most direct lookup
         </Box>
@@ -486,7 +486,7 @@ const handleCreateDebt = async () => {
         <Box sx={infoBox}>
           The ledger shows the full payment story — every vend, debt deduction and refund by date and time
         </Box>
-      </Stack>
+      </Stack> */}
     </Stack>
   </Paper>
 )}

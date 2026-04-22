@@ -200,7 +200,7 @@ const handleFilterChange = (key: string, value: string) => {
       <Stack direction="row" justifyContent="space-between" mb={4}>
         <Box>
           <Typography fontSize={28} fontWeight={700}>
-            Customer Registry
+            Customer Hub
           </Typography>
           <Typography color="#64748B">
             Register and manage all customers — search by meter number or account number

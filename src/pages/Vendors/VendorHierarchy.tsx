@@ -281,11 +281,11 @@ const loadchildren = async (id: any) => {
   />
 </Stack>
 
-          <Stack direction="row" spacing={1}>
+          {/* <Stack direction="row" spacing={1}>
             <Chip label={`Agents ${countByLevel(MOCK_TREE, "agent")}`} />
             <Chip label={`Cashiers ${countByLevel(MOCK_TREE, "cashier")}`} />
             <Chip label={`POS ${countByLevel(MOCK_TREE, "pos")}`} />
-          </Stack>
+          </Stack> */}
         </Stack>
       </Paper>
 
@@ -374,7 +374,8 @@ const loadchildren = async (id: any) => {
                 {/* CHILDREN CARDS */}
                 <Box mt={4}>
                   <Typography fontWeight={600} mb={2}>
-                    {LEVEL_LABEL[selected.level]} Children ({countChildren(selected)})
+                    {LEVEL_LABEL[selected.level]} Children 
+                    {/* ({countChildren(selected)}) */}
                   </Typography>
 
                   <Grid container spacing={2}>
