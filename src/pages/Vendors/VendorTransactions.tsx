@@ -20,7 +20,7 @@ import {
 		DialogTitle,
 		DialogContent,
 		DialogActions,
-  MenuItem,
+  MenuItem,Snackbar, Alert 
 } from "@mui/material";
 import {
   Refresh,
@@ -43,7 +43,7 @@ import {
 const VendorTransactions: React.FC = () => {
   const [selectedVendorId, selectVendor] = useState<string | null>(null);
   const [vendorsId, setVendorId] = useState<string | null>(null);
-  const { totalBalance } = useOrgWallets(vendorsId);
+  
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [transactions, setTransactions] = useState<Ledger[]>([]);
   const [openFund, setOpenFund] = useState(false);
@@ -57,14 +57,29 @@ const VendorTransactions: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"analytics" | "ledger">("analytics");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "credit" | "debit">("all");
   const today = new Date();
   const past = new Date();
   past.setDate(today.getDate() - 14);
 
   const format = (d: Date) => d.toISOString().split("T")[0];
   const [startDate, setStartDate] = useState(format(past));
-  const [endDate, setEndDate] = useState(format(today));
+  const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
   
+  type AlertType = "success" | "error" | "info" | "warning";
+
+  const [alert, setAlert] = useState<{
+    open: boolean;
+    type: AlertType;
+    message: string;
+  }>({
+    open: false,
+    type: "success",
+    message: "",
+  });
+  const [endDate, setEndDate] = useState(format(tomorrow));
+      
   const load = async () => {
      const res = await fetchVendors();
   
@@ -72,6 +87,16 @@ const VendorTransactions: React.FC = () => {
   
      setVendors(res.results); // ✅ now works
   };
+// useEffect(() => {
+//   if (!vendorsId) return;
+
+//   const interval = setInterval(() => {
+//     loadTransactions(vendorsId);
+//     load(); // sync vendors too
+//   }, 5000);
+
+//   return () => clearInterval(interval);
+// }, [vendorsId]);
 
   useEffect(() => {
     load();
@@ -83,13 +108,21 @@ const VendorTransactions: React.FC = () => {
   );
 
   const handleExport = () => {
-  if (!transactions.length) {
-    alert("No data to export");
+    if (!transactions.length) {
+    setAlert({
+      open: true,
+      type: "warning",
+      message: "No data to export",
+    });
     return;
   }
 
   if (startDate > endDate) {
-    alert("Invalid date range");
+    setAlert({
+      open: true,
+      type: "error",
+      message: "Invalid date range",
+    });
     return;
   }
 
@@ -119,9 +152,13 @@ const VendorTransactions: React.FC = () => {
 
   // ✅ prevent bad date range
   if (startDate > endDate) {
-    alert("Start date cannot be after end date");
-    return;
-  }
+  setAlert({
+    open: true,
+    type: "error",
+    message: "Start date cannot be after end date",
+  });
+  return;
+}
 
   setLoading(true);
 
@@ -138,11 +175,14 @@ const VendorTransactions: React.FC = () => {
   } catch (err: any) {
     console.error("Transaction error:", err);
 
-    alert(
-      err?.response?.data?.message ||
-      err?.message ||
-      "Failed to load transactions"
-    );
+    setAlert({
+      open: true,
+      type: "error",
+      message:
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to load transactions",
+    });
 
     setTransactions([]); // prevent crash
 
@@ -188,27 +228,69 @@ const handleFundWallet = async () => {
   setFunding(true);
 
   try {
+    const amt = Number(amount);
+
     await fundVendorWallet({
       vendor: vendorsId,
-      amount: Number(amount),
+      amount: amt,
     });
 
-    alert("✅ Wallet funded successfully");
+    // ✅ 1. Optimistically update UI instantly
+    setVendors((prev) =>
+      prev.map((v) =>
+        v.id === vendorsId
+          ? {
+              ...v,
+              wallet: {
+                ...v.wallet,
+                balance: String(
+                  Number(v.wallet?.balance || 0) + amt
+                ),
+              },
+            }
+          : v
+      )
+    );
+
+    // ✅ 2. Refresh transactions (real data)
+    loadTransactions(vendorsId);
+
+    // ✅ 3. Optional: refresh vendors from backend
+    // load();
+    // ✅ optional: sync after 3s
+    setTimeout(() => load(), 3000);
+
+    setAlert({
+      open: true,
+      type: "success",
+      message: "Wallet funded successfully",
+    });
 
     setOpenFund(false);
     setAmount("");
-    loadTransactions(vendorsId); // refresh
 
   } catch (err: any) {
-    alert(
-  err?.response?.data?.message ||
-  err?.message ||
-  "❌ Funding failed"
-);
+    setAlert({
+      open: true,
+      type: "error",
+      message:
+        err?.response?.data?.message ||
+        err?.message ||
+        "Funding failed",
+    });
   } finally {
     setFunding(false);
   }
 };
+const filteredTransactions = useMemo(() => {
+  return transactions.filter((tx) => {
+    if (typeFilter === "credit") return tx.credit_amount;
+    if (typeFilter === "debit") return tx.debit_amount;
+    return true;
+  });
+}, [transactions, typeFilter]);
+
+const displayBalance = Number(selectedVendor?.wallet?.balance || 0);
 
  const totalCredits = summary.total_credits;
  const totalDebits = summary.total_debits;
@@ -244,9 +326,9 @@ const getColor = (name: string = "") => {
             >
               Refresh
             </Button>
-          <Button size="small" variant="outlined" sx={{ height: 36, textTransform: "none", borderRadius: 2 }} startIcon={<FileDownload />}>
+          {/* <Button size="small" variant="outlined" sx={{ height: 36, textTransform: "none", borderRadius: 2 }} startIcon={<FileDownload />}>
             Export CSV
-          </Button>
+          </Button> */}
           {/* <Button size="small" onClick={() => setOpenFund(true)} sx={{ height: 36, textTransform: "none", borderRadius: 2 }} variant="contained">
             + Fund Wallet
           </Button> */}
@@ -473,7 +555,7 @@ const getColor = (name: string = "") => {
                 </Stack>
 
                 <Typography fontSize={22} fontWeight={700} color="#16a34a">
-                  ₦{Number(totalBalance || 0).toLocaleString()}
+                  ₦{displayBalance.toLocaleString()}
                 </Typography>
 
                 <Typography fontSize={12} color="#6b7280">
@@ -567,20 +649,23 @@ const getColor = (name: string = "") => {
   />
 
   <TextField
-    size="small"
-    select
-    SelectProps={{ native: true }}
-    sx={{
-      width: 120,
-      "& .MuiOutlinedInput-root": {
-        height: 34,
-        fontSize: 12,
-        bgcolor: "#f9fafb",
-      },
-    }}
-  >
-    <option>All Types</option>
-  </TextField>
+  size="small"
+  select
+  value={typeFilter}
+  onChange={(e) => setTypeFilter(e.target.value as any)}
+  sx={{
+    width: 120,
+    "& .MuiOutlinedInput-root": {
+      height: 34,
+      fontSize: 12,
+      bgcolor: "#f9fafb",
+    },
+  }}
+>
+  <MenuItem value="all">All Types</MenuItem>
+  <MenuItem value="credit">Credit</MenuItem>
+  <MenuItem value="debit">Debit</MenuItem>
+</TextField>
 
  <TextField
   size="small"
@@ -590,7 +675,11 @@ const getColor = (name: string = "") => {
     if (e.target.value <= endDate) {
       setStartDate(e.target.value);
     } else {
-      alert("Start date cannot be after end date");
+      setAlert({
+        open: true,
+        type: "error",
+        message: "Start date cannot be after end date",
+      });
     }
   }}
 />
@@ -603,7 +692,11 @@ const getColor = (name: string = "") => {
     if (e.target.value >= startDate) {
       setEndDate(e.target.value);
     } else {
-      alert("End date cannot be before start date");
+      setAlert({
+        open: true,
+        type: "error",
+        message: "End date cannot be before start date",
+      });
     }
   }}
 />
@@ -635,7 +728,7 @@ const getColor = (name: string = "") => {
 </TableHead>
 
                           <TableBody>
-  {transactions.map((tx) => (
+  {filteredTransactions.map((tx) => (
     <TableRow key={tx.transaction_ref} hover>
       <TableCell>{tx.transaction_ref}</TableCell>
 
@@ -775,6 +868,25 @@ const getColor = (name: string = "") => {
 </Button>
   </DialogActions>
 </Dialog>
+
+<Snackbar
+  open={alert.open}
+  autoHideDuration={4000}
+  onClose={() => setAlert({ ...alert, open: false })}
+  anchorOrigin={{ vertical: "top", horizontal: "right" }}
+>
+  <Alert
+    severity={alert.type}
+    variant="filled"
+    onClose={() => setAlert({ ...alert, open: false })}
+    sx={{
+      borderRadius: 2,
+      boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
+    }}
+  >
+    {alert.message}
+  </Alert>
+</Snackbar>
     </Box>
   );
 };

@@ -58,6 +58,7 @@ const DEBT_TYPES = [
 export default function DebtManager() {
   const [meter, setMeter] = useState("");
   const [account, setAccount] = useState("");
+  const [search, setSearch] = useState("");
   const [customer, setCustomer] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [debts, setDebts] = useState<any[]>([]);
@@ -174,32 +175,24 @@ const handleCreateDebt = async () => {
     try {
       setLoading(true);
 
-      const keyword = meter || account;
+      if (!search.trim()) return;
 
-      if (!keyword) return;
-
-      // 🔹 search customer
-      const res = await searchCustomers(keyword);
+      const res = await searchCustomers(search);
       const found = res?.results?.[0];
 
       if (!found) {
         setCustomer(null);
+        setDebts([]);
         return;
       }
 
       setCustomer(found);
 
-      // 🔹 fetch debts
       const debtRes = await fetchDebt(found.id);
       setDebts(debtRes || []);
 
-      // 🔹 fetch analytic
       const analyticRes = await fetchCustomerDebtAnalytic(found.id);
       setCustomerAnalytic(analyticRes);
-
-      setTimeout(() => {
-        detailsRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 200);
 
     } catch (err) {
       console.error(err);
@@ -295,75 +288,41 @@ const handleCreateDebt = async () => {
         </Typography>
 
         <Grid container spacing={2}>
-          <Grid item xs={12} md={5}>
-						<Typography fontWeight={100}>
-          Meter Number
-        </Typography>
-            <TextField
-              fullWidth
-              placeholder="e.g. 54160893710"
-              value={meter}
-              onChange={(e) => {
-                setMeter(e.target.value);
-                setAccount("");
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                )
-              }}
-							sx={{
-    mt: 2,
-    "& .MuiOutlinedInput-root": {
-      borderRadius: 2,
-      fontSize: 13,
-      height: 45,
-      bgcolor: "#f9fafb",
-    },
-  }}
-             
-            />
-          </Grid>
+          <Grid item xs={12} md={8}>
+  <TextField
+    fullWidth
+    placeholder="Enter meter number or account number"
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    onKeyDown={(e) => {
+      if (e.key === "Enter") handleSearch();
+    }}
+    InputProps={{
+      startAdornment: (
+        <InputAdornment position="start">
+          <Search />
+        </InputAdornment>
+      ),
+    }}
+    sx={{
+      mt: 2,
+      "& .MuiOutlinedInput-root": {
+        borderRadius: 2,
+        fontSize: 13,
+        height: 45,
+        bgcolor: "#f9fafb",
+      },
+    }}
+  />
+</Grid>
 
-          <Grid item xs={12} md={5}>
-						<Typography fontWeight={100}>
-          Account Number
-        </Typography>
-            <TextField
-              fullWidth
-              placeholder="e.g. 04290193847"
-              value={account}
-              onChange={(e) => {
-                setAccount(e.target.value);
-                setMeter("");
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                )
-              }}
-              sx={{
-    mt: 2,
-    "& .MuiOutlinedInput-root": {
-      borderRadius: 2,
-      fontSize: 13,
-      height: 45,
-      bgcolor: "#f9fafb",
-    },
-  }}
-            />
-          </Grid>
-
-          <Grid item direction={'column'} xs={12} md={2}>
+  <Grid item direction={'column'} xs={12} md={2}>
             <Button
+              fullWidth
               onClick={handleSearch}
               sx={{
-								top:39,
-                height: 36,
+                top:13,
+                height: 45,
                 borderRadius: 2,
                 background: "linear-gradient(135deg,#0a1628,#1e4fd8)",
                 color: "#fff"
@@ -371,8 +330,10 @@ const handleCreateDebt = async () => {
             >
               Find Customer
             </Button>
-						<div style={{marginTop:39,fontSize: "10.5px", color: "var(--text-light)"}}> Press <kbd>Enter</kbd> to search</div>
+						<div style={{marginTop:15,fontSize: "10.5px", color: "var(--text-light)"}}> Press <kbd>Enter</kbd> to search</div>
           </Grid>
+
+        
         </Grid>
 
         {/* QUICK */}
@@ -771,7 +732,7 @@ const handleCreateDebt = async () => {
       </Stack>
     ))} */}
 
-    {historyMap[d.id]?.map((r: any, i: number) => (
+    {(historyMap[d.id] || []).map((r: any, i: number) => (
   <Stack
     key={i}
     direction="row"
@@ -779,7 +740,7 @@ const handleCreateDebt = async () => {
     sx={{
           py: 1,
           borderBottom:
-            i !== d.recent.length - 1 ? "1px solid #f1f5f9" : "none"
+            i !== (historyMap[d.id]?.length || 0) - 1 ? "1px solid #f1f5f9" : "none"
         }}
   >
     <Box>
@@ -1022,7 +983,11 @@ const handleCreateDebt = async () => {
         <Stack direction="row" spacing={1.5} alignItems="flex-start">
           <Checkbox
             checked={selected}
-            onChange={togglePlan}
+            onChange={(e) => {
+              e.stopPropagation(); // ✅ prevent double toggle
+              togglePlan();
+            }}
+            onClick={(e) => e.stopPropagation()}
             sx={{
               mt: "-2px",
               p: 0.5,

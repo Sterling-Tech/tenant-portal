@@ -22,8 +22,8 @@ import {
   FormControl,
   Pagination,
   ListItemIcon,
-  Autocomplete,
-  Grid,
+  Autocomplete,Snackbar, Alert,
+  Grid,CircularProgress 
 } from "@mui/material";
 import {
   Search,
@@ -63,11 +63,21 @@ export default function VendorHub() {
   const [next, setNext] = useState<string | null>(null);
   const [previous, setPrevious] = useState<string | null>(null);
   const [selected, setSelected] = useState<Vendor | null>(null);
-
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-
   const [verifiedFilter, setVerifiedFilter] = useState("all");
+  const [loading, setLoading] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  type AlertType = "success" | "error" | "info" | "warning";
 
+const [alert, setAlert] = useState<{
+  open: boolean;
+  type: AlertType;
+  message: string;
+}>({
+  open: false,
+  type: "success",
+  message: "",
+});
+  
 
   const totalPages = Math.ceil(count / PAGE_SIZE);
 
@@ -216,12 +226,16 @@ const load = async (pageNumber = 1) => {
 
   const handleCreateVendor = async () => {
   if (!vendorForm.business_name || !vendorForm.email || !vendorForm.hierachy) {
-    alert("Business name, email and hierarchy are required");
+    setAlert({ open: true, type: "error", message: "Required fields missing" });
     return;
   }
 
   try {
+    setLoading(true);
     await createVendor(vendorForm as VendorForm);
+
+    setAlert({ open: true, type: "success", message: "Vendor created successfully" });
+
 
     setOpenModal(false);
 
@@ -240,7 +254,9 @@ const load = async (pageNumber = 1) => {
 
     load();
   } catch (err) {
-    console.error(err);
+    setAlert({ open: true, type: "error", message: "Failed to create vendor" });
+  } finally {
+    setLoading(false);
   }
 };
 
@@ -589,13 +605,45 @@ const load = async (pageNumber = 1) => {
               </Typography>
 
               <Button
-                size="small"
-                onClick={() => {
-                  navigator.clipboard.writeText(selected.token);
-                }}
-              >
-                Copy
-              </Button>
+              size="small"
+              onClick={async () => {
+                if (!selected?.token) return;
+
+                try {
+                  await navigator.clipboard.writeText(selected.token);
+
+                  setAlert({
+                    open: true,
+                    type: "success",
+                    message: "Token copied to clipboard",
+                  });
+                } catch (err) {
+                  // 🔥 fallback for older browsers / insecure context
+                  try {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = selected.token;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(textArea);
+
+                    setAlert({
+                      open: true,
+                      type: "success",
+                      message: "Token copied (fallback)",
+                    });
+                  } catch (e) {
+                    setAlert({
+                      open: true,
+                      type: "error",
+                      message: "Failed to copy token",
+                    });
+                  }
+                }
+              }}
+            >
+              Copy
+            </Button>
             </Box>
           </Box>
         </Stack>
@@ -795,24 +843,27 @@ const load = async (pageNumber = 1) => {
             />
           </Grid>
 
-          <Grid item xs={12}>
-            <Autocomplete
-              options={vendors || []}
-              getOptionLabel={(o) => o.business_name}
-              value={
-                vendors.find((v) => v.id === vendorForm.related_vendor) || null
-              }
-              onChange={(_, value) =>
-                setVendorForm({
-                  ...vendorForm,
-                  related_vendor: value?.id,
-                })
-              }
-              renderInput={(params) => (
-                <TextField {...params} label="Related Vendor (Optional)" />
-              )}
-            />
-          </Grid>
+          {vendorForm.hierachy &&
+ vendorForm.hierachy !== "vendor" && (
+  <Grid item xs={12}>
+    <Autocomplete
+      options={vendors || []}
+      getOptionLabel={(o) => o.business_name}
+      value={
+        vendors.find((v) => v.id === vendorForm.related_vendor) || null
+      }
+      onChange={(_, value) =>
+        setVendorForm({
+          ...vendorForm,
+          related_vendor: value?.id,
+        })
+      }
+      renderInput={(params) => (
+        <TextField {...params} label="Related Vendor (Optional)" />
+      )}
+    />
+  </Grid>
+)}
         </Grid>
       </Box>
 
@@ -833,18 +884,23 @@ const load = async (pageNumber = 1) => {
           Cancel
         </Button>
 
-        <Button
-          variant="contained"
-          onClick={handleCreateVendor}
-          sx={{
-            bgcolor: "#1e3a8a",
-            textTransform: "none",
-            borderRadius: 2,
-            px: 3,
-          }}
-        >
-          Onboard Vendor
-        </Button>
+       <Button
+  variant="contained"
+  onClick={handleCreateVendor}
+  disabled={loading}
+  sx={{
+    bgcolor: "#1e3a8a",
+    textTransform: "none",
+    borderRadius: 2,
+    px: 3,
+  }}
+>
+  {loading ? (
+    <CircularProgress size={20} sx={{ color: "#fff" }} />
+  ) : (
+    "Onboard Vendor"
+  )}
+</Button>
       </Box>
     </Card>
   </Box>
@@ -871,6 +927,21 @@ const load = async (pageNumber = 1) => {
     </MenuItem>
   )}
 </Menu>
+<Snackbar
+  open={alert.open}
+  autoHideDuration={4000}
+  onClose={() => setAlert({ ...alert, open: false })}
+  anchorOrigin={{ vertical: "top", horizontal: "right" }}
+>
+  <Alert
+    onClose={() => setAlert({ ...alert, open: false })}
+    severity={alert.type}
+    variant="filled"
+    sx={{ borderRadius: 2 }}
+  >
+    {alert.message}
+  </Alert>
+</Snackbar>
     </Box>
   );
 }
