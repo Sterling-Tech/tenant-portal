@@ -45,9 +45,6 @@ const DEBT_TYPES = [
 	{ label: "MAP Refund", value: "MAPREF" }
 ];
 export default function CustomerTrans() {
-	const [meter, setMeter] = useState("");
-	const [account, setAccount] = useState("");
-
   const [search, setSearch] = useState("");
 	const [customer, setCustomer] = useState<any>(null);
 	const [loading, setLoading] = useState(false);
