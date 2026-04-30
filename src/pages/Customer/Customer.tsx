@@ -23,7 +23,8 @@ import {
   Select,
    FormControl,
     MenuItem as SelectItem, 
-    Grid
+    Grid,
+    CircularProgress
 } from "@mui/material";
 import { Search, MoreVert, Refresh } from "@mui/icons-material";
 import { fetchCustomers, fetchCustomer, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers,	type CustomerForm } from "../../services/vendorService";
@@ -90,10 +91,16 @@ useEffect(() => {
   }
 
   debounceRef.current = setTimeout(async () => {
-    const res = await searchCustomers(search);
-    setCustomers(res.results);
-    setCount(res.count);
-  }, 600); // waits 600ms after typing stops
+    setLoading(true); // ✅ spinner trigger
+
+    try {
+      const res = await searchCustomers(search);
+      setCustomers(res.results);
+      setCount(res.count);
+    } finally {
+      setLoading(false);
+    }
+  }, 600);
 }, [search]);
 
 useEffect(() => {
@@ -188,19 +195,22 @@ useEffect(() => {
   }
 };
 const handleFilterChange = (key: string, value: string) => {
+  setLoading(true); // ✅ START SPINNER
+
   setFilters((prev) => ({
     ...prev,
     [key]: value === "all" ? "" : value,
   }));
+
   setPage(1);
-};
+}; 
   return (
     <Box sx={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* HEADER */}
       <Stack direction="row" justifyContent="space-between" mb={4}>
         <Box>
           <Typography fontSize={28} fontWeight={700}>
-            Customer Registry
+            Customer Hub
           </Typography>
           <Typography color="#64748B">
             Register and manage all customers — search by meter number or account number
@@ -218,7 +228,7 @@ const handleFilterChange = (key: string, value: string) => {
       </Stack>
 
       {/* SEARCH BAR */}
-      <Card
+     <Card
   sx={{
     p: 2,
     borderRadius: 4,
@@ -238,11 +248,11 @@ const handleFilterChange = (key: string, value: string) => {
 
   <Stack direction="row" spacing={2} alignItems="center">
     
-    {/* METER SEARCH */}
+    {/* ✅ SINGLE SEARCH */}
     <Box sx={{ flex: 1, position: "relative" }}>
       <TextField
         fullWidth
-        placeholder="Search by meter number..."
+        placeholder="Search by account number or meter number..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         sx={{
@@ -259,9 +269,9 @@ const handleFilterChange = (key: string, value: string) => {
         }}
       />
 
-      {/* RIGHT TAG */}
+      {/* 🔥 SMART TAG */}
       <Chip
-        label="Meter No"
+        label="Account / Meter"
         size="small"
         sx={{
           position: "absolute",
@@ -275,43 +285,7 @@ const handleFilterChange = (key: string, value: string) => {
       />
     </Box>
 
-    {/* ACCOUNT SEARCH */}
-    <Box sx={{ flex: 1, position: "relative" }}>
-      <TextField
-        fullWidth
-        placeholder="Search by account number..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{
-          bgcolor: "#E5E7EB",
-          borderRadius: 3,
-          "& fieldset": { border: "none" },
-        }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <Search sx={{ color: "#94A3B8" }} />
-            </InputAdornment>
-          ),
-        }}
-      />
-
-      <Chip
-        label="Account No"
-        size="small"
-        sx={{
-          position: "absolute",
-          right: 10,
-          top: "50%",
-          transform: "translateY(-50%)",
-          bgcolor: "#E0E7FF",
-          color: "#1D4ED8",
-          fontWeight: 600,
-        }}
-      />
-    </Box>
-
-    {/* CLEAR BUTTON */}
+    {/* CLEAR */}
     <Button
       variant="contained"
       sx={{
@@ -324,8 +298,8 @@ const handleFilterChange = (key: string, value: string) => {
         "&:hover": { bgcolor: "#CBD5F5" },
       }}
       onClick={() => {
-       setSearch("");
-       load();
+        setSearch("");
+        load();
       }}
     >
       Clear
@@ -352,7 +326,7 @@ const handleFilterChange = (key: string, value: string) => {
 
       {/* FILTERS */}
       <Stack direction="row" spacing={2}>
-
+{loading && <CircularProgress size={18} />}
   {/* STATUS */}
   <FormControl size="small">
     <Select
@@ -441,13 +415,41 @@ const handleFilterChange = (key: string, value: string) => {
             </TableHead>
 
             <TableBody>
-              {customers.map((c) => (
-                <TableRow
-                  key={c.id}
-                  hover
-                  sx={{ cursor: "pointer" }}
-                  onClick={() => handleRowClick(c)}
-                >
+  {loading ? (
+    <TableRow>
+      <TableCell colSpan={9}>
+        <Box
+          height={200}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <CircularProgress />
+        </Box>
+      </TableCell>
+    </TableRow>
+  ) : customers.length === 0 ? (
+    <TableRow>
+      <TableCell colSpan={9}>
+        <Box
+          height={200}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Typography color="#94A3B8">No customers found</Typography>
+        </Box>
+      </TableCell>
+    </TableRow>
+  ) : (
+    customers.map((c) => (
+      <TableRow
+        key={c.id}
+        hover
+        sx={{ cursor: "pointer" }}
+        onClick={() => handleRowClick(c)}
+      >
+       
                   <TableCell sx={{ color: "#94A3B8", fontWeight: 600, fontSize: 12 }}>
                     <Stack direction="row" spacing={2} alignItems="center">
                       <Avatar sx={{ bgcolor: "#E2E8F0", color: "#1E293B" }}>
@@ -524,7 +526,7 @@ const handleFilterChange = (key: string, value: string) => {
                     </IconButton>
                   </TableCell>
                 </TableRow>
-              ))}
+              )))}
             </TableBody>
           </Table>
           <Stack direction="row" justifyContent="space-between" p={2}>

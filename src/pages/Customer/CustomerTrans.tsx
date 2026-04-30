@@ -47,6 +47,8 @@ const DEBT_TYPES = [
 export default function CustomerTrans() {
 	const [meter, setMeter] = useState("");
 	const [account, setAccount] = useState("");
+
+  const [search, setSearch] = useState("");
 	const [customer, setCustomer] = useState<any>(null);
 	const [loading, setLoading] = useState(false);
 	const [debts, setDebts] = useState<any[]>([]);
@@ -146,53 +148,37 @@ const handleCreateDebt = async () => {
 };
 	
 	const handleSearch = async () => {
-		try {
-			setLoading(true);
+    try {
+      if (!search.trim()) return;
 
-			const keyword = meter || account;
+      setLoading(true);
 
-			if (!keyword) return;
+      const res = await searchCustomers(search);
+      const found = res?.results?.[0];
 
-			// 🔹 search customer
-			const res = await searchCustomers(keyword);
-			const found = res?.results?.[0];
+      if (!found) {
+        setCustomer(null);
+        return;
+      }
 
-			if (!found) {
-				setCustomer(null);
-				return;
-			}
+      setCustomer(found);
 
-			setCustomer(found);
+      const debtRes = await fetchDebt(found.id);
+      setDebts(debtRes || []);
 
-			// 🔹 fetch debts
-			const debtRes = await fetchDebt(found.id);
-			setDebts(debtRes || []);
+      const analyticRes = await fetchCustomerDebtAnalytic(found.id);
+      setCustomerAnalytic(analyticRes);
 
-			// 🔹 fetch analytic
-			const analyticRes = await fetchCustomerDebtAnalytic(found.id);
-			setCustomerAnalytic(analyticRes);
+      setTimeout(() => {
+        detailsRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 200);
 
-			setTimeout(() => {
-				detailsRef.current?.scrollIntoView({ behavior: "smooth" });
-			}, 200);
-
-		} catch (err) {
-			console.error(err);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const quickFill = (val: string, type: "meter" | "account") => {
-		if (type === "meter") {
-			setMeter(val);
-			setAccount("");
-		} else {
-			setAccount(val);
-			setMeter("");
-		}
-		setTimeout(handleSearch, 200);
-	};
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
 	/* ---------------- UI ---------------- */
 
@@ -259,14 +245,13 @@ const handleCreateDebt = async () => {
 			{/* SEARCH */}
 <Card
   sx={{
-    p: 4,
+    p: 3,
     borderRadius: 4,
     mb: 3,
     background: "#f8fafc",
     border: "1px solid #e5e9f2"
   }}
 >
-  {/* TITLE */}
   <Stack direction="row" alignItems="center" spacing={1} mb={1}>
     <Search sx={{ fontSize: 18, color: "#2563eb" }} />
     <Typography fontWeight={700} fontSize={16}>
@@ -274,163 +259,74 @@ const handleCreateDebt = async () => {
     </Typography>
   </Stack>
 
-  {/* DESCRIPTION */}
-  <Typography fontSize={12.5} color="#6b7280" mb={3}>
-    Enter either the customer's meter number (KCT1 or KCT2) or their account number
-    to retrieve their full financial record. Searching both fields simultaneously
-    is not supported — use one at a time.
+  <Typography fontSize={12.5} color="#6b7280" mb={2}>
+    Search using <b>meter number</b> or <b>account number</b>
   </Typography>
 
-  {/* INPUTS */}
-  <Grid container spacing={2} alignItems="center">
-    {/* METER */}
-    <Grid item xs={12} md={5}>
-      <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
-        <Typography fontSize={11} color="#6b7280" fontWeight={600}>
-          METER NUMBER
-        </Typography>
-        <Chip
-          label="KCT1 OR KCT2"
-          size="small"
-          sx={{
-            height: 18,
-            fontSize: 9,
-            bgcolor: "#e0e7ff",
-            color: "#3730a3"
-          }}
-        />
-      </Stack>
+  <Stack direction="row" spacing={2} alignItems="center">
 
-      <TextField
-        fullWidth
-        placeholder="e.g. 54160893710"
-        value={meter}
-        onChange={(e) => {
-          setMeter(e.target.value);
-          setAccount("");
-        }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <Search sx={{ fontSize: 18, color: "#9ca3af" }} />
-            </InputAdornment>
-          )
-        }}
-        sx={{
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 3,
-            fontSize: 13,
-            height: 48,
-            bgcolor: "#fff"
-          }
-        }}
-      />
-    </Grid>
+    {/* SINGLE SEARCH INPUT */}
+    <TextField
+      fullWidth
+      placeholder="Enter meter number or account number..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") handleSearch();
+      }}
+      InputProps={{
+        startAdornment: (
+          <InputAdornment position="start">
+            <Search sx={{ color: "#9ca3af" }} />
+          </InputAdornment>
+        ),
+      }}
+      sx={{
+        "& .MuiOutlinedInput-root": {
+          borderRadius: 3,
+          height: 48,
+          fontSize: 13,
+          bgcolor: "#fff"
+        }
+      }}
+    />
 
-    {/* OR */}
-    <Grid item xs={12} md={1}>
-      <Typography
-        textAlign="center"
-        fontSize={12}
-        color="#9ca3af"
-        fontWeight={600}
-      >
-        OR
-      </Typography>
-    </Grid>
+    {/* SEARCH BUTTON */}
+    <Button
+      onClick={handleSearch}
+      sx={{
+        height: 44,
+        px: 3,
+        borderRadius: 2,
+        background: "#1d4ed8",
+        color: "#fff",
+        fontWeight: 600,
+        textTransform: "none",
+        "&:hover": { background: "#1e40af" }
+      }}
+    >
+      Search
+    </Button>
 
-    {/* ACCOUNT */}
-    <Grid item xs={12} md={4}>
-      <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
-        <Typography fontSize={11} color="#6b7280" fontWeight={600}>
-          ACCOUNT NUMBER
-        </Typography>
-        <Chip
-          label="ACCOUNT NO"
-          size="small"
-          sx={{
-            height: 18,
-            fontSize: 9,
-            bgcolor: "#e0e7ff",
-            color: "#3730a3"
-          }}
-        />
-      </Stack>
+    {/* CLEAR BUTTON */}
+    <Button
+      onClick={() => {
+        setSearch("");
+        setCustomer(null);
+        setDebts([]);
+      }}
+      sx={{
+        height: 44,
+        px: 2,
+        borderRadius: 2,
+        background: "#f3f4f6",
+        color: "#374151",
+        textTransform: "none"
+      }}
+    >
+      Clear
+    </Button>
 
-      <TextField
-        fullWidth
-        placeholder="e.g. 04290193847"
-        value={account}
-        onChange={(e) => {
-          setAccount(e.target.value);
-          setMeter("");
-        }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <Search sx={{ fontSize: 18, color: "#9ca3af" }} />
-            </InputAdornment>
-          )
-        }}
-        sx={{
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 3,
-            fontSize: 13,
-            height: 48,
-            bgcolor: "#fff"
-          }
-        }}
-      />
-    </Grid>
-
-    {/* BUTTONS */}
-    <Grid item xs={12} md={2}>
-      <Stack direction="row" spacing={1}>
-        <Button
-          onClick={handleSearch}
-          sx={{
-            height: 44,
-            px: 3,
-            borderRadius: 2,
-            background: "#1d4ed8",
-            color: "#fff",
-            fontWeight: 600,
-            textTransform: "none",
-            "&:hover": {
-              background: "#1e40af"
-            }
-          }}
-        >
-          Search
-        </Button>
-
-        <Button
-          onClick={() => {
-            setMeter("");
-            setAccount("");
-          }}
-          sx={{
-            height: 44,
-            px: 2,
-            borderRadius: 2,
-            background: "#f3f4f6",
-            color: "#374151",
-            textTransform: "none"
-          }}
-        >
-          Clear
-        </Button>
-      </Stack>
-    </Grid>
-  </Grid>
-
-  {/* FOOTNOTE */}
-  <Stack direction="row" spacing={2} mt={2}>
-    <Typography fontSize={11} color="#9ca3af">
-      Press <kbd style={{ background: "#eee", padding: "2px 6px", borderRadius: 4 }}>Enter</kbd> to search
-    </Typography>
-    <Typography fontSize={11} color="#9ca3af">• One field at a time</Typography>
-    <Typography fontSize={11} color="#9ca3af">• Exact match required</Typography>
   </Stack>
 </Card>
 
@@ -604,7 +500,7 @@ const handleCreateDebt = async () => {
       <Box sx={{ px: 3, pt: 2 }}>
         <Stack direction="row" spacing={3}>
           <Typography fontWeight={700} sx={{ borderBottom: "2px solid #2563eb", pb: 1 }}>Transaction History</Typography>
-          <Typography fontWeight={600} color="#6b7280">Debt Account</Typography>
+          {/* <Typography fontWeight={600} color="#6b7280">Debt Account</Typography> */}
         </Stack>
       </Box>
 
