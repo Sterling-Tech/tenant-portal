@@ -103,45 +103,88 @@ export interface PaginatedDebtHistory {
   results: DebtHistory[];
 }
 
-export interface Customer {
-  id: string
-  name: string
-  phone_number: string
-  account_number: string
-  meter_number: string
+export interface CustomerTransaction {
+  id: number;
+  vendor?: {
+    id?: number;
+    email?: string;
+    business_name?: string;
+    account_status?: string;
+    hierachy?: string;
+  };
 
-  customer_category: {
-    id: number
-    name: string
-    description: string
-  }
-
-  customer_class: {
-    id: number
-    category: {
-      id: number
-      name: string
-      description: string
-    }
-    name: string
-    description: string
-  }
-
-  metering_type: {
-    id: number
-    name: string
-    description: string
-  }
-
-  wallet: {
-    id: number
-    wallet_type: {
-      name: string
-      description?: string
-    }
-    balance: string
-  }
+  transaction_ref?: string;
+  token?: string;
+  amount?: string;
+  timestamp?: string;
 }
+
+export interface PaginatedCustomerTransactions {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: CustomerTransaction[];
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  email?: string;
+  phone_number?: string;
+  account_number?: string;
+  meter_number?: string;
+
+  customer_category?: {
+    id: number;
+    name: string;
+    description?: string;
+  };
+
+  customer_class?: {
+    id: number;
+    name: string;
+    description?: string;
+    category?: {
+      id: number;
+      name: string;
+    };
+  };
+
+  metering_type?: {
+    id: number;
+    name: string;
+    description?: string;
+  };
+
+  wallet?: {
+    id: number;
+    balance?: string;
+
+    wallet_type?: {
+      name?: string;
+      description?: string;
+    };
+  };
+
+  extra_info?: {
+    address?: string;
+    district?: string;
+    feeder?: string;
+    transformer?: string;
+    service_center?: string;
+    band?: string;
+    tariff?: string | null;
+    krn?: string | null;
+    ti?: string | null;
+    sgc?: string | null;
+    kct1?: string | null;
+    kct2?: string | null;
+  };
+
+  transactions?: CustomerTransaction[];
+}
+
+
 export interface PaginatedCustomerResponse {
   count: number;
   next: string | null;
@@ -354,6 +397,16 @@ export const fetchCustomer = (params?: {
   customer_id?: string;
     }) =>
     get<Customer>(`/customer/${buildQuery(params)}`);
+
+export const fetchCustomerTransactions = (
+  customerId: string | number,
+  page?: number
+) =>
+  get<PaginatedCustomerTransactions>(
+    `/customer/transactions/?customer_id=${customerId}${
+      page ? `&page=${page}` : ""
+    }`
+  );
 
 export const fetchDebt = (id?: string) =>
     get<Debt[]>(`/customer/debt/?customer_id=${id}`);

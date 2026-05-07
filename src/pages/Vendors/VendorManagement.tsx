@@ -649,7 +649,7 @@ const load = async (pageNumber = 1) => {
         </Stack>
 
         {/* ACTIONS */}
-        <Stack direction="row" spacing={1} mt={3}>
+        {/* <Stack direction="row" spacing={1} mt={3}>
           <Button fullWidth variant="outlined">
             Full Profile
           </Button>
@@ -659,7 +659,7 @@ const load = async (pageNumber = 1) => {
           <Button fullWidth color="error" variant="contained">
             Delete
           </Button>
-        </Stack>
+        </Stack> */}
       </Box>
     </>
   )}

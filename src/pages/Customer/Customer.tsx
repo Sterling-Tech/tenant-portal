@@ -24,12 +24,28 @@ import {
    FormControl,
     MenuItem as SelectItem, 
     Grid,
-    CircularProgress
+    CircularProgress,
+    Tabs,
+  Tab,
 } from "@mui/material";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  AreaChart,
+  Area,
+} from "recharts";
+
+import { useNavigate } from "react-router-dom";
 import { Search, MoreVert, Refresh } from "@mui/icons-material";
-import { fetchCustomers, fetchCustomer, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers,	type CustomerForm } from "../../services/vendorService";
+import { fetchCustomers, fetchCustomer, fetchCustomerTransactions, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers,	type CustomerForm } from "../../services/vendorService";
 
 const CustomerManagement = () => {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selected, setSelected] = useState<Customer | null>(null);
   const [search, setSearch] = useState("");
@@ -47,32 +63,60 @@ const [saving, setSaving] = useState(false);
 const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 const [openViewModal, setOpenViewModal] = useState(false);
 const [openDeleteModal, setOpenDeleteModal] = useState(false);
-
+const [viewTab, setViewTab] = useState("overview");
 const [filters, setFilters] = useState({
   account_status: "",
   metering_type_id: "",
   class_id: "",
   category_id: "",
 });
-
 const [page, setPage] = useState(1);
 const [count, setCount] = useState(0);
 const [loading, setLoading] = useState(false);
-  const load = async (params?: any) => {
-  setLoading(true);
-  try {
-    const res = await fetchCustomers({
-      ...filters,
-      page,
-      ...params,
-    });
 
-    setCustomers(res.results);
-    setCount(res.count);
-  } finally {
-    setLoading(false);
+const [transactions, setTransactions] = useState<any[]>([]);
+const [transactionLoading, setTransactionLoading] = useState(false);
+const [transactionCount, setTransactionCount] = useState(0);
+const [transactionPage, setTransactionPage] = useState(1);
+
+const safeValue = (value: any, fallback = "N/A") => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    value === "null"
+  ) {
+    return fallback;
   }
+
+  return value;
 };
+const formatDate = (date: string) => {
+  if (!date) return "N/A";
+
+  return new Date(date).toLocaleString("en-NG", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+  const load = async (params?: any) => {
+    setLoading(true);
+    try {
+      const res = await fetchCustomers({
+        ...filters,
+        page,
+        ...params,
+      });
+
+      setCustomers(res.results);
+      setCount(res.count);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
   load();
@@ -102,6 +146,31 @@ useEffect(() => {
     }
   }, 600);
 }, [search]);
+
+const loadCustomerTransactions = async (
+  customerId: string | number,
+  page = 1
+) => {
+  try {
+    setTransactionLoading(true);
+
+    const res = await fetchCustomerTransactions(
+      customerId,
+      page
+    );
+
+    setTransactions(res.results || []);
+    setTransactionCount(res.count || 0);
+    setTransactionPage(page);
+
+  } catch (err) {
+    console.error(err);
+
+    setTransactions([]);
+  } finally {
+    setTransactionLoading(false);
+  }
+};
 
 useEffect(() => {
   const loadFilters = async () => {
@@ -204,6 +273,30 @@ const handleFilterChange = (key: string, value: string) => {
 
   setPage(1);
 }; 
+
+useEffect(() => {
+  if (
+    (viewTab === "transactions" || viewTab === "charts") &&
+    selected?.id &&
+    transactions.length === 0
+  ) {
+    loadCustomerTransactions(selected.id);
+  }
+}, [viewTab, selected]);
+
+const chartData = useMemo(() => {
+  return transactions
+    .slice()
+    .reverse()
+    .map((tx) => ({
+      amount: Number(tx.amount || 0),
+      date: new Date(tx.timestamp).toLocaleDateString("en-NG", {
+        month: "short",
+        day: "numeric",
+      }),
+    }));
+}, [transactions]);
+
   return (
     <Box sx={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* HEADER */}
@@ -499,9 +592,7 @@ const handleFilterChange = (key: string, value: string) => {
                   </TableCell>
 
                   <TableCell>
-                    <Chip
-                      label={`₦${c.wallet?.balance || "0.00"}`}
-                      size="small"
+                    <Button
                       sx={{
                         bgcolor:
                           Number(c.wallet?.balance) > 0
@@ -512,7 +603,39 @@ const handleFilterChange = (key: string, value: string) => {
                             ? "#991B1B"
                             : "#166534",
                       }}
-                    />
+                      size="small"
+                      // onClick = {async(e)  =>  {
+                      //   e.stopPropagation();
+
+                      //   const full = await fetchCustomer({
+                      //     customer_id: c.id,
+                      //   });
+
+                      //   setSelected(full);
+
+                      //   setOpenViewModal(true);
+
+                      //   setViewTab("transactions");
+
+                      //   await loadCustomerTransactions(c.id);
+                      // }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+
+                        navigate(
+                          `customer/subaccount/${c.account_number}`,
+                          {
+                            state: {
+                              customer: c,
+                              account_number: c.account_number,
+                            },
+                          }
+                        );
+                      }}
+                    >
+                      ₦{c.wallet?.balance}
+                    </Button>
+                    
                   </TableCell>
 
                   <TableCell onClick={(e) => e.stopPropagation()}>
@@ -591,8 +714,26 @@ const handleFilterChange = (key: string, value: string) => {
   >
     Edit
   </MenuItem>
+<MenuItem
+  onClick={async () => {
+    const full = await fetchCustomer({
+      customer_id: menuRow!.id,
+    });
 
-  <MenuItem
+    setSelected(full);
+
+    setOpenViewModal(true);
+
+    setViewTab("transactions");
+
+    await loadCustomerTransactions(full.id);
+
+    setAnchorEl(null);
+  }}
+>
+  Transactions
+</MenuItem>
+  {/* <MenuItem
     sx={{ color: "red" }}
     onClick={() => {
       setSelected(menuRow);
@@ -601,7 +742,7 @@ const handleFilterChange = (key: string, value: string) => {
     }}
   >
     Delete
-  </MenuItem>
+  </MenuItem> */}
 </Menu>
 
       {/* DETAIL PANEL */}
@@ -649,81 +790,437 @@ const handleFilterChange = (key: string, value: string) => {
       </Box>
 
       {/* BODY */}
-      <Box p={3}>
-        <Grid container spacing={3}>
-          <Grid item xs={6}>
-            <Typography fontSize={12} color="#94A3B8">Account No</Typography>
-            <Typography fontWeight={600}>{selected.account_number}</Typography>
-          </Grid>
+      <Box p={0}>
 
-          <Grid item xs={6}>
-            <Typography fontSize={12} color="#94A3B8">Meter No</Typography>
-            <Typography fontWeight={600}>{selected.meter_number}</Typography>
-          </Grid>
+  {/* TABS */}
+  <Tabs
+    value={viewTab}
+    onChange={(e, v) => setViewTab(v)}
+    sx={{
+      px: 3,
+      borderBottom: "1px solid #E2E8F0",
+    }}
+  >
+    <Tab label="Overview" value="overview" />
+    <Tab label="CIS Information" value="cis" />
+    <Tab label="Transactions" value="transactions" />
+    <Tab label="Charts" value="charts" />
+  </Tabs>
 
-          <Grid item xs={6}>
-            <Typography fontSize={12} color="#94A3B8">Class</Typography>
-            <Typography fontWeight={600}>{selected.customer_class?.name}</Typography>
-          </Grid>
+  {/* OVERVIEW */}
+  {viewTab === "overview" && (
+    <Box p={3}>
+      <Grid container spacing={3}>
 
-          <Grid item xs={6}>
-            <Typography fontSize={12} color="#94A3B8">Category</Typography>
-            <Typography fontWeight={600}>{selected.customer_category?.name}</Typography>
-          </Grid>
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Customer Name
+          </Typography>
 
-          <Grid item xs={6}>
-            <Typography fontSize={12} color="#94A3B8">Metering</Typography>
-            <Typography fontWeight={600}>{selected.metering_type?.name}</Typography>
-          </Grid>
-
-          <Grid item xs={6}>
-            <Typography fontSize={12} color="#94A3B8">Balance</Typography>
-            <Typography fontWeight={600}>₦{selected.wallet?.balance}</Typography>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Typography fontSize={12} color="#94A3B8">Address</Typography>
-            <Typography fontWeight={600}>
-              {(selected as any).address || "N/A"}
-            </Typography>
-          </Grid>
+          <Typography fontWeight={700}>
+            {safeValue(selected?.name)}
+          </Typography>
         </Grid>
 
-        <Divider sx={{ my: 3 }} />
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Phone Number
+          </Typography>
 
-        <Stack direction="row" spacing={2}>
-          <Button
-            variant="contained"
-            onClick={() => {
-              setOpenViewModal(false);
-              setFormMode("edit");
-              setCustomerForm({
-                name: selected.name,
-               // email: selected.email,
-                phone_number: selected.phone_number,
-                address: (selected as any).address,
-                customer_category: selected.customer_category?.id,
-                customer_class: selected.customer_class?.id,
-                metering_type: selected.metering_type?.id,
-              });
-              setOpenModal(true);
-            }}
-          >
-            Edit
-          </Button>
+          <Typography fontWeight={700}>
+            {safeValue(selected?.phone_number)}
+          </Typography>
+        </Grid>
 
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={() => {
-              setOpenViewModal(false);
-              setOpenDeleteModal(true);
-            }}
-          >
-            Delete
-          </Button>
-        </Stack>
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Account Number
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {safeValue(selected?.account_number)}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Meter Number
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {safeValue(selected?.meter_number)}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Wallet Balance
+          </Typography>
+
+          <Typography fontWeight={700}>
+            ₦{safeValue(selected?.wallet?.balance, "0.00")}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Wallet Type
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {safeValue(selected?.wallet?.wallet_type?.name)}
+          </Typography>
+        </Grid>
+
+      </Grid>
+    </Box>
+  )}
+
+  {/* CIS INFORMATION */}
+  {viewTab === "cis" && (
+    <Box p={3}>
+
+      <Grid container spacing={3}>
+
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            District / Branch
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {safeValue(selected?.extra_info?.district)}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Customer Category
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {safeValue(selected?.customer_category?.name)}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Feeder
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {safeValue(selected?.extra_info?.feeder)}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Transformer
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {safeValue(selected?.extra_info?.transformer)}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Service Center
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {safeValue(selected?.extra_info?.service_center)}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Band
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {safeValue(selected?.extra_info?.band)}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={6}>
+          <Typography fontSize={12} color="#94A3B8">
+            Tariff
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {safeValue(selected?.extra_info?.tariff)}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Typography fontSize={12} color="#94A3B8">
+            Address
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {safeValue(selected?.extra_info?.address)}
+          </Typography>
+        </Grid>
+
+      </Grid>
+
+    </Box>
+  )}
+
+  {/* TRANSACTIONS */}
+  {viewTab === "transactions" && (
+  <Box p={3}>
+
+    {transactionLoading ? (
+      <Box
+        height={250}
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+      >
+        <CircularProgress />
       </Box>
+    ) : (
+      <>
+        <Table>
+          <TableHead>
+            <TableRow>
+
+              <TableCell>ID</TableCell>
+
+              <TableCell>
+                Vendor
+              </TableCell>
+
+              <TableCell>
+                Token
+              </TableCell>
+
+              <TableCell>
+                Reference
+              </TableCell>
+
+              <TableCell>
+                Amount
+              </TableCell>
+
+              <TableCell>
+                Date
+              </TableCell>
+
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+
+            {transactions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6}>
+                  <Box
+                    py={6}
+                    textAlign="center"
+                  >
+                    <Typography color="#94A3B8">
+                      No transactions found
+                    </Typography>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : (
+              transactions.map((tx) => (
+                <TableRow key={tx.id} hover>
+
+                  <TableCell>
+                    {safeValue(tx.id)}
+                  </TableCell>
+
+                  <TableCell>
+                    <Stack spacing={0.5}>
+                      <Typography
+                        fontWeight={600}
+                        fontSize={13}
+                      >
+                        {safeValue(
+                          tx.vendor?.business_name
+                        )}
+                      </Typography>
+
+                      <Typography
+                        fontSize={11}
+                        color="#94A3B8"
+                      >
+                        {safeValue(
+                          tx.vendor?.email
+                        )}
+                      </Typography>
+                    </Stack>
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography
+                      fontSize={12}
+                      sx={{
+                        maxWidth: 180,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {safeValue(tx.token)}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell>
+                    {safeValue(
+                      tx.transaction_ref
+                    )}
+                  </TableCell>
+
+                  <TableCell>
+                    <Chip
+                      label={`₦${safeValue(
+                        tx.amount,
+                        "0.00"
+                      )}`}
+                      sx={{
+                        bgcolor: "#DCFCE7",
+                        color: "#166534",
+                        fontWeight: 700,
+                      }}
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    {formatDate(tx.timestamp)}
+                  </TableCell>
+
+                </TableRow>
+              ))
+            )}
+
+          </TableBody>
+        </Table>
+
+        {/* PAGINATION */}
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mt={2}
+        >
+          <Typography fontSize={13}>
+            Showing {transactions.length} of{" "}
+            {transactionCount}
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              disabled={transactionPage === 1}
+              onClick={() =>
+                loadCustomerTransactions(
+                  selected!.id,
+                  transactionPage - 1
+                )
+              }
+            >
+              Prev
+            </Button>
+
+            <Button
+              disabled={
+                transactions.length === 0
+              }
+              onClick={() =>
+                loadCustomerTransactions(
+                  selected!.id,
+                  transactionPage + 1
+                )
+              }
+            >
+              Next
+            </Button>
+          </Stack>
+        </Stack>
+      </>
+    )}
+
+  </Box>
+)}
+
+  {/* CHARTS */}
+  {/* CHARTS */}
+{viewTab === "charts" && (
+  <Box p={3}>
+    <Card
+      sx={{
+        p: 4,
+        borderRadius: 4,
+        bgcolor: "#F8FAFC",
+      }}
+    >
+      <Typography fontWeight={700} mb={1}>
+        Transaction Analytics
+      </Typography>
+
+      <Typography color="#64748B" mb={4}>
+        Customer payment trend
+      </Typography>
+
+      {chartData.length === 0 ? (
+        <Box py={8} textAlign="center">
+          <Typography color="#94A3B8">
+            No chart data available
+          </Typography>
+        </Box>
+      ) : (
+        <Box height={350}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient
+                  id="colorAmount"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="5%"
+                    stopColor="#2563EB"
+                    stopOpacity={0.4}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="#2563EB"
+                    stopOpacity={0}
+                  />
+                </linearGradient>
+              </defs>
+
+              <CartesianGrid strokeDasharray="3 3" />
+
+              <XAxis dataKey="date" />
+
+              <YAxis />
+
+              <Tooltip />
+
+              <Area
+                type="monotone"
+                dataKey="amount"
+                stroke="#2563EB"
+                fillOpacity={1}
+                fill="url(#colorAmount)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Box>
+      )}
+    </Card>
+  </Box>
+)}
+
+</Box>
     </Card>
   </Box>
 )}
