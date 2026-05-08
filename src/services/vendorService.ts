@@ -297,13 +297,28 @@ export interface MeteringType {
     description: string;
 }
 export interface CustomerForm {
-  name: string
-  email: string
-  phone_number: string
-  address: string
-  customer_category: number
-  customer_class: number
-  metering_type: number
+  name: string;
+  email: string;
+  phone_number: string;
+  address: string;
+
+  customer_category: number;
+  customer_class: number;
+  metering_type: number;
+
+  district: string;
+  feeder: string;
+  transformer: string;
+  service_center: string;
+
+  band: string;
+  tariff: string;
+
+  krn: string;
+  ti: string;
+  sgc: string;
+  kct1: string;
+  kct2: string;
 }
 export interface VendorAdminProfile {
     id: string;

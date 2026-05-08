@@ -61,6 +61,7 @@ export default function VendorHub() {
   const [menuVendor, setMenuVendor] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [openModal, setOpenModal] = useState(false);
+  const [openModalt, setOpenModalt] = useState(false);
   const [vendorForm, setVendorForm] = useState<Partial<VendorForm>>({});
 
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -332,7 +333,7 @@ const load = async (pageNumber = 1) => {
       bgcolor: "#1e3a8a",
       "&:hover": { bgcolor: "#1e40af" },
     }}
-    onClick={() => setOpenModal(true)}
+    onClick={() => setOpenModalt(true)}
   >
     + Onboard Vendor mvp test
   </Button>
@@ -969,7 +970,7 @@ const load = async (pageNumber = 1) => {
 
 
 <TenantFormModal
-                open={openModal}
+                open={openModalt}
                 mode={tenantModalState.mode}
                 // loading={mutationLoading}
                 initialValues={

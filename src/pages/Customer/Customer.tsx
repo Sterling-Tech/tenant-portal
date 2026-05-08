@@ -228,16 +228,30 @@ useEffect(() => {
   }
 
   setSaving(true);
-
   try {
     const payload: CustomerForm = {
-      name: customerForm.name!,
-      email: customerForm.email!,
-      phone_number: customerForm.phone_number!,
+      name: customerForm.name || "",
+      email: customerForm.email || "",
+      phone_number: customerForm.phone_number || "",
       address: customerForm.address || "",
+
       customer_category: Number(customerForm.customer_category),
       customer_class: Number(customerForm.customer_class),
       metering_type: Number(customerForm.metering_type),
+
+      district: customerForm.district || "",
+      feeder: customerForm.feeder || "",
+      transformer: customerForm.transformer || "",
+      service_center: customerForm.service_center || "",
+
+      band: customerForm.band || "",
+      tariff: customerForm.tariff || "",
+
+      krn: customerForm.krn || "",
+      ti: customerForm.ti || "",
+      sgc: customerForm.sgc || "",
+      kct1: customerForm.kct1 || "",
+      kct2: customerForm.kct2 || "",
     };
 
     await createCustomer(payload);
@@ -311,7 +325,7 @@ const chartData = useMemo(() => {
         </Box>
 
         <Stack direction="row" spacing={2}>
-          <Button variant="outlined" startIcon={<Refresh />}sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
+          <Button onClick={() => load()} variant="outlined" startIcon={<Refresh />}sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
             Refresh
           </Button>
           <Button onClick={handleCreateClick} variant="contained" sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
@@ -1272,212 +1286,462 @@ const chartData = useMemo(() => {
   </Box>
 )}
         {openModal && (
-        <Box
+  <Box
+    sx={{
+      position: "fixed",
+      inset: 0,
+      backdropFilter: "blur(10px)",
+      bgcolor: "rgba(0,0,0,0.25)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1300,
+      overflow: "auto",
+      py: 4,
+    }}
+  >
+    <Card
+      sx={{
+        width: 900,
+        borderRadius: 4,
+        overflow: "hidden",
+      }}
+    >
+      {/* HEADER */}
+      <Box
+        sx={{
+          bgcolor: "#1e3a8a",
+          color: "#fff",
+          px: 3,
+          py: 2.5,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Box>
+           {/* <Typography fontSize={13} opacity={0.8}>
+            Complete customer information and CIS setup
+          </Typography> */}
+          <Typography fontWeight={700} fontSize={20}>
+            {formMode === "create"
+              ? "Onboard New Customer"
+              : "Edit Customer"}
+          </Typography>
+        </Box>
+
+        <IconButton
+          onClick={() => setOpenModal(false)}
+          sx={{ color: "#fff" }}
+        >
+          ✕
+        </IconButton>
+      </Box>
+
+      {/* FORM */}
+      <Box px={3} py={3}>
+
+        {/* CUSTOMER INFORMATION */}
+        <Typography
+          fontWeight={700}
+          mb={2}
+          fontSize={16}
+          color="#0F172A"
+        >
+          Customer Information
+        </Typography>
+
+        <Grid container spacing={2} mb={3}>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Customer Name"
+              size="small"
+              value={customerForm.name || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  name: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Email Address"
+              size="small"
+              value={customerForm.email || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  email: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Phone Number"
+              size="small"
+              value={customerForm.phone_number || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  phone_number: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Band"
+              size="small"
+              placeholder="Band A"
+              value={customerForm.band || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  band: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              label="Address"
+              multiline
+              rows={2}
+              size="small"
+              value={customerForm.address || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  address: e.target.value,
+                })
+              }
+            />
+          </Grid>
+        </Grid>
+
+        {/* CUSTOMER CLASSIFICATION */}
+        <Typography
+          fontWeight={700}
+          mb={2}
+          fontSize={16}
+          color="#0F172A"
+        >
+          Customer Classification
+        </Typography>
+
+        <Grid container spacing={2} mb={3}>
+
+          {/* CATEGORY */}
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth size="small">
+              <Select
+                value={customerForm.customer_category || ""}
+                displayEmpty
+                onChange={(e) =>
+                  setCustomerForm({
+                    ...customerForm,
+                    customer_category: Number(e.target.value),
+                  })
+                }
+              >
+                <MenuItem value="">
+                  Select Category
+                </MenuItem>
+
+                {categories.map((cat) => (
+                  <MenuItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* CLASS */}
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth size="small">
+              <Select
+                value={customerForm.customer_class || ""}
+                displayEmpty
+                onChange={(e) =>
+                  setCustomerForm({
+                    ...customerForm,
+                    customer_class: Number(e.target.value),
+                  })
+                }
+              >
+                <MenuItem value="">
+                  Select Class
+                </MenuItem>
+
+                {classes.map((cls) => (
+                  <MenuItem key={cls.id} value={cls.id}>
+                    {cls.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* METERING */}
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth size="small">
+              <Select
+                value={customerForm.metering_type || ""}
+                displayEmpty
+                onChange={(e) =>
+                  setCustomerForm({
+                    ...customerForm,
+                    metering_type: Number(e.target.value),
+                  })
+                }
+              >
+                <MenuItem value="">
+                  Select Metering Type
+                </MenuItem>
+
+                {meteringTypes.map((m) => (
+                  <MenuItem key={m.id} value={m.id}>
+                    {m.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+        </Grid>
+
+        {/* CIS INFORMATION */}
+        <Typography
+          fontWeight={700}
+          mb={2}
+          fontSize={16}
+          color="#0F172A"
+        >
+          CIS Information
+        </Typography>
+
+        <Grid container spacing={2} mb={3}>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="District"
+              size="small"
+              value={customerForm.district || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  district: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Feeder"
+              size="small"
+              value={customerForm.feeder || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  feeder: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Transformer"
+              size="small"
+              value={customerForm.transformer || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  transformer: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Service Center"
+              size="small"
+              value={customerForm.service_center || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  service_center: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Tariff"
+              size="small"
+              value={customerForm.tariff || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  tariff: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+        </Grid>
+
+        {/* METER TOKENS */}
+        <Typography
+          fontWeight={700}
+          mb={2}
+          fontSize={16}
+          color="#0F172A"
+        >
+          Meter Configuration
+        </Typography>
+
+        <Grid container spacing={2}>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="KRN"
+              size="small"
+              value={customerForm.krn || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  krn: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="TI"
+              size="small"
+              value={customerForm.ti || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  ti: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="SGC"
+              size="small"
+              value={customerForm.sgc || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  sgc: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="KCT1"
+              size="small"
+              value={customerForm.kct1 || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  kct1: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="KCT2"
+              size="small"
+              value={customerForm.kct2 || ""}
+              onChange={(e) =>
+                setCustomerForm({
+                  ...customerForm,
+                  kct2: e.target.value,
+                })
+              }
+            />
+          </Grid>
+
+        </Grid>
+      </Box>
+
+      {/* FOOTER */}
+      <Box
+        px={3}
+        py={2}
+        display="flex"
+        justifyContent="flex-end"
+        gap={2}
+        borderTop="1px solid #eee"
+      >
+        <Button
+          variant="outlined"
+          onClick={() => setOpenModal(false)}
           sx={{
-            position: "fixed",
-            inset: 0,
-            backdropFilter: "blur(10px)",
-            bgcolor: "rgba(0,0,0,0.25)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1300,
+            textTransform: "none",
+            borderRadius: 2,
           }}
         >
-          <Card
-            sx={{
-              width: 650,
-              borderRadius: 4,
-              overflow: "hidden",
-            }}
-          >
-            {/* HEADER */}
-            <Box
-              sx={{
-                bgcolor: "#1e3a8a",
-                color: "#fff",
-                px: 3,
-                py: 2.5,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Box>
-                <Typography fontWeight={700} fontSize={18}>
-                  {formMode === "create" ? "Onboard New Customer" : "Edit Customer"}
-                </Typography>
-               
-                {/* <Typography fontSize={13} opacity={0.8}>
-                  Fill in the vendor's details to get them started
-                </Typography> */}
-              </Box>
-      
-              <IconButton
-                onClick={() => setOpenModal(false)}
-                sx={{ color: "#fff" }}
-              >
-                ✕
-              </IconButton>
-            </Box>
-      
-            {/* FORM */}
-            <Box px={3} py={3}>
-              <Grid container spacing={2}>
-  <Grid item xs={6}>
-    <TextField
-      fullWidth
-      label="Customer Name"
-      size="small"
-      value={customerForm.name || ""}
-      onChange={(e) =>
-        setCustomerForm({ ...customerForm, name: e.target.value })
-      }
-    />
-  </Grid>
+          Cancel
+        </Button>
 
-  <Grid item xs={6}>
-    <TextField
-      fullWidth
-      label="Email"
-      size="small"
-      value={customerForm.email || ""}
-      onChange={(e) =>
-        setCustomerForm({ ...customerForm, email: e.target.value })
-      }
-    />
-  </Grid>
-
-  <Grid item xs={6}>
-    <TextField
-      fullWidth
-      label="Phone"
-      size="small"
-      value={customerForm.phone_number || ""}
-      onChange={(e) =>
-        setCustomerForm({ ...customerForm, phone_number: e.target.value })
-      }
-    />
-  </Grid>
-
-  {/* CATEGORY */}
-  <Grid item xs={6}>
-    <FormControl fullWidth size="small">
-      <Select
-        value={customerForm.customer_category || ""}
-        displayEmpty
-        onChange={(e) =>
-          setCustomerForm({
-            ...customerForm,
-            customer_category: Number(e.target.value),
-          })
-        }
-      >
-        <MenuItem value="">Select Category</MenuItem>
-        {categories.map((cat) => (
-          <MenuItem key={cat.id} value={cat.id}>
-            {cat.name}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  </Grid>
-
-  {/* CLASS */}
-  <Grid item xs={6}>
-    <FormControl fullWidth size="small">
-      <Select
-        value={customerForm.customer_class || ""}
-        displayEmpty
-        onChange={(e) =>
-          setCustomerForm({
-            ...customerForm,
-            customer_class: Number(e.target.value),
-          })
-        }
-      >
-        <MenuItem value="">Select Class</MenuItem>
-        {classes.map((cls) => (
-          <MenuItem key={cls.id} value={cls.id}>
-            {cls.name}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  </Grid>
-
-  {/* METERING */}
-  <Grid item xs={6}>
-    <FormControl fullWidth size="small">
-      <Select
-        value={customerForm.metering_type || ""}
-        displayEmpty
-        onChange={(e) =>
-          setCustomerForm({
-            ...customerForm,
-            metering_type: Number(e.target.value),
-          })
-        }
-      >
-        <MenuItem value="">Select Metering Type</MenuItem>
-        {meteringTypes.map((m) => (
-          <MenuItem key={m.id} value={m.id}>
-            {m.name}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  </Grid>
-
-  <Grid item xs={12}>
-    <TextField
-      fullWidth
-      label="Address"
-      multiline
-      rows={2}
-      size="small"
-      value={customerForm.address || ""}
-      onChange={(e) =>
-        setCustomerForm({ ...customerForm, address: e.target.value })
-      }
-    />
-  </Grid>
-</Grid>
-            </Box>
-      
-            {/* FOOTER */}
-            <Box
-              px={3}
-              py={2}
-              display="flex"
-              justifyContent="flex-end"
-              gap={2}
-              borderTop="1px solid #eee"
-            >
-              <Button
-                variant="outlined"
-                onClick={() => setOpenModal(false)}
-                sx={{ textTransform: "none", borderRadius: 2 }}
-              >
-                Cancel
-              </Button>
-      
-              <Button
-                variant="contained"
-                onClick={handleSaveVendor}
-                sx={{
-                  bgcolor: "#1e3a8a",
-                  textTransform: "none",
-                  borderRadius: 2,
-                  px: 3,
-                }}
-              >
-                {saving ? "Creating..." : "Create Customer"}
-              </Button>
-            </Box>
-          </Card>
-        </Box>
-      )}
+        <Button
+          variant="contained"
+          onClick={handleSaveVendor}
+          disabled={saving}
+          sx={{
+            bgcolor: "#1e3a8a",
+            textTransform: "none",
+            borderRadius: 2,
+            px: 4,
+          }}
+        >
+          {saving
+            ? "Creating..."
+            : "Create Customer"}
+        </Button>
+      </Box>
+    </Card>
+  </Box>
+)}
     </Box>
   );
 };
