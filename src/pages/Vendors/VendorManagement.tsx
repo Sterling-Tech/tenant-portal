@@ -36,7 +36,8 @@ import {
   Delete,
 } from "@mui/icons-material";
 import { fetchVendors, createVendor, type VendorForm, Vendor, searchVendors, toggleVendorStatus} from "../../services/vendorService";
-	
+import TenantFormModal, { TenantFormValues } from '../../components/TenantAdmin/TenantFormModal';	
+import { Tenant } from "../../services/tenantService";
 const PAGE_SIZE = 10;
 
 const formatCurrency = (val: any) => {
@@ -49,6 +50,10 @@ const formatCurrency = (val: any) => {
 };
 
 export default function VendorHub() {
+  const [tenantModalState, setTenantModalState] = useState<{ open: boolean; mode: 'create' | 'edit'; tenant?: Tenant | null }>({
+        open: false,
+        mode: 'create',
+  });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -149,7 +154,9 @@ const load = async (pageNumber = 1) => {
     setCount(0);
   }
 };
+ const handleTenantModalSubmit = async (values: TenantFormValues) => {
 
+ }
   useEffect(() => {
     load(page);
   }, [page, debouncedSearch, statusFilter, verifiedFilter]);
@@ -313,6 +320,21 @@ const load = async (pageNumber = 1) => {
     onClick={() => setOpenModal(true)}
   >
     + Onboard Vendor
+  </Button>
+
+  <Button
+    size="small"
+    variant="contained"
+    sx={{
+      height: 36,
+      textTransform: "none",
+      borderRadius: 2,
+      bgcolor: "#1e3a8a",
+      "&:hover": { bgcolor: "#1e40af" },
+    }}
+    onClick={() => setOpenModal(true)}
+  >
+    + Onboard Vendor mvp test
   </Button>
 </Stack>
       </Stack>
@@ -942,6 +964,34 @@ const load = async (pageNumber = 1) => {
     {alert.message}
   </Alert>
 </Snackbar>
+
+
+
+
+<TenantFormModal
+                open={openModal}
+                mode={tenantModalState.mode}
+                // loading={mutationLoading}
+                initialValues={
+                    tenantModalState.mode === 'edit' && tenantModalState.tenant
+                        ? {
+                            name: tenantModalState.tenant.business_name,
+                            slug: tenantModalState.tenant.email,
+                            domain: tenantModalState.tenant.address,
+                            subdomain: tenantModalState.tenant.phone_number ?? '',
+                            isTrial: true,
+                            trialEndsAt: tenantModalState.tenant.state ?? '',
+                            isActive: true,
+                        }
+                        : undefined
+                }
+                submitDisabled={tenantModalState.mode === 'create'}
+                // submitDisabledMessage={
+                    // tenantModalState.mode === 'create'}
+                onClose={()=>{console.log("hi")}}
+                onSubmit={handleTenantModalSubmit}
+            />
+
     </Box>
   );
 }
