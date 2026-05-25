@@ -392,6 +392,7 @@ export const fetchVendors = (params?: {
 }) =>
   get<PaginatedVendorResponse>(
     `/vendor/retrieve/${buildQuery(params)}`
+    //`/vendor/retrieve${buildQuery(params)}`
   );
 
 export const fetchVendor = (id: string) =>

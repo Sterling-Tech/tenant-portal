@@ -16,11 +16,12 @@ import {
   TableBody,
   InputAdornment,
   Avatar,
-	Dialog,
-		DialogTitle,
-		DialogContent,
-		DialogActions,
-  MenuItem,Snackbar, Alert 
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Pagination,
+  MenuItem, Snackbar, Alert
 } from "@mui/material";
 import {
   Refresh,
@@ -43,7 +44,7 @@ import {
 const VendorTransactions: React.FC = () => {
   const [selectedVendorId, selectVendor] = useState<string | null>(null);
   const [vendorsId, setVendorId] = useState<string | null>(null);
-  
+
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [transactions, setTransactions] = useState<Ledger[]>([]);
   const [openFund, setOpenFund] = useState(false);
@@ -53,9 +54,14 @@ const VendorTransactions: React.FC = () => {
     total_debits: 0,
     total_credits: 0,
   });
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(5);
+  const [vendorCount, setVendorCount] = useState(0);
+
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"analytics" | "ledger">("analytics");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "credit" | "debit">("all");
   const today = new Date();
@@ -65,8 +71,8 @@ const VendorTransactions: React.FC = () => {
   const format = (d: Date) => d.toISOString().split("T")[0];
   const [startDate, setStartDate] = useState(format(past));
   const tomorrow = new Date();
-    tomorrow.setDate(today.getDate() + 1);
-  
+  tomorrow.setDate(today.getDate() + 1);
+
   type AlertType = "success" | "error" | "info" | "warning";
 
   const [alert, setAlert] = useState<{
@@ -79,28 +85,34 @@ const VendorTransactions: React.FC = () => {
     message: "",
   });
   const [endDate, setEndDate] = useState(format(tomorrow));
-      
-  const load = async () => {
-     const res = await fetchVendors();
-  
-     console.log(res, "yhhh");
-  
-     setVendors(res.results); // ✅ now works
-  };
-// useEffect(() => {
-//   if (!vendorsId) return;
-
-//   const interval = setInterval(() => {
-//     loadTransactions(vendorsId);
-//     load(); // sync vendors too
-//   }, 5000);
-
-//   return () => clearInterval(interval);
-// }, [vendorsId]);
 
   useEffect(() => {
-    load();
-  }, []);
+  const timer = setTimeout(() => {
+    setDebouncedSearch(search);
+  }, 500);
+
+  return () => clearTimeout(timer);
+}, [search]);
+
+useEffect(() => {
+  setPage(1);
+}, [debouncedSearch, statusFilter]);
+
+  const load = async (pageNumber = 1) => {
+    const res = await fetchVendors({
+      page: pageNumber,
+      search: debouncedSearch,
+      account_status:
+        statusFilter === "all" ? undefined : statusFilter,
+    });
+
+    setVendors(res.results || []);
+    setVendorCount(res.count || 0);
+  };
+
+  useEffect(() => {
+  load(page);
+}, [page, debouncedSearch, statusFilter]);
 
   const selectedVendor = useMemo(
     () => vendors?.find((t) => t.id === vendorsId),
@@ -109,93 +121,93 @@ const VendorTransactions: React.FC = () => {
 
   const handleExport = () => {
     if (!transactions.length) {
-    setAlert({
-      open: true,
-      type: "warning",
-      message: "No data to export",
-    });
-    return;
-  }
+      setAlert({
+        open: true,
+        type: "warning",
+        message: "No data to export",
+      });
+      return;
+    }
 
-  if (startDate > endDate) {
-    setAlert({
-      open: true,
-      type: "error",
-      message: "Invalid date range",
-    });
-    return;
-  }
+    if (startDate > endDate) {
+      setAlert({
+        open: true,
+        type: "error",
+        message: "Invalid date range",
+      });
+      return;
+    }
 
-  const headers = ["Reference", "Credit", "Debit", "Date"];
+    const headers = ["Reference", "Credit", "Debit", "Date"];
 
-  const rows = transactions.map((tx) => [
-    tx.transaction_ref,
-    tx.credit_amount || "0",
-    tx.debit_amount || "0",
-    new Date(tx.timestamp).toLocaleString(),
-  ]);
+    const rows = transactions.map((tx) => [
+      tx.transaction_ref,
+      tx.credit_amount || "0",
+      tx.debit_amount || "0",
+      new Date(tx.timestamp).toLocaleString(),
+    ]);
 
-  const csvContent =
-    [headers, ...rows].map((row) => row.join(",")).join("\n");
+    const csvContent =
+      [headers, ...rows].map((row) => row.join(",")).join("\n");
 
-  const blob = new Blob([csvContent], { type: "text/csv" });
-  const url = window.URL.createObjectURL(blob);
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `transactions_${startDate}_${endDate}.csv`;
-  link.click();
-};
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `transactions_${startDate}_${endDate}.csv`;
+    link.click();
+  };
 
   const loadTransactions = async (id: string) => {
-  if (!id) return;
+    if (!id) return;
 
-  // ✅ prevent bad date range
-  if (startDate > endDate) {
-  setAlert({
-    open: true,
-    type: "error",
-    message: "Start date cannot be after end date",
-  });
-  return;
-}
+    // ✅ prevent bad date range
+    if (startDate > endDate) {
+      setAlert({
+        open: true,
+        type: "error",
+        message: "Start date cannot be after end date",
+      });
+      return;
+    }
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    const res = await fetchTransactions({
-      vendor_id: id,
-      start_date: startDate,
-      end_date: endDate,
-    });
+    try {
+      const res = await fetchTransactions({
+        vendor_id: id,
+        start_date: startDate,
+        end_date: endDate,
+      });
 
-    setTransactions(res?.results || []);
-    setSummary(res?.summary || { total_debits: 0, total_credits: 0 });
+      setTransactions(res?.results || []);
+      setSummary(res?.summary || { total_debits: 0, total_credits: 0 });
 
-  } catch (err: any) {
-    console.error("Transaction error:", err);
+    } catch (err: any) {
+      console.error("Transaction error:", err);
 
-    setAlert({
-      open: true,
-      type: "error",
-      message:
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to load transactions",
-    });
+      setAlert({
+        open: true,
+        type: "error",
+        message:
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to load transactions",
+      });
 
-    setTransactions([]); // prevent crash
+      setTransactions([]); // prevent crash
 
-  } finally {
-    setLoading(false);
-  }
-};
-const chartData = useMemo(() => {
-  return transactions.map((tx) => ({
-    date: new Date(tx.timestamp).toLocaleDateString(),
-    amount: Number(tx.credit_amount || tx.debit_amount || 0),
-  }));
-}, [transactions]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const chartData = useMemo(() => {
+    return transactions.map((tx) => ({
+      date: new Date(tx.timestamp).toLocaleDateString(),
+      amount: Number(tx.credit_amount || tx.debit_amount || 0),
+    }));
+  }, [transactions]);
 
   useEffect(() => {
     if (selectedVendorId) setVendorId(selectedVendorId);
@@ -205,41 +217,26 @@ const chartData = useMemo(() => {
     if (vendorsId) loadTransactions(vendorsId);
   }, [vendorsId, startDate, endDate]);
 
-const filteredVendors = useMemo(() => {
-  return vendors.filter((v) => {
-    const nameMatch = v.business_name
-      ?.toLowerCase()
-      .includes(search.toLowerCase());
+  const totalPages = Math.ceil(vendorCount / pageSize);
 
-    const isActive = v?.account_status === "active";
+  const handleFundWallet = async () => {
+    if (!vendorsId || !amount) return;
 
-    const statusMatch =
-      statusFilter === "all" ||
-      (statusFilter === "active" && isActive) ||
-      (statusFilter === "inactive" && !isActive);
+    setFunding(true);
 
-    return nameMatch && statusMatch;
-  });
-}, [vendors, search, statusFilter]);
+    try {
+      const amt = Number(amount);
 
-const handleFundWallet = async () => {
-  if (!vendorsId || !amount) return;
+      await fundVendorWallet({
+        vendor: vendorsId,
+        amount: amt,
+      });
 
-  setFunding(true);
-
-  try {
-    const amt = Number(amount);
-
-    await fundVendorWallet({
-      vendor: vendorsId,
-      amount: amt,
-    });
-
-    // ✅ 1. Optimistically update UI instantly
-    setVendors((prev) =>
-      prev.map((v) =>
-        v.id === vendorsId
-          ? {
+      // ✅ 1. Optimistically update UI instantly
+      setVendors((prev) =>
+        prev.map((v) =>
+          v.id === vendorsId
+            ? {
               ...v,
               wallet: {
                 ...v.wallet,
@@ -248,64 +245,64 @@ const handleFundWallet = async () => {
                 ),
               },
             }
-          : v
-      )
-    );
+            : v
+        )
+      );
 
-    // ✅ 2. Refresh transactions (real data)
-    loadTransactions(vendorsId);
+      // ✅ 2. Refresh transactions (real data)
+      loadTransactions(vendorsId);
 
-    // ✅ 3. Optional: refresh vendors from backend
-    // load();
-    // ✅ optional: sync after 3s
-    setTimeout(() => load(), 3000);
+      // ✅ 3. Optional: refresh vendors from backend
+      // load();
+      // ✅ optional: sync after 3s
+      setTimeout(() => load(), 3000);
 
-    setAlert({
-      open: true,
-      type: "success",
-      message: "Wallet funded successfully",
+      setAlert({
+        open: true,
+        type: "success",
+        message: "Wallet funded successfully",
+      });
+
+      setOpenFund(false);
+      setAmount("");
+
+    } catch (err: any) {
+      setAlert({
+        open: true,
+        type: "error",
+        message:
+          err?.response?.data?.message ||
+          err?.message ||
+          "Funding failed",
+      });
+    } finally {
+      setFunding(false);
+    }
+  };
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((tx) => {
+      if (typeFilter === "credit") return tx.credit_amount;
+      if (typeFilter === "debit") return tx.debit_amount;
+      return true;
     });
+  }, [transactions, typeFilter]);
 
-    setOpenFund(false);
-    setAmount("");
+  const displayBalance = Number(selectedVendor?.wallet?.balance || 0);
 
-  } catch (err: any) {
-    setAlert({
-      open: true,
-      type: "error",
-      message:
-        err?.response?.data?.message ||
-        err?.message ||
-        "Funding failed",
-    });
-  } finally {
-    setFunding(false);
-  }
-};
-const filteredTransactions = useMemo(() => {
-  return transactions.filter((tx) => {
-    if (typeFilter === "credit") return tx.credit_amount;
-    if (typeFilter === "debit") return tx.debit_amount;
-    return true;
-  });
-}, [transactions, typeFilter]);
-
-const displayBalance = Number(selectedVendor?.wallet?.balance || 0);
-
- const totalCredits = summary.total_credits;
- const totalDebits = summary.total_debits;
-const getColor = (name: string = "") => {
-  const colors = [
-    "#2563eb", "#16a34a", "#dc2626",
-    "#7c3aed", "#ea580c", "#0891b2"
-  ];
-  const index = name.charCodeAt(0) % colors.length;
-  return colors[index];
-};
+  const totalCredits = summary.total_credits;
+  const totalDebits = summary.total_debits;
+  const getColor = (name: string = "") => {
+    const colors = [
+      "#2563eb", "#16a34a", "#dc2626",
+      "#7c3aed", "#ea580c", "#0891b2"
+    ];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
   return (
     <Box
-    // /p={2}
-     bgcolor="#f9fafb">
+      // /p={2}
+      bgcolor="#f9fafb">
       {/* HEADER */}
       <Stack direction="row" justifyContent="space-between" mb={3}>
         <Box>
@@ -319,13 +316,13 @@ const getColor = (name: string = "") => {
 
         <Stack direction="row" spacing={1}>
           <Button
-              size="small"
-              variant="outlined"
-              startIcon={<Refresh />}
-              sx={{ height: 36, textTransform: "none", borderRadius: 2 }}
-            >
-              Refresh
-            </Button>
+            size="small"
+            variant="outlined"
+            startIcon={<Refresh />}
+            sx={{ height: 36, textTransform: "none", borderRadius: 2 }}
+          >
+            Refresh
+          </Button>
           {/* <Button size="small" variant="outlined" sx={{ height: 36, textTransform: "none", borderRadius: 2 }} startIcon={<FileDownload />}>
             Export CSV
           </Button> */}
@@ -335,178 +332,200 @@ const getColor = (name: string = "") => {
         </Stack>
       </Stack>
       {/* SUMMARY */}
-          <Grid pb={2} container spacing={2}>
-              {[
-                { title: "Total Wallet Balance", value:  selectedVendor?.wallet?.balance, color: "#2563eb" },
-                { title: "Total Credits", value: totalCredits, color: "#16a34a" },
-                { title: "Total Debits", value: totalDebits, color: "#dc2626" },
-              ].map((item, i) => (
-                <Grid item xs={12} md={4} key={i}>
-                  <Card sx={{ p: 2, borderBottom: `3px solid ${item.color}`, borderRadius: 3 }}>
-                    <Typography fontSize={13} color="#6b7280">
-                      {item.title}
-                    </Typography>
-                    <Typography fontSize={22} fontWeight={700}>
-                      ₦{Number(item.value || 0).toLocaleString()}
-                    </Typography>
-                    <Typography fontSize={12} color="#16a34a">
-                      ↑ 9.2% this month
-                    </Typography>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-      <Grid container spacing={3}>
+      <Grid pb={2} container spacing={2}>
+        {[
+          { title: "Total Wallet Balance", value: selectedVendor?.wallet?.balance, color: "#2563eb" },
+          { title: "Total Credits", value: totalCredits, color: "#16a34a" },
+          { title: "Total Debits", value: totalDebits, color: "#dc2626" },
+        ].map((item, i) => (
+          <Grid item xs={12} md={4} key={i}>
+            <Card sx={{ p: 2, borderBottom: `3px solid ${item.color}`, borderRadius: 3 }}>
+              <Typography fontSize={13} color="#6b7280">
+                {item.title}
+              </Typography>
+              <Typography fontSize={22} fontWeight={700}>
+                ₦{Number(item.value || 0).toLocaleString()}
+              </Typography>
+              <Typography fontSize={12} color="#16a34a">
+                ↑ 9.2% this month
+              </Typography>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+      <Grid container spacing={3} >
         {/* SIDEBAR */}
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={4} >
           <Card sx={{ borderRadius: 3 }}>
             <Box p={2}>
               <Stack direction="row" justifyContent="space-between">
                 <Typography fontWeight={600}>Select Vendor</Typography>
                 <Typography fontSize={12} color="gray">
-                  {vendors?.length || 0} total
+                  {vendorCount} total
                 </Typography>
               </Stack>
 
               <TextField
-  fullWidth
-  size="small"
-  placeholder="Search by name or domain..."
-  value={search}
-  onChange={(e) => setSearch(e.target.value)}
-  sx={{
-    mt: 2,
-    "& .MuiOutlinedInput-root": {
-      borderRadius: 2,
-      fontSize: 13,
-      height: 36,
-      bgcolor: "#f9fafb",
-    },
-  }}
-  InputProps={{
-    startAdornment: (
-      <InputAdornment position="start">
-        <Search sx={{ fontSize: 16, color: "#9ca3af" }} />
-      </InputAdornment>
-    ),
-  }}
-/>
-               <Stack direction="row" spacing={1} mt={2}>
-  {["all", "active", "inactive"].map((tab) => (
-    <Box
-      key={tab}
-      onClick={() => setStatusFilter(tab as any)}
-      sx={{
-        px: 2,
-        py: 0.5,
-        borderRadius: 20,
-        fontSize: 12,
-        cursor: "pointer",
-        bgcolor: statusFilter === tab ? "#eff6ff" : "#f3f4f6",
-        color: statusFilter === tab ? "#2563eb" : "#6b7280",
-        fontWeight: 600,
-        textTransform: "capitalize",
-      }}
-    >
-      {tab}
-    </Box>
-  ))}
-</Stack>
+                fullWidth
+                size="small"
+                placeholder="Search by name or domain..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                sx={{
+                  mt: 2,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    fontSize: 13,
+                    height: 36,
+                    bgcolor: "#f9fafb",
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search sx={{ fontSize: 16, color: "#9ca3af" }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Stack direction="row" spacing={1} mt={2}>
+                {["all", "active", "inactive"].map((tab) => (
+                  <Box
+                    key={tab}
+                    onClick={() => setStatusFilter(tab as any)}
+                    sx={{
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 20,
+                      fontSize: 12,
+                      cursor: "pointer",
+                      bgcolor: statusFilter === tab ? "#eff6ff" : "#f3f4f6",
+                      color: statusFilter === tab ? "#2563eb" : "#6b7280",
+                      fontWeight: 600,
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {tab}
+                  </Box>
+                ))}
+              </Stack>
               <Stack mt={2} spacing={1.2}>
 
-  {filteredVendors?.map((v) => {
-    const isActive = v?.account_status === "active";
+                {/* {filteredVendors?.map((v) => { */}
+                {vendors?.map((v) => {
+                  const isActive = v?.account_status === "active";
 
-    return (
-      <Box
-        key={v.id}
-        onClick={() => {
-          setVendorId(v.id);
-          selectVendor(v.id);
-        }}
-        sx={{
-          p: 1,
-          borderRadius: 2,
-          cursor: "pointer",
-          transition: "0.2s",
-          border: vendorsId === v.id ? "1px solid #dbeafe" : "1px solid transparent",
-          bgcolor: vendorsId === v.id ? "#eff6ff" : "#fff",
-          "&:hover": { bgcolor: "#f9fafb" },
-        }}
-      >
-       
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          
-          {/* LEFT */}
-          <Stack direction="row" spacing={1.2} alignItems="center">
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: 2,
-                bgcolor: getColor(v.business_name),
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              {v.business_name?.slice(0, 2)}
-            </Box>
+                  return (
+                    <Box
+                      key={v.id}
+                      onClick={() => {
+                        setVendorId(v.id);
+                        selectVendor(v.id);
+                      }}
+                      sx={{
+                        p: 1,
+                        borderRadius: 2,
+                        cursor: "pointer",
+                        transition: "0.2s",
+                        border: vendorsId === v.id ? "1px solid #dbeafe" : "1px solid transparent",
+                        bgcolor: vendorsId === v.id ? "#eff6ff" : "#fff",
+                        "&:hover": { bgcolor: "#f9fafb" },
+                      }}
+                    >
 
-            <Box>
-              <Typography
-  fontSize={13}
-  fontWeight={600}
-  sx={{
-    maxWidth: 120,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  }}
->
-  {v.business_name}
-</Typography>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
 
-              <Typography fontSize={11} color="#6b7280">
-                Vendor
-              </Typography>
-            </Box>
-          </Stack>
+                        {/* LEFT */}
+                        <Stack direction="row" spacing={1.2} alignItems="center">
+                          <Box
+                            sx={{
+                              width: 46,
+                              height: 36,
+                              borderRadius: 2,
+                              bgcolor: getColor(v.business_name),
+                              color: "#fff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 13,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {v.business_name?.slice(0, 2)}
+                          </Box>
 
-          {/* RIGHT */}
-          <Box textAlign="right">
-            <Typography fontSize={13} fontWeight={600} color="#111827">
-              ₦{Number(v.wallet?.balance || 0).toLocaleString()}
-            </Typography>
+                          <Box>
+                            <Typography
+                              fontSize={13}
+                              fontWeight={600}
+                              sx={{
+                                maxWidth: 120,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {v.business_name}
+                            </Typography>
 
-            <Chip
-              label={isActive ? "Active" : "Inactive"}
-              size="small"
-              sx={{
-                mt: 0.5,
-                height: 18,
-                fontSize: 10,
-                bgcolor: isActive ? "#dcfce7" : "#e5e7eb",
-                color: isActive ? "#16a34a" : "#6b7280",
-              }}
-            />
-          </Box>
-        </Stack>
-      </Box>
-    );
-  })}
-</Stack>
+                            <Typography fontSize={11} color="#6b7280">
+                              Vendor
+                            </Typography>
+                          </Box>
+                        </Stack>
+
+                        {/* RIGHT */}
+                        <Box textAlign="right">
+                          <Typography fontSize={13} fontWeight={600} color="#111827">
+                            ₦{Number(v.wallet?.balance || 0).toLocaleString()}
+                          </Typography>
+
+                          <Chip
+                            label={isActive ? "Active" : "Inactive"}
+                            size="small"
+                            sx={{
+                              mt: 0.5,
+                              height: 18,
+                              fontSize: 10,
+                              bgcolor: isActive ? "#dcfce7" : "#e5e7eb",
+                              color: isActive ? "#16a34a" : "#6b7280",
+                            }}
+                          />
+                        </Box>
+                      </Stack>
+                    </Box>
+                  );
+                })}
+              </Stack>
+              {/* Pagination */}
+              <Stack
+                direction="row"
+                justifyContent="center"
+                mt={2}
+              >
+
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={(_, value) => {
+                    setPage(value);
+                    load(value);
+                  }}
+                  color="primary"
+                  size="small"
+                  shape="rounded"
+                />
+              </Stack>
+
             </Box>
           </Card>
+
         </Grid>
 
         {/* MAIN */}
-        <Grid item xs={12} md={9}>
+        <Grid item xs={12} md={8} >
           <Stack spacing={3}>
-        
+
 
             {/* HEADER */}
             <Card sx={{ p: 2, borderRadius: 3 }}>
@@ -547,7 +566,7 @@ const getColor = (name: string = "") => {
                   </Button>
                 </Stack>
               </Stack>
-               {/* WALLET */}
+              {/* WALLET */}
               <Card sx={{ p: 2, borderRadius: 3, width: 260 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <AccountBalanceWallet fontSize="small" />
@@ -565,7 +584,7 @@ const getColor = (name: string = "") => {
                 <Button size="small" variant="outlined" sx={{ mt: 1 }} onClick={() => setOpenFund(true)}>
                   Fund
                 </Button>
-              
+
               </Card>
             </Card>
 
@@ -627,153 +646,153 @@ const getColor = (name: string = "") => {
                   <Card sx={{ mt: 2, borderRadius: 3 }}>
                     <Box p={2}>
                       <Stack direction="row" spacing={1.5} mb={2} alignItems="center">
-  
-  <TextField
-    size="small"
-    placeholder="Search ref, description..."
-    sx={{
-      width: 260,
-      "& .MuiOutlinedInput-root": {
-        height: 34,
-        fontSize: 12,
-        bgcolor: "#f9fafb",
-      },
-    }}
-    InputProps={{
-      startAdornment: (
-        <InputAdornment position="start">
-          <Search sx={{ fontSize: 14 }} />
-        </InputAdornment>
-      ),
-    }}
-  />
 
-  <TextField
-  size="small"
-  select
-  value={typeFilter}
-  onChange={(e) => setTypeFilter(e.target.value as any)}
-  sx={{
-    width: 120,
-    "& .MuiOutlinedInput-root": {
-      height: 34,
-      fontSize: 12,
-      bgcolor: "#f9fafb",
-    },
-  }}
->
-  <MenuItem value="all">All Types</MenuItem>
-  <MenuItem value="credit">Credit</MenuItem>
-  <MenuItem value="debit">Debit</MenuItem>
-</TextField>
+                        <TextField
+                          size="small"
+                          placeholder="Search ref, description..."
+                          sx={{
+                            width: 260,
+                            "& .MuiOutlinedInput-root": {
+                              height: 34,
+                              fontSize: 12,
+                              bgcolor: "#f9fafb",
+                            },
+                          }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Search sx={{ fontSize: 14 }} />
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
 
- <TextField
-  size="small"
-  type="date"
-  value={startDate}
-  onChange={(e) => {
-    if (e.target.value <= endDate) {
-      setStartDate(e.target.value);
-    } else {
-      setAlert({
-        open: true,
-        type: "error",
-        message: "Start date cannot be after end date",
-      });
-    }
-  }}
-/>
+                        <TextField
+                          size="small"
+                          select
+                          value={typeFilter}
+                          onChange={(e) => setTypeFilter(e.target.value as any)}
+                          sx={{
+                            width: 120,
+                            "& .MuiOutlinedInput-root": {
+                              height: 34,
+                              fontSize: 12,
+                              bgcolor: "#f9fafb",
+                            },
+                          }}
+                        >
+                          <MenuItem value="all">All Types</MenuItem>
+                          <MenuItem value="credit">Credit</MenuItem>
+                          <MenuItem value="debit">Debit</MenuItem>
+                        </TextField>
 
-<TextField
-  size="small"
-  type="date"
-  value={endDate}
-  onChange={(e) => {
-    if (e.target.value >= startDate) {
-      setEndDate(e.target.value);
-    } else {
-      setAlert({
-        open: true,
-        type: "error",
-        message: "End date cannot be before start date",
-      });
-    }
-  }}
-/>
+                        <TextField
+                          size="small"
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => {
+                            if (e.target.value <= endDate) {
+                              setStartDate(e.target.value);
+                            } else {
+                              setAlert({
+                                open: true,
+                                type: "error",
+                                message: "Start date cannot be after end date",
+                              });
+                            }
+                          }}
+                        />
 
-  <Button
-  startIcon={<FileDownload />}
-  variant="outlined"
-  size="small"
-  onClick={handleExport}
->
-  Export
-</Button>
-</Stack>
+                        <TextField
+                          size="small"
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => {
+                            if (e.target.value >= startDate) {
+                              setEndDate(e.target.value);
+                            } else {
+                              setAlert({
+                                open: true,
+                                type: "error",
+                                message: "End date cannot be before start date",
+                              });
+                            }
+                          }}
+                        />
+
+                        <Button
+                          startIcon={<FileDownload />}
+                          variant="outlined"
+                          size="small"
+                          onClick={handleExport}
+                        >
+                          Export
+                        </Button>
+                      </Stack>
 
                       {loading ? (
                         <CircularProgress />
                       ) : (
                         <Table size="small">
                           <TableHead>
-  <TableRow sx={{ bgcolor: "#f9fafb" }}>
-    <TableCell>REFERENCE</TableCell>
-    <TableCell>DESCRIPTION</TableCell>
-    <TableCell>CREDIT</TableCell>
-    <TableCell>DEBIT</TableCell>
-    {/* <TableCell>BALANCE AFTER</TableCell> */}
-    <TableCell>STATUS</TableCell>
-    <TableCell>DATE & TIME</TableCell>
-  </TableRow>
-</TableHead>
+                            <TableRow sx={{ bgcolor: "#f9fafb" }}>
+                              <TableCell>REFERENCE</TableCell>
+                              <TableCell>DESCRIPTION</TableCell>
+                              <TableCell>CREDIT</TableCell>
+                              <TableCell>DEBIT</TableCell>
+                              {/* <TableCell>BALANCE AFTER</TableCell> */}
+                              <TableCell>STATUS</TableCell>
+                              <TableCell>DATE & TIME</TableCell>
+                            </TableRow>
+                          </TableHead>
 
                           <TableBody>
-  {filteredTransactions.map((tx) => (
-    <TableRow key={tx.transaction_ref} hover>
-      <TableCell>{tx.transaction_ref}</TableCell>
+                            {filteredTransactions.map((tx) => (
+                              <TableRow key={tx.transaction_ref} hover>
+                                <TableCell>{tx.transaction_ref}</TableCell>
 
-      <TableCell>
-        <Typography fontWeight={500}>
-          Wallet Funding
-        </Typography>
-        <Typography fontSize={12} color="#6b7280">
-          Bank Transfer via NIBSS
-        </Typography>
-      </TableCell>
+                                <TableCell>
+                                  <Typography fontWeight={500}>
+                                    Wallet Funding
+                                  </Typography>
+                                  <Typography fontSize={12} color="#6b7280">
+                                    Bank Transfer via NIBSS
+                                  </Typography>
+                                </TableCell>
 
-      <TableCell sx={{ color: "#16a34a", fontWeight: 600 }}>
-        {tx.credit_amount
-          ? `+₦${Number(tx.credit_amount).toLocaleString()}`
-          : "—"}
-      </TableCell>
+                                <TableCell sx={{ color: "#16a34a", fontWeight: 600 }}>
+                                  {tx.credit_amount
+                                    ? `+₦${Number(tx.credit_amount).toLocaleString()}`
+                                    : "—"}
+                                </TableCell>
 
-      <TableCell sx={{ color: "#dc2626", fontWeight: 600 }}>
-        {tx.debit_amount
-          ? `-₦${Number(tx.debit_amount).toLocaleString()}`
-          : "—"}
-      </TableCell>
-      {/* <TableCell sx={{ fontWeight: 600 }}>
+                                <TableCell sx={{ color: "#dc2626", fontWeight: 600 }}>
+                                  {tx.debit_amount
+                                    ? `-₦${Number(tx.debit_amount).toLocaleString()}`
+                                    : "—"}
+                                </TableCell>
+                                {/* <TableCell sx={{ fontWeight: 600 }}>
   ₦{Number(tx.balance_after || 0).toLocaleString()}
 </TableCell> */}
-      <TableCell>
-        <Chip
-          label="Success"
-          size="small"
-          sx={{
-            bgcolor: "#dcfce7",
-            color: "#16a34a",
-            fontWeight: 600,
-            fontSize: 11,
-          }}
-        />
-      </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label="Success"
+                                    size="small"
+                                    sx={{
+                                      bgcolor: "#dcfce7",
+                                      color: "#16a34a",
+                                      fontWeight: 600,
+                                      fontSize: 11,
+                                    }}
+                                  />
+                                </TableCell>
 
-      <TableCell>
-        {new Date(tx.timestamp).toLocaleString()}
-      </TableCell>
-    </TableRow>
-  ))}
-</TableBody>
+                                <TableCell>
+                                  {new Date(tx.timestamp).toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
                         </Table>
                       )}
                     </Box>
@@ -786,107 +805,107 @@ const getColor = (name: string = "") => {
       </Grid>
 
       <Dialog
-  open={openFund}
-  onClose={() => setOpenFund(false)}
-  fullWidth
-  maxWidth="sm"
-  PaperProps={{
-    sx: {
-      borderRadius: 3,
-      p: 1,
-      animation: "fadeIn 0.3s ease",
-    },
-  }}
->
-  <DialogTitle>
-    Fund Vendor Wallet
-  </DialogTitle>
-
-  <DialogContent>
-    <Stack spacing={2} mt={1}>
-
-      <TextField
-        label="Vendor"
-        value={selectedVendor?.business_name}
+        open={openFund}
+        onClose={() => setOpenFund(false)}
         fullWidth
-        size="small"
-        disabled
-      />
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            animation: "fadeIn 0.3s ease",
+          },
+        }}
+      >
+        <DialogTitle>
+          Fund Vendor Wallet
+        </DialogTitle>
 
-      <TextField select label="Wallet Type" fullWidth size="small">
-        <MenuItem value="vending">⚡ Vending Wallet</MenuItem>
-      </TextField>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
 
-      <TextField
-  label="Amount (₦)"
-  fullWidth
-  size="small"
-  value={amount}
-  onChange={(e) => setAmount(e.target.value)}
-/>
-<TextField
-  label="Funding Source"
-  fullWidth
-  size="small"
-  value="Tenant Wallet"
-  disabled
-/>
-      {/* <TextField select label="Funding Source" fullWidth size="small">
+            <TextField
+              label="Vendor"
+              value={selectedVendor?.business_name}
+              fullWidth
+              size="small"
+              disabled
+            />
+
+            <TextField select label="Wallet Type" fullWidth size="small">
+              <MenuItem value="vending">⚡ Vending Wallet</MenuItem>
+            </TextField>
+
+            <TextField
+              label="Amount (₦)"
+              fullWidth
+              size="small"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+            <TextField
+              label="Funding Source"
+              fullWidth
+              size="small"
+              value="Tenant Wallet"
+              disabled
+            />
+            {/* <TextField select label="Funding Source" fullWidth size="small">
         <MenuItem>Bank Transfer (NIBSS)</MenuItem>
       </TextField> */}
 
-      <TextField
-        label="Transaction Note"
-        fullWidth
-        size="small"
-        placeholder="e.g. Monthly float top-up"
-      />
+            <TextField
+              label="Transaction Note"
+              fullWidth
+              size="small"
+              placeholder="e.g. Monthly float top-up"
+            />
 
-      <Box
-        sx={{
-          bgcolor: "#eff6ff",
-          p: 1.5,
-          borderRadius: 2,
-          fontSize: 12,
-          color: "#2563eb",
-        }}
+            <Box
+              sx={{
+                bgcolor: "#eff6ff",
+                p: 1.5,
+                borderRadius: 2,
+                fontSize: 12,
+                color: "#2563eb",
+              }}
+            >
+              This action will be logged and attributed to your admin account.
+              Funds are credited instantly.
+            </Box>
+          </Stack>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setOpenFund(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleFundWallet}
+            disabled={funding}
+          >
+            {funding ? <CircularProgress size={18} /> : "Confirm Funding"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={4000}
+        onClose={() => setAlert({ ...alert, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        This action will be logged and attributed to your admin account.
-        Funds are credited instantly.
-      </Box>
-    </Stack>
-  </DialogContent>
-
-  <DialogActions>
-    <Button onClick={() => setOpenFund(false)}>Cancel</Button>
-   <Button
-  variant="contained"
-  onClick={handleFundWallet}
-  disabled={funding}
->
-  {funding ? <CircularProgress size={18} /> : "Confirm Funding"}
-</Button>
-  </DialogActions>
-</Dialog>
-
-<Snackbar
-  open={alert.open}
-  autoHideDuration={4000}
-  onClose={() => setAlert({ ...alert, open: false })}
-  anchorOrigin={{ vertical: "top", horizontal: "right" }}
->
-  <Alert
-    severity={alert.type}
-    variant="filled"
-    onClose={() => setAlert({ ...alert, open: false })}
-    sx={{
-      borderRadius: 2,
-      boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-    }}
-  >
-    {alert.message}
-  </Alert>
-</Snackbar>
+        <Alert
+          severity={alert.type}
+          variant="filled"
+          onClose={() => setAlert({ ...alert, open: false })}
+          sx={{
+            borderRadius: 2,
+            boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
+          }}
+        >
+          {alert.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
