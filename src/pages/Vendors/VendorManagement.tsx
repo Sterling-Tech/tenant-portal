@@ -83,9 +83,60 @@ export default function VendorHub() {
     type: "success",
     message: "",
   });
-
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // const totalPages = Math.ceil(count / PAGE_SIZE);
+  const validateVendorForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!vendorForm.business_name?.trim()) {
+      newErrors.business_name = "Business Name field is required";
+    }
+
+    if (!vendorForm.email?.trim()) {
+      newErrors.email = "Email Address field is required";
+    }
+
+    if (!vendorForm.phone_number?.trim()) {
+      newErrors.phone_number = "Phone Number field is required";
+    }
+
+    if (!vendorForm.hierachy?.trim()) {
+      newErrors.hierachy = "Hierarchy field is required";
+    }
+
+    if (!vendorForm.address?.trim()) {
+      newErrors.address = "Address field is required";
+    }
+
+    if (!vendorForm.city?.trim()) {
+      newErrors.city = "City field is required";
+    }
+
+    if (!vendorForm.state?.trim()) {
+      newErrors.state = "State field is required";
+    }
+
+    if (!vendorForm.country?.trim()) {
+      newErrors.country = "Country field is required";
+    }
+
+    if (!vendorForm.postal_code?.trim()) {
+      newErrors.postal_code = "Postal Code field is required";
+    }
+
+    // email format validation
+    if (
+      vendorForm.email &&
+      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(vendorForm.email)
+    ) {
+      newErrors.email = "Invalid email address";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
 
   const formatDateTime = (date: string) => {
     if (!date) return "-";
@@ -227,7 +278,7 @@ export default function VendorHub() {
         } else {
           setSelected(null);
         }
-        return; 
+        return;
       }
 
 
@@ -340,18 +391,66 @@ export default function VendorHub() {
     }
   };
 
+  // const handleCreateVendor = async () => {
+  //   if (!vendorForm.business_name || !vendorForm.email || !vendorForm.hierachy) {
+  //     setAlert({ open: true, type: "error", message: "Required fields missing" });
+  //     return;
+  //   }
+
+  //   try {
+  //     setLoading(true);
+  //     await createVendor(vendorForm as VendorForm);
+
+  //     setAlert({ open: true, type: "success", message: "Vendor created successfully" });
+
+
+  //     setOpenModal(false);
+
+  //     setVendorForm({
+  //       business_name: "",
+  //       email: "",
+  //       phone_number: "",
+  //       address: "",
+  //       city: "",
+  //       state: "",
+  //       country: "",
+  //       postal_code: "",
+  //       hierachy: "",
+  //       related_vendor: undefined,
+  //     });
+
+  //     load();
+  //   } catch (err) {
+  //     setAlert({ open: true, type: "error", message: "Failed to create vendor" });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+  //
+  // const handleDeleteVendor = async (vendorId: number) => {
+  //   try {
+  //     await deleteVendor(String(vendorId));
+  //     setAnchorEl(null);
+  //     load();
+  //   } catch (err) {
+  //     console.error(err);
+  //   }
+  // };
   const handleCreateVendor = async () => {
-    if (!vendorForm.business_name || !vendorForm.email || !vendorForm.hierachy) {
-      setAlert({ open: true, type: "error", message: "Required fields missing" });
-      return;
-    }
+    const isValid = validateVendorForm();
+
+    if (!isValid) return;
 
     try {
       setLoading(true);
+
       await createVendor(vendorForm as VendorForm);
 
-      setAlert({ open: true, type: "success", message: "Vendor created successfully" });
-
+      setAlert({
+        open: true,
+        type: "success",
+        message: "Vendor created successfully",
+      });
 
       setOpenModal(false);
 
@@ -368,24 +467,21 @@ export default function VendorHub() {
         related_vendor: undefined,
       });
 
+      setErrors({});
+
       load();
-    } catch (err) {
-      setAlert({ open: true, type: "error", message: "Failed to create vendor" });
+    } catch (err: any) {
+      setAlert({
+        open: true,
+        type: "error",
+        message:
+          err?.response?.data?.message ||
+          "Failed to create vendor",
+      });
     } finally {
       setLoading(false);
     }
   };
-
-  // const handleDeleteVendor = async (vendorId: number) => {
-  //   try {
-  //     await deleteVendor(String(vendorId));
-  //     setAnchorEl(null);
-  //     load();
-  //   } catch (err) {
-  //     console.error(err);
-  //   }
-  // };
-
 
 
   return (
@@ -889,9 +985,17 @@ export default function VendorHub() {
                     placeholder="e.g. Acme Nigeria Ltd"
                     size="small"
                     value={vendorForm.business_name || ""}
-                    onChange={(e) =>
+
+                    onChange={(e) => {
                       setVendorForm({ ...vendorForm, business_name: e.target.value })
-                    }
+
+                      setErrors((prev) => ({
+                        ...prev,
+                        business_name: "",
+                      }));
+                    }}
+                    error={!!errors.business_name}
+                    helperText={errors.business_name}
                   />
                 </Grid>
 
@@ -902,9 +1006,17 @@ export default function VendorHub() {
                     placeholder="admin@business.com"
                     size="small"
                     value={vendorForm.email || ""}
-                    onChange={(e) =>
+
+                    onChange={(e) => {
                       setVendorForm({ ...vendorForm, email: e.target.value })
-                    }
+
+                      setErrors((prev) => ({
+                        ...prev,
+                        email: "",
+                      }));
+                    }}
+                    error={!!errors.email}
+                    helperText={errors.email}
                   />
                 </Grid>
 
@@ -914,24 +1026,40 @@ export default function VendorHub() {
                     label="Phone Number"
                     placeholder="+234 800 000 0000"
                     size="small"
+
                     value={vendorForm.phone_number || ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setVendorForm({ ...vendorForm, phone_number: e.target.value })
-                    }
+                      setErrors((prev) => ({
+                        ...prev,
+                        phone_number: "",
+                      }));
+                    }}
+                    error={!!errors.phone_number}
+                    helperText={errors.phone_number}
                   />
                 </Grid>
 
                 <Grid item xs={6}>
-                  <FormControl fullWidth size="small">
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    error={!!errors.hierachy}
+                  >
                     <Select
                       displayEmpty
                       value={vendorForm.hierachy || ""}
-                      onChange={(e) =>
+
+                      onChange={(e) => {
                         setVendorForm({
                           ...vendorForm,
                           hierachy: e.target.value,
                         })
-                      }
+                        setErrors((prev) => ({
+                          ...prev,
+                          hierachy: "",
+                        }));
+                      }}
                     >
                       <MenuItem value="">Select Hierarchy</MenuItem>
                       {hierarchyOptions.map((opt) => (
@@ -940,6 +1068,15 @@ export default function VendorHub() {
                         </MenuItem>
                       ))}
                     </Select>
+                    {errors.hierachy && (
+                      <Typography
+                        fontSize={12}
+                        color="error"
+                        mt={0.5}
+                      >
+                        {errors.hierachy}
+                      </Typography>
+                    )}
                   </FormControl>
                 </Grid>
 
@@ -950,9 +1087,16 @@ export default function VendorHub() {
                     placeholder="Street, City, State"
                     size="small"
                     value={vendorForm.address || ""}
-                    onChange={(e) =>
+
+                    onChange={(e) => {
                       setVendorForm({ ...vendorForm, address: e.target.value })
-                    }
+                      setErrors((prev) => ({
+                        ...prev,
+                        address: "",
+                      }));
+                    }}
+                    error={!!errors.address}
+                    helperText={errors.address}
                   />
                 </Grid>
 
@@ -961,10 +1105,17 @@ export default function VendorHub() {
                     fullWidth
                     label="City"
                     size="small"
+
                     value={vendorForm.city || ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setVendorForm({ ...vendorForm, city: e.target.value })
-                    }
+                      setErrors((prev) => ({
+                        ...prev,
+                        city: "",
+                      }));
+                    }}
+                    error={!!errors.city}
+                    helperText={errors.city}
                   />
                 </Grid>
 
@@ -973,10 +1124,17 @@ export default function VendorHub() {
                     fullWidth
                     label="State"
                     size="small"
+
                     value={vendorForm.state || ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setVendorForm({ ...vendorForm, state: e.target.value })
-                    }
+                      setErrors((prev) => ({
+                        ...prev,
+                        state: "",
+                      }));
+                    }}
+                    error={!!errors.state}
+                    helperText={errors.state}
                   />
                 </Grid>
 
@@ -985,10 +1143,17 @@ export default function VendorHub() {
                     fullWidth
                     label="Country"
                     size="small"
+
                     value={vendorForm.country || ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setVendorForm({ ...vendorForm, country: e.target.value })
-                    }
+                      setErrors((prev) => ({
+                        ...prev,
+                        country: "",
+                      }));
+                    }}
+                    error={!!errors.country}
+                    helperText={errors.country}
                   />
                 </Grid>
 
@@ -997,13 +1162,20 @@ export default function VendorHub() {
                     fullWidth
                     label="Postal Code"
                     size="small"
+
                     value={vendorForm.postal_code || ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setVendorForm({
                         ...vendorForm,
                         postal_code: e.target.value,
                       })
-                    }
+                      setErrors((prev) => ({
+                        ...prev,
+                        postal_code: "",
+                      }));
+                    }}
+                    error={!!errors.postal_code}
+                    helperText={errors.postal_code}
                   />
                 </Grid>
 
