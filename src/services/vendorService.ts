@@ -381,6 +381,7 @@ export const MeteringTypeS = () =>
 export const CustomerClass = () =>
     get<Class[]>(`/customer/class/`);
 
+//paginated vendors with optional filters
 export const fetchVendors = (params?: {
   page?: number;
   vendor_id?: number;
@@ -392,8 +393,10 @@ export const fetchVendors = (params?: {
 }) =>
   get<PaginatedVendorResponse>(
     `/vendor/retrieve/${buildQuery(params)}`
-    //`/vendor/retrieve${buildQuery(params)}`
   );
+  //fetch all vendors without pagination
+export const fetchAllVendors = () =>
+    get<Vendor[]>(`/vendor/retrieve/all/`);
 
 export const fetchVendor = (id: string) =>
     get<Vendor>(`/vendor/retrieve/?vendor_id=${id}/`);

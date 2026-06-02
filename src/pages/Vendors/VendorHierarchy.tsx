@@ -19,6 +19,7 @@ import {
   fetchVendors,
   fetchVendorchildren,
   Vendor,
+  fetchAllVendors,
 } from "../../services/vendorService";
 
 /* ================= COLUMN ================= */
@@ -129,18 +130,15 @@ const VendorHierarchy = () => {
 
   /* LOAD ROOT */
 
-  // const loadVendors = async () => {
-  //   const res = await fetchVendors({ main_vendor: true });
-  //   setVendors(res.results || []);
-  // };
   const loadVendors = async () => {
     try {
       setLoading(true);
-      const res = await fetchVendors({
-        main_vendor: true,
-      });
+      // const res = await fetchVendors({
+      //   main_vendor: true,
+      // });
+      const res = await fetchAllVendors();
 
-      setVendors(res?.results || []);
+      setVendors(res || []);
     } catch (err) {
       console.error(err);
       setVendors([]);
