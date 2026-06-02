@@ -129,11 +129,25 @@ const VendorHierarchy = () => {
 
   /* LOAD ROOT */
 
+  // const loadVendors = async () => {
+  //   const res = await fetchVendors({ main_vendor: true });
+  //   setVendors(res.results || []);
+  // };
   const loadVendors = async () => {
-    const res = await fetchVendors({ main_vendor: true });
-    setVendors(res.results || []);
-  };
+    try {
+      setLoading(true);
+      const res = await fetchVendors({
+        main_vendor: true,
+      });
 
+      setVendors(res?.results || []);
+    } catch (err) {
+      console.error(err);
+      setVendors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     loadVendors();
   }, []);
@@ -141,15 +155,16 @@ const VendorHierarchy = () => {
   /* LOAD CHILDREN (ONLY when explicitly called) */
 
   const loadChildren = async (id: any) => {
-    setLoading(true);
+    // setLoading(true);
     try {
+      setLoading(true);
       const res: any = await fetchVendorchildren(id);
 
       const list = Array.isArray(res?.results)
         ? res.results
         : Array.isArray(res)
-        ? res
-        : [];
+          ? res
+          : [];
 
       setData(list); // ✅ replace ONLY when explicitly loading children
     } catch {
@@ -202,8 +217,14 @@ const VendorHierarchy = () => {
           </Typography>
         </Box>
 
-        <Button variant="outlined" startIcon={<Refresh />} onClick={loadVendors}
-         sx={{ height: 36, textTransform: "none", borderRadius: 2 }}
+        <Button variant="outlined" startIcon={<Refresh />}
+          onClick={() => {
+            loadVendors()
+            setSelectedVendor(null);
+            setSelected(null);
+            setData([]);
+          }}
+          sx={{ height: 36, textTransform: "none", borderRadius: 2 }}
         >
           Refresh
         </Button>
@@ -329,5 +350,4 @@ const VendorHierarchy = () => {
     </Box>
   );
 };
-
 export default VendorHierarchy;

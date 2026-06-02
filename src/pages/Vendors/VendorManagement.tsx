@@ -49,6 +49,7 @@ const formatCurrency = (val: any) => {
   }).format(num);
 };
 
+
 export default function VendorHub() {
   const [tenantModalState, setTenantModalState] = useState<{ open: boolean; mode: 'create' | 'edit'; tenant?: Tenant | null }>({
     open: false,
@@ -72,6 +73,7 @@ export default function VendorHub() {
   const [verifiedFilter, setVerifiedFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
   type AlertType = "success" | "error" | "info" | "warning";
 
   const [alert, setAlert] = useState<{
@@ -147,6 +149,12 @@ export default function VendorHub() {
     }).format(new Date(date));
   };
 
+  const clickOutside = (e: any) => {
+    if (e.target === e.currentTarget) {
+      setOpenModal(false);
+    };
+  }
+
   const truncate = (text: string, max = 25) => {
     if (!text) return "-";
     return text.length > max ? text.slice(0, max) + "..." : text;
@@ -163,106 +171,10 @@ export default function VendorHub() {
     return () => clearTimeout(handler);
   }, [search]);
 
-  // Debounced search: wait until user stops typing for 500ms
-  // const load = async (pageNumber = 1) => {
-  //   try {
-  //     if (debouncedSearch.trim()) {
-  //       const res = await searchVendors(debouncedSearch);
-
-  //       let data: Vendor[] = [];
-  //       if (Array.isArray(res)) data = res;
-  //       else if (res && "results" in res) data = res.results;
-
-  //       setVendors(data);
-  //       setCount(data.length);
-
-  //       if (data.length) {
-  //         setSelected(data[0]);
-  //       } else {
-  //         setSelected(null);
-  //       }
-  //       return; 
-  //     }
-
-  //     const res = await fetchVendors({
-  //       page: pageNumber,
-  //       account_status: statusFilter === "all" ? undefined : statusFilter,
-  //       is_verified: verifiedFilter === "all" ? undefined : verifiedFilter === "verified",
-  //     });
-
-  //     setVendors(res?.results || []);
-  //     setCount(res?.count || 0);
-
-  //     if (res?.results?.length) {
-  //       setSelected(res.results[0]);
-  //     } else {
-  //       setSelected(null);
-  //     }
-  //   } catch (err) {
-  //     console.error("LOAD ERROR:", err);
-  //     setVendors([]);
-  //     setCount(0);
-  //   }
-  // };
-  //
-  // const load = async (pageNumber = 1) => {
-  //   try {
-  //     setLoading(true);
-  //     const res = await fetchVendors({
-  //       page: pageNumber,
-  //       search: debouncedSearch || undefined,
-  //       account_status:
-  //         statusFilter === "all" ? undefined : statusFilter,
-  //       is_verified:
-  //         verifiedFilter === "all"
-  //           ? undefined
-  //           : verifiedFilter === "verified",
-  //     });
-
-  //     setVendors(res?.results || []);
-  //     setCount(res?.count || 0);
-  //     setNext(res?.next || null);
-  //     setPrevious(res?.previous || null);
-
-  //     if (res?.results?.length) {
-  //       setSelected(res.results[0]);
-  //     } else {
-  //       setSelected(null);
-  //     }
-  //   } catch (err) {
-  //     console.error(err);
-  //     setVendors([]);
-  //     setCount(0);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const load = async (pageNumber = 1) => {
     try {
-      //setLoading(true);
+      setLoading(true);
 
-      // SEARCH MODE
-      // if (debouncedSearch.trim()) {
-      //   const res = await searchVendors(debouncedSearch);
-
-      //   let data: Vendor[] = [];
-
-      //   if (Array.isArray(res)) {
-      //     data = res;
-      //   } else if ("results" in res) {
-      //     data = res.results;
-      //   }
-
-      //   setVendors(data);
-      //   setCount(data.length);
-
-      //   setNext(null);
-      //   setPrevious(null);
-
-      //   setSelected(data.length ? data[0] : null);
-
-      //   return;
-      // }
       if (debouncedSearch.trim()) {
         const res = await searchVendors(debouncedSearch);
 
@@ -507,11 +419,20 @@ export default function VendorHub() {
             size="small"
             variant="outlined"
             startIcon={<Refresh />}
-            onClick={() => load(page)}
+            //onClick={() => load(page)}
+            onClick={() => {
+              setSearch("");
+              setDebouncedSearch("");
+              setPage(1);
+              load(1);
+            }}
             sx={{ height: 36, textTransform: "none", borderRadius: 2 }}
+            disabled={loading}
           >
-            Refresh
+            {/* Refresh */}
+            {loading ? "Refreshing..." : "Refresh"}
           </Button>
+
           <Button
             size="small"
             variant="contained"
@@ -527,7 +448,7 @@ export default function VendorHub() {
             + Onboard Vendor
           </Button>
 
-          <Button
+          {/* <Button
             size="small"
             variant="contained"
             sx={{
@@ -540,7 +461,7 @@ export default function VendorHub() {
             onClick={() => setOpenModalt(true)}
           >
             + Onboard Vendor mvp test
-          </Button>
+          </Button> */}
         </Stack>
       </Stack>
 
@@ -618,15 +539,20 @@ export default function VendorHub() {
             </TableHead>
 
             <TableBody>
-              {(vendors || []).map((v) => (
-                <TableRow
-                  key={v.id}
-                  hover
-                  selected={selected?.id === v.id}
-                  onClick={() => setSelected(v)}
-                  sx={{ cursor: "pointer" }}
-                >
-                  {/* <TableCell padding="checkbox">
+              {loading ? (
+                <Box py={3} textAlign="center">
+                  <CircularProgress size={24} />
+                </Box>
+              ) : (
+                (vendors || []).map((v) => (
+                  <TableRow
+                    key={v.id}
+                    hover
+                    selected={selected?.id === v.id}
+                    onClick={() => setSelected(v)}
+                    sx={{ cursor: "pointer" }}
+                  >
+                    {/* <TableCell padding="checkbox">
                     <Checkbox
                       checked={selectedIds.includes(Number(v.id))}
                       onClick={(e) => e.stopPropagation()}
@@ -634,57 +560,57 @@ export default function VendorHub() {
                     />
                   </TableCell> */}
 
-                  <TableCell>
-                    <Stack direction="row" spacing={2}>
-                      <Avatar>
-                        {v.business_name?.charAt(0)}
-                      </Avatar>
+                    <TableCell>
+                      <Stack direction="row" spacing={2}>
+                        <Avatar>
+                          {v.business_name?.charAt(0)}
+                        </Avatar>
 
-                      <Typography
-                        fontWeight={500}
-                        sx={{
-                          maxWidth: 150,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
+                        <Typography
+                          fontWeight={500}
+                          sx={{
+                            maxWidth: 150,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {v.business_name}
+                        </Typography>
+                      </Stack>
+                    </TableCell>
+
+                    <TableCell>{v.email}</TableCell>
+
+                    <TableCell>
+                      <Chip
+                        label={v.account_status}
+                        color={
+                          v.account_status === "active"
+                            ? "success"
+                            : "default"
+                        }
+                        size="small"
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      {formatCurrency(v.wallet?.balance)}
+                    </TableCell>
+
+                    <TableCell>
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAnchorEl(e.currentTarget);
+                          setMenuVendor(v); // ✅ THIS WAS MISSING
                         }}
                       >
-                        {v.business_name}
-                      </Typography>
-                    </Stack>
-                  </TableCell>
-
-                  <TableCell>{v.email}</TableCell>
-
-                  <TableCell>
-                    <Chip
-                      label={v.account_status}
-                      color={
-                        v.account_status === "active"
-                          ? "success"
-                          : "default"
-                      }
-                      size="small"
-                    />
-                  </TableCell>
-
-                  <TableCell>
-                    {formatCurrency(v.wallet?.balance)}
-                  </TableCell>
-
-                  <TableCell>
-                    <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setAnchorEl(e.currentTarget);
-                        setMenuVendor(v); // ✅ THIS WAS MISSING
-                      }}
-                    >
-                      <MoreVert />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        <MoreVert />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                )))}
             </TableBody>
           </Table>
 
@@ -938,6 +864,7 @@ export default function VendorHub() {
             justifyContent: "center",
             zIndex: 1300,
           }}
+          onClick={clickOutside}
         >
           <Card
             sx={{
@@ -1302,7 +1229,7 @@ export default function VendorHub() {
         submitDisabled={tenantModalState.mode === 'create'}
         // submitDisabledMessage={
         // tenantModalState.mode === 'create'}
-        onClose={() => { console.log("hi") }}
+        onClose={() => setOpenModalt(false)}
         onSubmit={handleTenantModalSubmit}
       />
 
