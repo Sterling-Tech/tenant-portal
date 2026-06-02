@@ -342,8 +342,201 @@ export default function CustomerTrans() {
         </Stack>
       </Card>
 
-      {/* EMPTY STATE */}
-      {/* {!customer && (
+
+      {/* RESULT 
+			// 🔥 PIXEL-PERFECT UPGRADE (MATCHES YOUR DESIGN)*/}
+
+      {loading ? (
+        <Box py={3} textAlign="center">
+          <CircularProgress size={35} />
+        </Box>
+      ) : customer ? (
+        <Grid container spacing={2} ref={detailsRef}>
+
+          {/* FULL WIDTH */}
+          <Grid item xs={12}>
+            <Card sx={{ borderRadius: 4, overflow: "hidden" }}>
+
+              {/* ===== TOP HEADER (BLUE GRADIENT) ===== */}
+              <Box sx={{
+                px: 3,
+                py: 2.5,
+                color: "#fff",
+                background: "linear-gradient(135deg,#142a5c,#2d5bff)",
+              }}>
+
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+
+                  {/* LEFT INFO */}
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Avatar sx={{ bgcolor: "#ffffff22", fontWeight: 800 }}>
+                      {customer.name?.[0]}
+                    </Avatar>
+
+                    <Box>
+                      <Typography fontWeight={800} fontSize={20}>
+                        {customer.name}
+                      </Typography>
+
+                      <Typography fontSize={12} sx={{ opacity: 0.9 }}>
+                        {customer.phone} • {customer.email}
+                      </Typography>
+
+                      <Typography fontSize={12} sx={{ opacity: 0.9 }}>
+                        Acct: {customer.account_number} • KCT1: {customer.meter_number} • KCT2: {customer.meter_number}
+                      </Typography>
+
+                      <Stack direction="row" spacing={1} mt={1}>
+                        <Chip label="active" size="small" sx={{ bgcolor: "#10b981", color: "#fff", fontSize: 10 }} />
+                        <Chip label="postpaid" size="small" sx={{ bgcolor: "#f59e0b", color: "#fff", fontSize: 10 }} />
+                        <Chip label="Industrial - Maximum Demand" size="small" sx={{ bgcolor: "#475569", color: "#fff", fontSize: 10 }} />
+                        <Chip label={`⚠ Debt: ${fmt(customerAnalytic?.remaining_debt || 0)}`} size="small" sx={{ bgcolor: "#7f1d1d", color: "#fff", fontSize: 10 }} />
+                      </Stack>
+                    </Box>
+                  </Stack>
+
+                  {/* BUTTON */}
+                  <Button
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      background: "#ffffff22",
+                      color: "#fff",
+                      textTransform: "none",
+                      fontSize: 12
+                    }}
+                  >
+                    ✕ New Search
+                  </Button>
+
+                </Stack>
+              </Box>
+
+              {/* ===== SUMMARY STRIP ===== */}
+              <Box sx={{ px: 3, py: 2, borderBottom: "1px solid #eee", background: "#fafafa" }}>
+                <Grid container spacing={2}>
+
+                  <Grid item xs={12} md={3}>
+                    <Typography fontSize={10} color="#6b7280">BALANCE DUE</Typography>
+                    <Typography fontWeight={800} color="#dc2626">{fmt(customerAnalytic?.remaining_debt || 0)}</Typography>
+                  </Grid>
+
+                  <Grid item xs={12} md={3}>
+                    <Typography fontSize={10} color="#6b7280">DEBT TYPE</Typography>
+                    <Typography fontWeight={600}>Maximum Demand Arrears</Typography>
+                  </Grid>
+
+                  <Grid item xs={12} md={3}>
+                    <Typography fontSize={10} color="#6b7280">EFFECTIVE FROM</Typography>
+                    <Typography fontWeight={600}>Sep 1, 2025</Typography>
+                  </Grid>
+
+                  <Grid item xs={12} md={3}>
+                    <Typography fontSize={10} color="#6b7280">LAST DEDUCTION</Typography>
+                    <Typography fontWeight={600} color="#dc2626">Mar 1, 2026</Typography>
+                  </Grid>
+
+                </Grid>
+              </Box>
+
+              {/* ===== KPI ROW ===== */}
+              <Grid container>
+
+                <Grid item xs={12} md={6} sx={{ p: 3, borderRight: "1px solid #eee" }}>
+                  <Typography fontSize={10} color="#6b7280">TOTAL AMOUNT PAID (ALL TIME)</Typography>
+                  <Typography fontSize={28} fontWeight={900} color="#1d4ed8">{fmt(customerAnalytic?.recovered_debt || 0)}</Typography>
+                  <Typography fontSize={11} color="#9ca3af">3 payments</Typography>
+                </Grid>
+
+                <Grid item xs={12} md={6} sx={{ p: 3 }}>
+                  <Typography fontSize={10} color="#6b7280">OUTSTANDING DEBT</Typography>
+                  <Typography fontSize={28} fontWeight={900} color="#dc2626">{fmt(customerAnalytic?.remaining_debt || 0)}</Typography>
+                  <Typography fontSize={11} color="#9ca3af">Maximum Demand Arrears</Typography>
+                </Grid>
+
+              </Grid>
+
+              {/* ===== TABS ===== */}
+              <Box sx={{ px: 3, pt: 2 }}>
+                <Stack direction="row" spacing={3}>
+                  <Typography fontWeight={700} sx={{ borderBottom: "2px solid #2563eb", pb: 1 }}>Transaction History</Typography>
+                  {/* <Typography fontWeight={600} color="#6b7280">Debt Account</Typography> */}
+                </Stack>
+              </Box>
+
+              {/* ===== FILTER BAR ===== */}
+              <Box sx={{ px: 3, py: 2 }}>
+                <Stack direction="row" spacing={2} alignItems="center">
+
+                  <TextField
+                    size="small"
+                    placeholder="Search ref, description..."
+                    sx={{ width: 260 }}
+                  />
+
+                  <TextField select size="small" sx={{ width: 160 }}>
+                    <MenuItem>Filter by Type</MenuItem>
+                  </TextField>
+
+                  <TextField type="date" size="small" />
+                  <TextField type="date" size="small" />
+
+                  <Box flex={1} />
+
+                  <Button size="small" variant="outlined">⬇ Export CSV</Button>
+
+                </Stack>
+              </Box>
+
+              {/* ===== TOTAL FILTERED ===== */}
+              <Box textAlign="center" py={1}>
+                <Typography fontSize={10} color="#6b7280">TOTAL AMOUNT PAID (FILTERED VIEW)</Typography>
+                <Typography color="#dc2626" fontWeight={800}>{fmt(customerAnalytic?.recovered_debt || 0)}</Typography>
+              </Box>
+
+              {/* ===== TABLE ===== */}
+              <Box sx={{ px: 3, pb: 3 }}>
+                <Stack spacing={1}>
+
+                  {historyMap[debts[0]?.id]?.map((r: any, i: number) => (
+                    <Box key={i} sx={{ p: 2, borderBottom: "1px solid #f1f5f9" }}>
+
+                      <Grid container alignItems="center">
+
+                        <Grid item xs={2}>
+                          <Typography fontSize={12} color="#6b7280">{r.transaction_ref}</Typography>
+                        </Grid>
+
+                        <Grid item xs={5}>
+                          <Typography fontSize={13} fontWeight={600}>Transaction</Typography>
+                          <Typography fontSize={11} color="#6b7280">{new Date(r.timestamp).toLocaleString()}</Typography>
+                        </Grid>
+
+                        <Grid item xs={2}>
+                          <Chip label="Postpaid Bill" size="small" />
+                        </Grid>
+
+                        <Grid item xs={2}>
+                          <Typography color="#dc2626" fontWeight={700}>{fmt(Number(r.amount_paid))}</Typography>
+                        </Grid>
+
+                        <Grid item xs={1}>
+                          <Chip label="success" size="small" sx={{ bgcolor: "#dcfce7", color: "#166534" }} />
+                        </Grid>
+
+                      </Grid>
+
+                    </Box>
+                  ))}
+
+                </Stack>
+              </Box>
+
+            </Card>
+          </Grid>
+
+        </Grid>
+      ) : (
         <Paper
           sx={{
             p: 8,
@@ -353,232 +546,10 @@ export default function CustomerTrans() {
             border: "1px solid #e5e9f2"
           }}
         >
-          <Stack alignItems="center" spacing={2}>
-            <Box
-              sx={{
-                width: 60,
-                height: 60,
-                borderRadius: 3,
-                background: "#e5e7eb",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}
-            >
-              <Search sx={{ fontSize: 28, color: "#6b7280" }} />
-            </Box>
-          </Stack>
-        </Paper>
-      )} */}
-
-      {/* RESULT 
-      // Replace ONLY your RESULT section with this*/}
-      {loading ? (
-        <Box py={3} textAlign="center">
-          <CircularProgress size={35} />
-        </Box>
-      ) : (
-        customer && (
-          <Grid container spacing={2} ref={detailsRef}>
-
-            {/* FULL WIDTH */}
-            <Grid item xs={12}>
-              <Card sx={{ borderRadius: 4, overflow: "hidden" }}>
-
-                {/* ===== TOP HEADER (BLUE GRADIENT) ===== */}
-                <Box sx={{
-                  px: 3,
-                  py: 2.5,
-                  color: "#fff",
-                  background: "linear-gradient(135deg,#142a5c,#2d5bff)",
-                }}>
-
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-
-                    {/* LEFT INFO */}
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Avatar sx={{ bgcolor: "#ffffff22", fontWeight: 800 }}>
-                        {customer.name?.[0]}
-                      </Avatar>
-
-                      <Box>
-                        <Typography fontWeight={800} fontSize={20}>
-                          {customer.name}
-                        </Typography>
-
-                        <Typography fontSize={12} sx={{ opacity: 0.9 }}>
-                          {customer.phone} • {customer.email}
-                        </Typography>
-
-                        <Typography fontSize={12} sx={{ opacity: 0.9 }}>
-                          Acct: {customer.account_number} • KCT1: {customer.meter_number} • KCT2: {customer.meter_number}
-                        </Typography>
-
-                        <Stack direction="row" spacing={1} mt={1}>
-                          <Chip label="active" size="small" sx={{ bgcolor: "#10b981", color: "#fff", fontSize: 10 }} />
-                          <Chip label="postpaid" size="small" sx={{ bgcolor: "#f59e0b", color: "#fff", fontSize: 10 }} />
-                          <Chip label="Industrial - Maximum Demand" size="small" sx={{ bgcolor: "#475569", color: "#fff", fontSize: 10 }} />
-                          <Chip label={`⚠ Debt: ${fmt(customerAnalytic?.remaining_debt || 0)}`} size="small" sx={{ bgcolor: "#7f1d1d", color: "#fff", fontSize: 10 }} />
-                        </Stack>
-                      </Box>
-                    </Stack>
-
-                    {/* BUTTON */}
-                    <Button
-                      size="small"
-                      sx={{
-                        borderRadius: 2,
-                        background: "#ffffff22",
-                        color: "#fff",
-                        textTransform: "none",
-                        fontSize: 12
-                      }}
-                    >
-                      ✕ New Search
-                    </Button>
-
-                  </Stack>
-                </Box>
-
-                {/* ===== SUMMARY STRIP ===== */}
-                <Box sx={{ px: 3, py: 2, borderBottom: "1px solid #eee", background: "#fafafa" }}>
-                  <Grid container spacing={2}>
-
-                    <Grid item xs={12} md={3}>
-                      <Typography fontSize={10} color="#6b7280">BALANCE DUE</Typography>
-                      <Typography fontWeight={800} color="#dc2626">{fmt(customerAnalytic?.remaining_debt || 0)}</Typography>
-                    </Grid>
-
-                    <Grid item xs={12} md={3}>
-                      <Typography fontSize={10} color="#6b7280">DEBT TYPE</Typography>
-                      <Typography fontWeight={600}>Maximum Demand Arrears</Typography>
-                    </Grid>
-
-                    <Grid item xs={12} md={3}>
-                      <Typography fontSize={10} color="#6b7280">EFFECTIVE FROM</Typography>
-                      <Typography fontWeight={600}>Sep 1, 2025</Typography>
-                    </Grid>
-
-                    <Grid item xs={12} md={3}>
-                      <Typography fontSize={10} color="#6b7280">LAST DEDUCTION</Typography>
-                      <Typography fontWeight={600} color="#dc2626">Mar 1, 2026</Typography>
-                    </Grid>
-
-                  </Grid>
-                </Box>
-
-                {/* ===== KPI ROW ===== */}
-                <Grid container>
-
-                  <Grid item xs={12} md={6} sx={{ p: 3, borderRight: "1px solid #eee" }}>
-                    <Typography fontSize={10} color="#6b7280">TOTAL AMOUNT PAID (ALL TIME)</Typography>
-                    <Typography fontSize={28} fontWeight={900} color="#1d4ed8">{fmt(customerAnalytic?.recovered_debt || 0)}</Typography>
-                    <Typography fontSize={11} color="#9ca3af">3 payments</Typography>
-                  </Grid>
-
-                  <Grid item xs={12} md={6} sx={{ p: 3 }}>
-                    <Typography fontSize={10} color="#6b7280">OUTSTANDING DEBT</Typography>
-                    <Typography fontSize={28} fontWeight={900} color="#dc2626">{fmt(customerAnalytic?.remaining_debt || 0)}</Typography>
-                    <Typography fontSize={11} color="#9ca3af">Maximum Demand Arrears</Typography>
-                  </Grid>
-
-                </Grid>
-
-                {/* ===== TABS ===== */}
-                <Box sx={{ px: 3, pt: 2 }}>
-                  <Stack direction="row" spacing={3}>
-                    <Typography fontWeight={700} sx={{ borderBottom: "2px solid #2563eb", pb: 1 }}>Transaction History</Typography>
-                    {/* <Typography fontWeight={600} color="#6b7280">Debt Account</Typography> */}
-                  </Stack>
-                </Box>
-
-                {/* ===== FILTER BAR ===== */}
-                <Box sx={{ px: 3, py: 2 }}>
-                  <Stack direction="row" spacing={2} alignItems="center">
-
-                    <TextField
-                      size="small"
-                      placeholder="Search ref, description..."
-                      sx={{ width: 260 }}
-                    />
-
-                    <TextField select size="small" sx={{ width: 160 }}>
-                      <MenuItem>Filter by Type</MenuItem>
-                    </TextField>
-
-                    <TextField type="date" size="small" />
-                    <TextField type="date" size="small" />
-
-                    <Box flex={1} />
-
-                    <Button size="small" variant="outlined">⬇ Export CSV</Button>
-
-                  </Stack>
-                </Box>
-
-                {/* ===== TOTAL FILTERED ===== */}
-                <Box textAlign="center" py={1}>
-                  <Typography fontSize={10} color="#6b7280">TOTAL AMOUNT PAID (FILTERED VIEW)</Typography>
-                  <Typography color="#dc2626" fontWeight={800}>{fmt(customerAnalytic?.recovered_debt || 0)}</Typography>
-                </Box>
-
-                {/* ===== TABLE ===== */}
-                <Box sx={{ px: 3, pb: 3 }}>
-                  <Stack spacing={1}>
-
-                    {historyMap[debts[0]?.id]?.map((r: any, i: number) => (
-                      <Box key={i} sx={{ p: 2, borderBottom: "1px solid #f1f5f9" }}>
-
-                        <Grid container alignItems="center">
-
-                          <Grid item xs={2}>
-                            <Typography fontSize={12} color="#6b7280">{r.transaction_ref}</Typography>
-                          </Grid>
-
-                          <Grid item xs={5}>
-                            <Typography fontSize={13} fontWeight={600}>Transaction</Typography>
-                            <Typography fontSize={11} color="#6b7280">{new Date(r.timestamp).toLocaleString()}</Typography>
-                          </Grid>
-
-                          <Grid item xs={2}>
-                            <Chip label="Postpaid Bill" size="small" />
-                          </Grid>
-
-                          <Grid item xs={2}>
-                            <Typography color="#dc2626" fontWeight={700}>{fmt(Number(r.amount_paid))}</Typography>
-                          </Grid>
-
-                          <Grid item xs={1}>
-                            <Chip label="success" size="small" sx={{ bgcolor: "#dcfce7", color: "#166534" }} />
-                          </Grid>
-
-                        </Grid>
-
-                      </Box>
-                    ))}
-
-                  </Stack>
-                </Box>
-
-              </Card>
-            </Grid>
-
-          </Grid>
-        )
-      )? !customer :(
-        <Paper
-          sx={{
-            p: 8,
-            textAlign: "center",
-            borderRadius: 4,
-            background: "#f8fafc",
-            border: "1px solid #e5e9f2",
-            fontSize: 20,
-          }}
-        >
-          Use the search bar above to find a customer and view their transaction history
+          Customer not found. Please search using a valid meter number or account number.
         </Paper>
       )}
+
       <Snackbar
         open={!!successMsg}
         autoHideDuration={3000}
