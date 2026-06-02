@@ -448,7 +448,7 @@ export default function VendorHub() {
             + Onboard Vendor
           </Button>
 
-          {/* <Button
+          <Button
             size="small"
             variant="contained"
             sx={{
@@ -461,7 +461,7 @@ export default function VendorHub() {
             onClick={() => setOpenModalt(true)}
           >
             + Onboard Vendor mvp test
-          </Button> */}
+          </Button>
         </Stack>
       </Stack>
 
