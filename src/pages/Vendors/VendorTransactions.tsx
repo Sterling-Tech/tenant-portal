@@ -31,7 +31,7 @@ import {
   BarChart,
 } from "@mui/icons-material";
 import { useTenants } from "../../hooks/useTenants";
-import { fetchTransactions, fetchVendors, fundVendorWallet, Ledger, PaginatedLedgerResponse, Vendor } from "../../services/vendorService";
+import { fetchTransactions, fetchVendors, fundVendorWallet, Ledger, PaginatedLedgerResponse, PaginatedVendorResponse, searchVendors, Vendor } from "../../services/vendorService";
 import { useOrgWallets } from "../../hooks/useOrgWallets";
 import {
   BarChart as ReBarChart,
@@ -87,32 +87,53 @@ const VendorTransactions: React.FC = () => {
   const [endDate, setEndDate] = useState(format(tomorrow));
 
   useEffect(() => {
-  const timer = setTimeout(() => {
-    setDebouncedSearch(search);
-  }, 500);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
 
-  return () => clearTimeout(timer);
-}, [search]);
-
-useEffect(() => {
-  setPage(1);
-}, [debouncedSearch, statusFilter]);
-
-  const load = async (pageNumber = 1) => {
-    const res = await fetchVendors({
-      page: pageNumber,
-      search: debouncedSearch,
-      account_status:
-        statusFilter === "all" ? undefined : statusFilter,
-    });
-
-    setVendors(res.results || []);
-    setVendorCount(res.count || 0);
-  };
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
-  load(page);
-}, [page, debouncedSearch, statusFilter]);
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
+
+ 
+  const load = async (pageNumber = 1) => {
+    try {
+      setLoading(true);
+
+      let res: PaginatedVendorResponse;
+
+      if (debouncedSearch.trim()) {
+        res = await searchVendors(
+          debouncedSearch,
+          pageNumber
+        );
+      } else {
+        res = await fetchVendors({
+          page: pageNumber,
+          account_status:
+            statusFilter === "all"
+              ? undefined
+              : statusFilter,
+        });
+      }
+
+      setVendors(res.results || []);
+      setVendorCount(res.count || 0);
+
+    } catch (error) {
+      console.error("Vendor load error:", error);
+      setVendors([]);
+      setVendorCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    load(page);
+  }, [page, debouncedSearch, statusFilter]);
 
   const selectedVendor = useMemo(
     () => vendors?.find((t) => t.id === vendorsId),
@@ -217,7 +238,22 @@ useEffect(() => {
     if (vendorsId) loadTransactions(vendorsId);
   }, [vendorsId, startDate, endDate]);
 
-  const totalPages = Math.ceil(vendorCount / pageSize);
+  // const totalPages = Math.ceil(vendorCount / pageSize);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(vendorCount / pageSize)
+  );
+  useEffect(() => {
+    if (!vendors.length) {
+      setVendorId(null);
+      return;
+    }
+
+    if (!vendors.some(v => v.id === vendorsId)) {
+      setVendorId(vendors[0].id);
+      selectVendor(vendors[0].id);
+    }
+  }, [vendors]);
 
   const handleFundWallet = async () => {
     if (!vendorsId || !amount) return;
@@ -319,6 +355,12 @@ useEffect(() => {
             size="small"
             variant="outlined"
             startIcon={<Refresh />}
+            onClick={()=>{
+              setSearch("");
+              setDebouncedSearch("");
+              setPage(1);
+              load(1)
+            }}
             sx={{ height: 36, textTransform: "none", borderRadius: 2 }}
           >
             Refresh
@@ -411,91 +453,97 @@ useEffect(() => {
               </Stack>
               <Stack mt={2} spacing={1.2}>
 
-                {/* {filteredVendors?.map((v) => { */}
-                {vendors?.map((v) => {
-                  const isActive = v?.account_status === "active";
+                {loading ? (
+                  <Box py={3} textAlign="center">
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : (
+                  vendors?.map((v) => {
+                    const isActive = v?.account_status === "active";
 
-                  return (
-                    <Box
-                      key={v.id}
-                      onClick={() => {
-                        setVendorId(v.id);
-                        selectVendor(v.id);
-                      }}
-                      sx={{
-                        p: 1,
-                        borderRadius: 2,
-                        cursor: "pointer",
-                        transition: "0.2s",
-                        border: vendorsId === v.id ? "1px solid #dbeafe" : "1px solid transparent",
-                        bgcolor: vendorsId === v.id ? "#eff6ff" : "#fff",
-                        "&:hover": { bgcolor: "#f9fafb" },
-                      }}
-                    >
+                    return (
+                      <Box
+                        key={v.id}
+                        onClick={() => {
+                          setVendorId(v.id);
+                          selectVendor(v.id);
+                        }}
+                        sx={{
+                          p: 1,
+                          borderRadius: 2,
+                          cursor: "pointer",
+                          transition: "0.2s",
+                          border: vendorsId === v.id ? "1px solid #dbeafe" : "1px solid transparent",
+                          bgcolor: vendorsId === v.id ? "#eff6ff" : "#fff",
+                          "&:hover": { bgcolor: "#f9fafb" },
+                        }}
+                      >
 
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
 
-                        {/* LEFT */}
-                        <Stack direction="row" spacing={1.2} alignItems="center">
-                          <Box
-                            sx={{
-                              width: 46,
-                              height: 36,
-                              borderRadius: 2,
-                              bgcolor: getColor(v.business_name),
-                              color: "#fff",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: 13,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {v.business_name?.slice(0, 2)}
-                          </Box>
-
-                          <Box>
-                            <Typography
-                              fontSize={13}
-                              fontWeight={600}
+                          {/* LEFT */}
+                          <Stack direction="row" spacing={1.2} alignItems="center">
+                            <Box
                               sx={{
-                                maxWidth: 120,
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
+                                width: 46,
+                                height: 36,
+                                borderRadius: 2,
+                                bgcolor: getColor(v.business_name),
+                                color: "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 13,
+                                fontWeight: 600,
                               }}
                             >
-                              {v.business_name}
+                              {v.business_name?.slice(0, 2)}
+                            </Box>
+
+                            <Box>
+                              <Typography
+                                fontSize={13}
+                                fontWeight={600}
+                                sx={{
+                                  maxWidth: 120,
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                {v.business_name}
+                              </Typography>
+
+                              <Typography fontSize={11} color="#6b7280">
+                                Vendor
+                              </Typography>
+                            </Box>
+                          </Stack>
+
+                          {/* RIGHT */}
+                          <Box textAlign="right">
+                            <Typography fontSize={13} fontWeight={600} color="#111827">
+                              ₦{Number(v.wallet?.balance || 0).toLocaleString()}
                             </Typography>
 
-                            <Typography fontSize={11} color="#6b7280">
-                              Vendor
-                            </Typography>
+                            <Chip
+                              label={isActive ? "Active" : "Inactive"}
+                              size="small"
+                              sx={{
+                                mt: 0.5,
+                                height: 18,
+                                fontSize: 10,
+                                bgcolor: isActive ? "#dcfce7" : "#e5e7eb",
+                                color: isActive ? "#16a34a" : "#6b7280",
+                              }}
+                            />
                           </Box>
                         </Stack>
+                      </Box>
+                    );
+                  })
+                )}
 
-                        {/* RIGHT */}
-                        <Box textAlign="right">
-                          <Typography fontSize={13} fontWeight={600} color="#111827">
-                            ₦{Number(v.wallet?.balance || 0).toLocaleString()}
-                          </Typography>
-
-                          <Chip
-                            label={isActive ? "Active" : "Inactive"}
-                            size="small"
-                            sx={{
-                              mt: 0.5,
-                              height: 18,
-                              fontSize: 10,
-                              bgcolor: isActive ? "#dcfce7" : "#e5e7eb",
-                              color: isActive ? "#16a34a" : "#6b7280",
-                            }}
-                          />
-                        </Box>
-                      </Stack>
-                    </Box>
-                  );
-                })}
               </Stack>
               {/* Pagination */}
               <Stack

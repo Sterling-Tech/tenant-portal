@@ -492,11 +492,18 @@ export const createCustomer = (payload: CustomerForm) =>
 export const createVendor = (payload: VendorForm) =>
     post<Vendor>('/vendor/create/', payload);
 
-export const searchVendors = (keyword: string) =>
-  get<Vendor[] | PaginatedVendorResponse>(
-    `/vendor/search/?keyword=${keyword}`
+// export const searchVendors = (keyword: string) =>
+//   get<Vendor[] | PaginatedVendorResponse>(
+//     `/vendor/search/?keyword=${keyword}`,
+//     //`http://188.166.161.13:8061/vendor/search/?keyword=mama`
+//   );
+  export const searchVendors = (
+  keyword: string,
+  page = 1
+) =>
+  get<PaginatedVendorResponse>(
+    `/vendor/search/?keyword=${encodeURIComponent(keyword)}&page=${page}`
   );
-  
 export const fundVendorWallet = (payload: {
   vendor: string;
   amount: number;
