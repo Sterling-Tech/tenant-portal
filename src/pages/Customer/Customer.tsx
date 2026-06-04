@@ -328,9 +328,9 @@ const chartData = useMemo(() => {
           <Button onClick={() => load()} variant="outlined" startIcon={<Refresh />}sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
             Refresh
           </Button>
-          <Button onClick={handleCreateClick} variant="contained" sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
+          {/* <Button onClick={handleCreateClick} variant="contained" sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
             + Register Customer
-          </Button>
+          </Button> */}
         </Stack>
       </Stack>
 

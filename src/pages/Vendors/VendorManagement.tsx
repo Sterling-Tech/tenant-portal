@@ -303,51 +303,6 @@ export default function VendorHub() {
     }
   };
 
-  // const handleCreateVendor = async () => {
-  //   if (!vendorForm.business_name || !vendorForm.email || !vendorForm.hierachy) {
-  //     setAlert({ open: true, type: "error", message: "Required fields missing" });
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-  //     await createVendor(vendorForm as VendorForm);
-
-  //     setAlert({ open: true, type: "success", message: "Vendor created successfully" });
-
-
-  //     setOpenModal(false);
-
-  //     setVendorForm({
-  //       business_name: "",
-  //       email: "",
-  //       phone_number: "",
-  //       address: "",
-  //       city: "",
-  //       state: "",
-  //       country: "",
-  //       postal_code: "",
-  //       hierachy: "",
-  //       related_vendor: undefined,
-  //     });
-
-  //     load();
-  //   } catch (err) {
-  //     setAlert({ open: true, type: "error", message: "Failed to create vendor" });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-  //
-  // const handleDeleteVendor = async (vendorId: number) => {
-  //   try {
-  //     await deleteVendor(String(vendorId));
-  //     setAnchorEl(null);
-  //     load();
-  //   } catch (err) {
-  //     console.error(err);
-  //   }
-  // };
   const handleCreateVendor = async () => {
     const isValid = validateVendorForm();
 
