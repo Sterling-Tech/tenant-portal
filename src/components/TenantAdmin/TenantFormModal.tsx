@@ -283,8 +283,8 @@ function TabPanel(props: TabPanelProps) {
         <div
             role="tabpanel"
             hidden={value !== index}
-            id={`tenant-tabpanel-${index}`}
-            aria-labelledby={`tenant-tab-${index}`}
+            id={`vendor-tabpanel-${index}`}
+            aria-labelledby={`vendor-tab-${index}`}
             {...other}
         >
             {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
@@ -394,7 +394,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
 
         // Validate agreement acceptance
         if (!values.agreementAccepted) {
-            setSubmitError('You must accept the service agreement to create a tenant.');
+            setSubmitError('You must accept the service agreement to create a vendor.');
             setActiveTab(5); // Switch to agreement tab
             return;
         }
@@ -439,13 +439,13 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
         }
 
         try {
-            console.log('[TenantFormModal] Submitting form with payload:', payload);
+            console.log('[VendorFormModal] Submitting form with payload:', payload);
             await onSubmit(payload);
-            console.log('[TenantFormModal] Form submitted successfully');
+            console.log('[VendorFormModal] Form submitted successfully');
             setSubmitError(null);
         } catch (error: any) {
-            console.error('[TenantFormModal] Form submission failed:', error);
-            let message = 'Unable to save tenant. Please try again.';
+            console.error('[VendorFormModal] Form submission failed:', error);
+            let message = 'Unable to save vendor. Please try again.';
 
             if (typeof error === 'string') {
                 message = error;
@@ -552,10 +552,10 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                         </Avatar>
                         <Box>
                             <Typography variant="h5" fontWeight="bold">
-                                {mode === 'create' ? 'Create New Tenant' : 'Edit Tenant'}
+                                {mode === 'create' ? 'Create New Vendor' : 'Edit Vendor'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Complete all sections to register a new tenant
+                                Complete all sections to register a new vendor
                             </Typography>
                         </Box>
                     </Stack>
@@ -599,7 +599,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
             </Box>
 
             <DialogContent sx={{ py: 0 }}>
-                <form id="tenant-form-modal" onSubmit={handleSubmit(handleFormSubmit)}>
+                <form id="vendor-form-modal" onSubmit={handleSubmit(handleFormSubmit)}>
                     {submitDisabled && submitDisabledMessage && (
                         <Alert severity="info" icon={<Info />} sx={{ mt: 2 }}>
                             {submitDisabledMessage}
@@ -616,20 +616,20 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                         <Stack spacing={3}>
                             <Typography variant="h6" color="primary" gutterBottom>
                                 <Domain sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                Basic Tenant Information
+                                Basic Vendor Information
                             </Typography>
                             
                             <TextField
-                                label="Tenant Name"
+                                label="Vendor Name"
                                 fullWidth
                                 required
                                 {...register('name', {
-                                    required: 'Tenant name is required.',
-                                    minLength: { value: 2, message: 'Tenant name must be at least 2 characters.' },
-                                    maxLength: { value: 255, message: 'Tenant name must not exceed 255 characters.' }
+                                    required: 'Vendor name is required.',
+                                    minLength: { value: 2, message: 'Vendor name must be at least 2 characters.' },
+                                    maxLength: { value: 255, message: 'Vendor name must not exceed 255 characters.' }
                                 })}
                                 error={Boolean(errors.name)}
-                                helperText={errors.name?.message || 'Enter a unique name for this tenant'}
+                                helperText={errors.name?.message || 'Enter a unique name for this vendor'}
                                 autoFocus
                                 InputProps={{
                                     startAdornment: (
@@ -654,7 +654,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                                             }
                                         })}
                                         error={Boolean(errors.domain) || (touchedFields.domain && !isValidDomain)}
-                                        helperText={errors.domain?.message || 'Unique domain for this tenant'}
+                                        helperText={errors.domain?.message || 'Unique domain for this vendor'}
                                         InputProps={{
                                             startAdornment: (
                                                 <InputAdornment position="start">
@@ -663,7 +663,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                                             ),
                                             endAdornment: autoGenerateDomain && mode === 'create' && (
                                                 <InputAdornment position="end">
-                                                    <Tooltip title="Auto-generated from tenant name">
+                                                    <Tooltip title="Auto-generated from vendor name">
                                                         <CheckCircle color="success" fontSize="small" />
                                                     </Tooltip>
                                                 </InputAdornment>
@@ -700,7 +700,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                                     ),
                                     endAdornment: autoGenerateSlug && mode === 'create' && watchedSlug && (
                                         <InputAdornment position="end">
-                                            <Tooltip title="Auto-generated from tenant name">
+                                            <Tooltip title="Auto-generated from vendor name">
                                                 <CheckCircle color="success" fontSize="small" />
                                             </Tooltip>
                                         </InputAdornment>
@@ -712,7 +712,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
 
                             <Stack spacing={1}>
                                 <Typography variant="subtitle2" color="text.secondary">
-                                    Tenant Status
+                                    Vendor Status
                                 </Typography>
                                 <Grid container spacing={2}>
                                     <Grid item xs={12} md={6}>
@@ -724,7 +724,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                                                     onChange={(event) => setValue('isActive', event.target.checked)}
                                                 />
                                             }
-                                            label="Active Tenant"
+                                            label="Active Vendor"
                                         />
                                     </Grid>
                                     <Grid item xs={12} md={6}>
@@ -736,7 +736,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                                                     onChange={(event) => setValue('isTrial', event.target.checked)}
                                                 />
                                             }
-                                            label="Trial Tenant"
+                                            label="Trial Vendor"
                                         />
                                     </Grid>
                                 </Grid>
@@ -757,7 +757,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                                 <>
                                     <Divider />
                                     <Typography variant="subtitle2" color="text.secondary">
-                                        Optional: Create Tenant Admin User
+                                        Optional: Create Vendor Admin User
                                     </Typography>
                                     <Grid container spacing={2}>
                                         <Grid item xs={12} md={6}>
@@ -773,7 +773,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                                                         </InputAdornment>
                                                     ),
                                                 }}
-                                                helperText="Email for tenant admin user"
+                                                helperText="Email for vendor admin user"
                                             />
                                         </Grid>
                                         <Grid item xs={12} md={6}>
@@ -1236,7 +1236,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                             </Typography>
 
                             <Alert severity="warning" icon={<Info />}>
-                                Please review and accept the service agreement to complete tenant registration.
+                                Please review and accept the service agreement to complete vendor registration.
                             </Alert>
 
                             {/* Agreement Terms */}
@@ -1422,7 +1422,7 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                                         <Stack direction="row" spacing={1} alignItems="center" mt={1}>
                                             <CheckCircle color="success" />
                                             <Typography variant="body2" color="success.dark">
-                                                Agreement accepted - You can now create the tenant
+                                                Agreement accepted - You can now create the vendor
                                             </Typography>
                                         </Stack>
                                     )}
@@ -1457,13 +1457,13 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
                         </Button>
                         <Button
                             type="submit"
-                            form="tenant-form-modal"
+                            form="vendor-form-modal"
                             variant="contained"
                             disabled={loading || isSubmitting || submitDisabled || !agreementAccepted}
                             startIcon={(loading || isSubmitting) ? <CircularProgress size={16} /> : <CheckCircle />}
                             color="primary"
                         >
-                            {mode === 'create' ? 'Create Tenant' : 'Save Changes'}
+                            {mode === 'create' ? 'Create Vendor' : 'Save Changes'}
                         </Button>
                     </Stack>
                 </Stack>
