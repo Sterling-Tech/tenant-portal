@@ -360,6 +360,7 @@ export const fetchTransactions = (params?: {
   start_date?: string;
   end_date?: string;
   vendor_id?: string;
+  page?: number;
 }) =>
   get<PaginatedLedgerResponse>(`/vendor/ledger/${buildQuery(params)}`)
 

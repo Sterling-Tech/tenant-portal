@@ -58,6 +58,9 @@ const VendorTransactions: React.FC = () => {
   const [pageSize] = useState(5);
   const [vendorCount, setVendorCount] = useState(0);
 
+  const [transactionCount, setTransactionCount] = useState(0);
+  const [txPage, setTxPage] = useState(1);
+
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"analytics" | "ledger">("analytics");
   const [search, setSearch] = useState("");
@@ -98,7 +101,7 @@ const VendorTransactions: React.FC = () => {
     setPage(1);
   }, [debouncedSearch, statusFilter]);
 
- 
+
   const load = async (pageNumber = 1) => {
     try {
       setLoading(true);
@@ -180,7 +183,7 @@ const VendorTransactions: React.FC = () => {
     link.click();
   };
 
-  const loadTransactions = async (id: string) => {
+  const loadTransactions = async (id: string, page: number = 1) => {
     if (!id) return;
 
     // ✅ prevent bad date range
@@ -200,10 +203,12 @@ const VendorTransactions: React.FC = () => {
         vendor_id: id,
         start_date: startDate,
         end_date: endDate,
+        page,
       });
 
       setTransactions(res?.results || []);
       setSummary(res?.summary || { total_debits: 0, total_credits: 0 });
+      setTransactionCount(res?.count || 0);
 
     } catch (err: any) {
       console.error("Transaction error:", err);
@@ -242,6 +247,11 @@ const VendorTransactions: React.FC = () => {
   const totalPages = Math.max(
     1,
     Math.ceil(vendorCount / pageSize)
+  );
+  //transaction pagination
+  const totalTxPages = Math.max(
+    1,
+    Math.ceil(transactionCount / pageSize)
   );
   useEffect(() => {
     if (!vendors.length) {
@@ -323,7 +333,10 @@ const VendorTransactions: React.FC = () => {
     });
   }, [transactions, typeFilter]);
 
-  const displayBalance = Number(selectedVendor?.wallet?.balance || 0);
+  //const displayBalance = Number(selectedVendor?.wallet?.balance || 0);
+  const displayBalance =
+    Number(summary?.total_credits || 0) -
+    Number(summary?.total_debits || 0);
 
   const totalCredits = summary.total_credits;
   const totalDebits = summary.total_debits;
@@ -355,7 +368,7 @@ const VendorTransactions: React.FC = () => {
             size="small"
             variant="outlined"
             startIcon={<Refresh />}
-            onClick={()=>{
+            onClick={() => {
               setSearch("");
               setDebouncedSearch("");
               setPage(1);
@@ -376,7 +389,8 @@ const VendorTransactions: React.FC = () => {
       {/* SUMMARY */}
       <Grid pb={2} container spacing={2}>
         {[
-          { title: "Total Wallet Balance", value: selectedVendor?.wallet?.balance, color: "#2563eb" },
+          // { title: "Total Wallet Balance", value: selectedVendor?.wallet?.balance, color: "#2563eb" },
+          { title: "Total Wallet Balance", value: displayBalance, color: "#2563eb" },
           { title: "Total Credits", value: totalCredits, color: "#16a34a" },
           { title: "Total Debits", value: totalDebits, color: "#dc2626" },
         ].map((item, i) => (
@@ -671,14 +685,6 @@ const VendorTransactions: React.FC = () => {
                       </Typography>
                     </Stack>
 
-                    {/* <ResponsiveContainer width="100%" height={220}>
-                      <ReBarChart data={transactions}>
-                        <XAxis dataKey="transaction_ref" hide />
-                        <Tooltip />
-                        <Bar dataKey="credit_amount" />
-                      </ReBarChart>
-                    </ResponsiveContainer> */}
-
                     <ResponsiveContainer width="100%" height={220}>
                       <ReBarChart data={chartData}>
                         <XAxis dataKey="date" />
@@ -843,7 +849,27 @@ const VendorTransactions: React.FC = () => {
                           </TableBody>
                         </Table>
                       )}
+                      <Stack
+                        direction="row"
+                        justifyContent="center"
+                        mt={2}
+                      >
+
+                        <Pagination
+                          count={totalTxPages}
+                          page={txPage}
+                          onChange={(_, value) => {
+                            setTxPage(value);
+                            if (vendorsId)
+                              loadTransactions(vendorsId, value);
+                          }}
+                          color="primary"
+                          size="small"
+                          shape="rounded"
+                        />
+                      </Stack>
                     </Box>
+
                   </Card>
                 )}
               </Box>
