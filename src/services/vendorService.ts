@@ -1,43 +1,6 @@
 import { get, post, patch, del, put } from './api';
 
-// export interface Vendor {
-//     id: string;
-//     tenant: string | null;
-//     tenant_name?: string | null;
-//     name: string;
-//     slug: string;
-//     email: string;
-//     phone?: string | null;
-//     address?: string | null;
-//     city?: string | null;
-//     state?: string | null;
-//     country?: string | null;
-//     postal_code?: string | null;
-//     is_active: boolean;
-//     is_verified: boolean;
-//     verification_date?: string | null;
-//     organisation_count?: number;
-//     admin_count?: number;
-//     metadata?: Record<string, unknown>;
-//     created_at: string;
-//     updated_at: string;
-//     deleted_at?: string | null;
-// }
 
-// export interface VendorForm {
-//     tenant?: string | null;
-//     name: string;
-//     email: string;
-//     phone?: string;
-//     address?: string;
-//     city?: string;
-//     state?: string;
-//     country?: string;
-//     postal_code?: string;
-//     is_active?: boolean;
-//     is_verified?: boolean;
-//     metadata?: Record<string, unknown>;
-// }
 export interface Vendor {
   id: string
   business_name: string
@@ -205,6 +168,78 @@ export interface VendorForm {
     hierachy: string;
     related_vendor?: string;
 }
+export interface VendorFormMvp {
+  // Basic Information
+  business_name: string;
+  email: string;
+  phone_number?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+
+  // Hierarchy
+  hierachy: string;
+  related_vendor?: string | null;
+
+  // Tenant Information
+  domain?: string;
+  sub_domain?: string;
+  slug?: string;
+  trial_ends?: string | null;
+  description?: string;
+  industry?: string;
+  category?: string;
+
+  // Business Registration
+  registration_number?: string;
+  cac_registration_number?: string;
+  website?: string;
+
+  // Contact Information
+  contact_name?: string;
+  email1?: string;
+  email2?: string;
+
+  // Bank Details
+  bank_name?: string;
+  account_name?: string;
+  account_number?: string;
+
+  // Owner Details
+  owner_name?: string;
+  dob?: string; // YYYY-MM-DD
+  nationality?: string;
+  id_type?: string;
+  id_number?: string;
+  owner_address?: string;
+
+  // Company Details
+  entity_name?: string;
+  company_website?: string;
+  company_address?: string;
+
+  // Signatory Details
+  signatory_name?: string;
+  signatory_phone_number?: string;
+  signatory_email?: string;
+}
+export interface VendorResponse extends VendorFormMvp {
+  id: number;
+  account_status: string;
+  token: string;
+  created_at: string;
+
+  wallet: {
+    wallet_type: {
+      name: string;
+      description: string;
+    };
+    balance: string;
+  };
+}
+
 export interface Category {
     id: string;
     name: string;
@@ -495,6 +530,9 @@ export const createCustomer = (payload: CustomerForm) =>
 
 export const createVendor = (payload: VendorForm) =>
     post<Vendor>('/vendor/create/', payload);
+
+export const createVendorMvp = (payload: VendorFormMvp) =>
+    post<VendorResponse>('/vendor/create/', payload);
 
 // export const searchVendors = (keyword: string) =>
 //   get<Vendor[] | PaginatedVendorResponse>(

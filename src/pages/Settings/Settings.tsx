@@ -41,8 +41,11 @@ import {
 } from "@mui/icons-material";
 
 import { useAppSelector } from "../../store/store";
+import CreateNewAdmin from "./CreateNewAdmin";
+import AllAdmin from "./AllAdmin";
+import AssignPermission from "./AssignPermission";
 
-const API_BASE_URL = "http://188.166.161.13:8001/api/v1";
+//const API_BASE_URL = "http://188.166.161.13:8001/api/v1";
 
 const Settings: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
@@ -115,68 +118,68 @@ const Settings: React.FC = () => {
   const handleSaveAccount = async () => {
     setLoading(true);
 
-    try {
-      const token = localStorage.getItem("token");
+    // try {
+    //   const token = localStorage.getItem("token");
 
-      const response = await fetch(
-        `${API_BASE_URL}/users/${user?.id}/`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(accountForm),
-        }
-      );
+    //   const response = await fetch(
+    //     `${API_BASE_URL}/users/${user?.id}/`,
+    //     {
+    //       method: "PATCH",
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "Content-Type": "application/json",
+    //       },
+    //       body: JSON.stringify(accountForm),
+    //     }
+    //   );
 
-      if (response.ok) {
-        setSuccess("Account settings updated successfully!");
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    //   if (response.ok) {
+    //     setSuccess("Account settings updated successfully!");
+    //   }
+    // } catch (err) {
+    //   console.error(err);
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   // ================= SECURITY SAVE =================
   const handleSaveSecurity = async () => {
     setLoading(true);
 
-    try {
-      const token = localStorage.getItem("token");
+    // try {
+    //   const token = localStorage.getItem("token");
 
-      const response = await fetch(
-        `${API_BASE_URL}/auth/change-password/`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            current_password: securityForm.current_password,
-            new_password: securityForm.new_password,
-          }),
-        }
-      );
+    //   const response = await fetch(
+    //     `${API_BASE_URL}/auth/change-password/`,
+    //     {
+    //       method: "POST",
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "Content-Type": "application/json",
+    //       },
+    //       body: JSON.stringify({
+    //         current_password: securityForm.current_password,
+    //         new_password: securityForm.new_password,
+    //       }),
+    //     }
+    //   );
 
-      if (response.ok) {
-        setSuccess("Password changed successfully!");
+    //   if (response.ok) {
+    //     setSuccess("Password changed successfully!");
 
-        setSecurityForm({
-          current_password: "",
-          new_password: "",
-          confirm_password: "",
-          two_factor_enabled: securityForm.two_factor_enabled,
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    //     setSecurityForm({
+    //       current_password: "",
+    //       new_password: "",
+    //       confirm_password: "",
+    //       two_factor_enabled: securityForm.two_factor_enabled,
+    //     });
+    //   }
+    // } catch (err) {
+    //   console.error(err);
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   // ================= CONFIGURATION =================
@@ -314,6 +317,21 @@ const Settings: React.FC = () => {
                 icon={<ConfigIcon />}
                 iconPosition="start"
                 label="Configuration"
+              />
+              <Tab
+                icon={<ConfigIcon />}
+                iconPosition="start"
+                label="Admin Management"
+              />
+              <Tab
+                icon={<ConfigIcon />}
+                iconPosition="start"
+                label="Admin List"
+              />
+              <Tab
+                icon={<ConfigIcon />}
+                iconPosition="start"
+                label="Assign Permission"
               />
             {/* )} */}
           </Tabs>
@@ -1172,6 +1190,17 @@ const Settings: React.FC = () => {
               </Box>
             </CardContent>
           )} 
+          {/* ================= ADMIN MANAGEMENT TAB ================= */}
+          {activeTab === 4 && (
+            <CreateNewAdmin />
+          )}
+          {/* ================= ADMIN LIST TAB ================= */}
+          {activeTab === 5 && (
+            <AllAdmin />
+          )}
+          {activeTab === 6 && (
+            <AssignPermission />
+          )}
       </Card>
     </Box>
   );

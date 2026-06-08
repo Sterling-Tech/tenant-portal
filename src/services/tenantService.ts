@@ -5,25 +5,6 @@
 
 import { get, post, patch, del } from './api';
 
-// export interface Tenant {
-//     id: string;
-//     name: string;
-//     slug: string;
-//     domain: string;
-//     subdomain?: string;
-//     configuration: Record<string, any>;
-//     features: string[];
-//     limits: Record<string, any>;
-//     custom_settings: Record<string, any>;
-//     database_name?: string;
-//     database_url?: string;
-//     is_active: boolean;
-//     is_trial: boolean;
-//     trial_ends_at?: string;
-//     created_at: string;
-//     updated_at: string;
-//     created_by?: string;
-// }
 export interface Tenant {
     id: string;
     business_name: string;

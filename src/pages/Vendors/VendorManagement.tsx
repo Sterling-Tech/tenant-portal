@@ -256,9 +256,6 @@ export default function VendorHub() {
         : [...prev, id]
     );
   };
-
-
-
   const hierarchyOptions = [
     { value: "vendor", label: "Vendor" },
     { value: "sub_vendor", label: "Sub Vendor" },
@@ -266,30 +263,6 @@ export default function VendorHub() {
     { value: "cashier", label: "Cashier" },
     { value: "POS", label: "POS" },
   ];
-
-  // const load = async (pageNumber = 1) => {
-  //   const res = await fetchVendors({
-  //     page: pageNumber,
-  //     search,
-  //     is_active:
-  //       statusFilter === "all"
-  //         ? undefined
-  //         : statusFilter === "active",
-  //     is_verified:
-  //       verifiedFilter === "all"
-  //         ? undefined
-  //         : verifiedFilter === "verified",
-  //   });
-
-  //   console.log("VENDORS API RESPONSE:", res);
-
-  //   setVendors(res.results);
-  //   setCount(res.count);
-  //   setNext(res.next);
-  //   setPrevious(res.previous);
-
-  //   if (res.results.length) setSelected(res.results[0]);
-  // };
 
   const handleToggleStatus = async (vendor: Vendor) => {
     try {
@@ -388,7 +361,7 @@ export default function VendorHub() {
             {loading ? "Refreshing..." : "Refresh"}
           </Button>
 
-          <Button
+          {/* <Button
             size="small"
             variant="contained"
             sx={{
@@ -401,7 +374,7 @@ export default function VendorHub() {
             onClick={() => setOpenModal(true)}
           >
             + Onboard Vendor
-          </Button>
+          </Button> */}
 
           <Button
             size="small"
@@ -844,9 +817,6 @@ export default function VendorHub() {
                 <Typography fontWeight={700} fontSize={18}>
                   Onboard New Vendor
                 </Typography>
-                {/* <Typography fontSize={13} opacity={0.8}>
-            Fill in the vendor's details to get them started
-          </Typography> */}
               </Box>
 
               <IconButton
