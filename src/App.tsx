@@ -18,6 +18,7 @@ import VendorTransactions from './pages/Vendors/VendorTransactions';
 import CustomerAdmin from './pages/Customer/Dashboard';
 import Subaccount from './pages/Customer/Subaccount';
 import CustomerTrans from './pages/Customer/CustomerTrans';
+import OnboardingPage from './pages/Onboarding/Onboarding';
 
 // Enhanced theme
 const theme = createTheme({
@@ -128,7 +129,16 @@ const App: React.FC = () => {
                                 }
                             />
 
-                            
+                            <Route
+                                path="/onboarding"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <OnboardingPage />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
                             <Route
                                 path="/settings"
                                 element={

@@ -6,7 +6,6 @@ import { getAllAdmin, getPermissions, grantPermissions, CreateAdmin, PermissionI
 
 export default function AssignPermission() {
     const [admins, setAdmins] = useState<CreateAdmin[]>([]);
-    // const [permissions, setPermissions] = useState<Permission[]>([]);
     const [permissions, setPermissions] = useState<PermissionItem[]>([]);
 
     const [selectedAdmin, setSelectedAdmin] =

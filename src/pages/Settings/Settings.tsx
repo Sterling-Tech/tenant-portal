@@ -44,6 +44,7 @@ import { useAppSelector } from "../../store/store";
 import CreateNewAdmin from "./CreateNewAdmin";
 import AllAdmin from "./AllAdmin";
 import AssignPermission from "./AssignPermission";
+import ChangePassword from "./ChangePassword";
 
 //const API_BASE_URL = "http://188.166.161.13:8001/api/v1";
 
@@ -306,18 +307,17 @@ const Settings: React.FC = () => {
               label="Security"
             />
 
-            <Tab
+            {/* <Tab
               icon={<NotificationsIcon />}
               iconPosition="start"
               label="Notifications"
-            />
+            />*/}
 
-            {/* {isSuperAdmin && ( */}
               <Tab
                 icon={<ConfigIcon />}
                 iconPosition="start"
                 label="Configuration"
-              />
+              /> 
               <Tab
                 icon={<ConfigIcon />}
                 iconPosition="start"
@@ -430,116 +430,11 @@ const Settings: React.FC = () => {
 
         {/* ================= SECURITY TAB ================= */}
         {activeTab === 1 && (
-          <CardContent sx={{ p: 4 }}>
-            <Typography
-              variant="h6"
-              fontWeight={700}
-              mb={4}
-            >
-              Security Settings
-            </Typography>
-
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  type="password"
-                  label="Current Password"
-                  value={
-                    securityForm.current_password
-                  }
-                  onChange={(e) =>
-                    setSecurityForm({
-                      ...securityForm,
-                      current_password:
-                        e.target.value,
-                    })
-                  }
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  type="password"
-                  label="New Password"
-                  value={
-                    securityForm.new_password
-                  }
-                  onChange={(e) =>
-                    setSecurityForm({
-                      ...securityForm,
-                      new_password:
-                        e.target.value,
-                    })
-                  }
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  type="password"
-                  label="Confirm Password"
-                  value={
-                    securityForm.confirm_password
-                  }
-                  onChange={(e) =>
-                    setSecurityForm({
-                      ...securityForm,
-                      confirm_password:
-                        e.target.value,
-                    })
-                  }
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={
-                        securityForm.two_factor_enabled
-                      }
-                      onChange={(e) =>
-                        setSecurityForm({
-                          ...securityForm,
-                          two_factor_enabled:
-                            e.target.checked,
-                        })
-                      }
-                    />
-                  }
-                  label="Enable Two-Factor Authentication"
-                />
-              </Grid>
-            </Grid>
-
-            <Box mt={4}>
-              <Button
-                variant="contained"
-                startIcon={<SaveIcon />}
-                onClick={handleSaveSecurity}
-                disabled={
-                  loading ||
-                  securityForm.new_password !==
-                    securityForm.confirm_password
-                }
-                sx={{
-                  borderRadius: 3,
-                  textTransform: "none",
-                  px: 4,
-                  height: 46,
-                }}
-              >
-                Change Password
-              </Button>
-            </Box>
-          </CardContent>
+          <ChangePassword/>
         )}
 
         {/* ================= NOTIFICATIONS TAB ================= */}
-        {activeTab === 2 && (
+        {/* {activeTab === 2 && (
           <CardContent sx={{ p: 4 }}>
             <Typography
               variant="h6"
@@ -615,10 +510,10 @@ const Settings: React.FC = () => {
               </ListItem>
             </List>
           </CardContent>
-        )}
+        )} */}
 
           {/* ================= CONFIGURATION TAB ================= */}
-         {activeTab === 3 && (
+         {activeTab === 2 && (
             <CardContent sx={{ p: 4 }}>
               <Stack
                 direction="row"
@@ -657,7 +552,6 @@ const Settings: React.FC = () => {
               </Stack>
 
               <Grid container spacing={3}>
-                {/* ORGANIZATION */}
                 <Grid item xs={12}>
                   <Paper
                     sx={{
@@ -781,7 +675,6 @@ const Settings: React.FC = () => {
                   </Paper>
                 </Grid>
 
-                {/* API */}
                 <Grid item xs={12}>
                   <Paper
                     sx={{
@@ -942,7 +835,6 @@ const Settings: React.FC = () => {
                   </Paper>
                 </Grid>
 
-                {/* DOMAIN */}
                 <Grid item xs={12}>
                   <Paper
                     sx={{
@@ -1035,7 +927,6 @@ const Settings: React.FC = () => {
                   </Paper>
                 </Grid>
 
-                {/* BILLING */}
                 <Grid item xs={12}>
                   <Paper
                     sx={{
@@ -1167,7 +1058,6 @@ const Settings: React.FC = () => {
                 </Grid>
               </Grid>
 
-              {/* SAVE BUTTON */}
               <Box mt={4}>
                 <Button
                   variant="contained"
@@ -1191,14 +1081,14 @@ const Settings: React.FC = () => {
             </CardContent>
           )} 
           {/* ================= ADMIN MANAGEMENT TAB ================= */}
-          {activeTab === 4 && (
+          {activeTab === 3 && (
             <CreateNewAdmin />
           )}
           {/* ================= ADMIN LIST TAB ================= */}
-          {activeTab === 5 && (
+          {activeTab === 4 && (
             <AllAdmin />
           )}
-          {activeTab === 6 && (
+          {activeTab === 5 && (
             <AssignPermission />
           )}
       </Card>
