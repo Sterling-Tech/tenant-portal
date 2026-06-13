@@ -227,7 +227,8 @@ export default function CreateNewAdmin() {
                         {loading ? (
                             <CircularProgress size={20} sx={{ color: "#fff" }} />
                         ) : (
-                            "Onboard Admin"
+                            // "Onboard Admin"
+                            "Create Tenant User"
                         )}
                     </Button>
                 </Box>

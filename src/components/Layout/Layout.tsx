@@ -35,6 +35,7 @@ import {
     ExpandMore,
     AccountBalanceWallet,
     History,
+    PersonAdd,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -42,6 +43,7 @@ import { logoutUser } from '../../store/slices/authSlice';
 import TenantSwitcher from '../TenantSwitcher/TenantSwitcher';
 import { useVendorHierarchy } from '../../contexts/VendorContext';
 import { useEnsureUserApiKey } from '../../hooks/useEnsureUserApiKey';
+import Onboarding from '../../pages/Onboarding/Onboarding';
 
 const drawerWidth = 240;
 
@@ -328,30 +330,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </ListItem>
                 <Collapse in={customerMenuOpen} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
-                        {/* Customer admin */}
-                        {/* <ListItemButton
-                            selected={location.pathname === '/customer/admin'}
-                            onClick={() => handleNavigation('/customer/admin')}
-                            sx={{
-                                pl: 4,
-                                '&.Mui-selected': {
-                                    backgroundColor: 'primary.main',
-                                    color: 'white',
-                                    '&:hover': {
-                                        backgroundColor: 'primary.dark',
-                                    },
-                                    '& .MuiListItemIcon-root': {
-                                        color: 'white',
-                                    },
-                                },
-                            }}
-                        >
-                            <ListItemIcon>
-                                <Store fontSize="small" />
-                            </ListItemIcon>
-                            <ListItemText primary="analytics" />
-                        </ListItemButton>
-                       */}
+                    
                         {/* Customer */}
                         <ListItemButton
                             selected={location.pathname === '/customer'}
@@ -426,7 +405,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <ListItemText primary="Sub account" />
                     </ListItemButton>
                 </ListItem>
-
+                {/* Onboarding */}
+                {/* <ListItem disablePadding>
+                    <ListItemButton
+                        selected={location.pathname === '/onboarding'}
+                        onClick={() => handleNavigation('/onboarding')}
+                        sx={{
+                            '&.Mui-selected': {
+                                backgroundColor: 'primary.main',
+                                color: 'white',
+                                '&:hover': {
+                                    backgroundColor: 'primary.dark',
+                                },
+                                '& .MuiListItemIcon-root': {
+                                    color: 'white',
+                                },
+                            },
+                        }}
+                    >
+                        <ListItemIcon>
+                            <PersonAdd />
+                        </ListItemIcon>
+                        <ListItemText primary="Onboarding" />
+                    </ListItemButton>
+                </ListItem> */}
                 {/* Settings */}
                 <ListItem disablePadding>
                     <ListItemButton
@@ -451,6 +453,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <ListItemText primary="Settings" />
                     </ListItemButton>
                 </ListItem>
+                
             </List>
         </Box>
     );
