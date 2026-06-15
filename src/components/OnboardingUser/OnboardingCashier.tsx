@@ -3,7 +3,7 @@
  * Entity: Cashier   Parent: Agent (user selects)
  * API endpoint: POST /api/cashiers
  */
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Typography, FormControl, Select, MenuItem } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import WizardShell from "./WizardShell";
@@ -18,6 +18,7 @@ import {
   EMPTY_BASIC, EMPTY_PROFILE, EMPTY_KYC, EMPTY_CONTROLS, EMPTY_AGREEMENT,
   DEFAULT_TX_TYPES,
 } from "./WizardTypes";
+import { createVendor, getAllVendors, RelatedVendorResponse } from "../../services/onbordingService";
 
 export interface CashierForm {
   parentAgentId: string;
@@ -30,17 +31,25 @@ export interface CashierForm {
 
 const EMPTY_FORM: CashierForm = {
   parentAgentId: "",
-  basic:     { ...EMPTY_BASIC },
-  profile:   { ...EMPTY_PROFILE },
-  kyc:       { ...EMPTY_KYC },
-  controls:  { ...EMPTY_CONTROLS, permittedTxTypes: { ...DEFAULT_TX_TYPES } },
+  basic: { ...EMPTY_BASIC },
+  profile: { ...EMPTY_PROFILE },
+  kyc: { ...EMPTY_KYC },
+  controls: { ...EMPTY_CONTROLS, permittedTxTypes: { ...DEFAULT_TX_TYPES } },
   agreement: { ...EMPTY_AGREEMENT },
 };
 
 // TODO: fetch from GET /api/agents
 const AGENT_OPTIONS = ["Agent Lagos", "Agent Abuja", "Agent PH"];
 
-function StepParentCashier({ selected, onSelect }: { selected: string; onSelect: (v: string) => void }) {
+function StepParentCashier({
+  selected,
+  onSelect,
+  agents
+}: {
+  selected: string;
+  onSelect: (v: string) => void;
+  agents: RelatedVendorResponse[]
+}) {
   const chain = selected || "[Agent]";
   return (
     <Box sx={{ px: 3, py: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
@@ -60,14 +69,21 @@ function StepParentCashier({ selected, onSelect }: { selected: string; onSelect:
             displayEmpty value={selected} onChange={(e) => onSelect(e.target.value)}
             renderValue={(val) =>
               val ? <Typography sx={{ fontSize: "0.88rem" }}>{val as string}</Typography>
-                  : <Typography sx={{ fontSize: "0.88rem", color: "#9AA4B2" }}>— choose a Agent —</Typography>
+                : <Typography sx={{ fontSize: "0.88rem", color: "#9AA4B2" }}>— choose a Agent —</Typography>
             }
             sx={{ bgcolor: "#F5F7FA", "& fieldset": { borderColor: "#E0E4EA" } }}
           >
             <MenuItem value="" disabled>
               <Typography sx={{ color: "#9AA4B2", fontSize: "0.88rem" }}>— choose a Agent —</Typography>
             </MenuItem>
-            {AGENT_OPTIONS.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+            {agents.map((vendor) => (
+              <MenuItem
+                key={vendor.id}
+                value={vendor.id.toString()}
+              >
+                {vendor.business_name}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Box>
@@ -89,13 +105,131 @@ interface Props { open: boolean; onClose: () => void; }
 export default function OnboardingCashier({ open, onClose }: Props) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<CashierForm>(EMPTY_FORM);
+  const [agents, setAgents] = useState<RelatedVendorResponse[]>([]);
+  const [loading, setLoading] = useState(false);
 
   function resetAndClose() { setStep(0); setForm(EMPTY_FORM); onClose(); }
 
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const vendors = await getAllVendors();
+
+        setAgents(
+          vendors.filter(
+            (item) =>
+              item.hierachy === "agent"
+          )
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchAgents();
+  }, []);
+  
   async function handleSubmit() {
-    // TODO: await api.post("/api/cashiers", form);
-    console.log("POST /api/cashiers", form);
-    resetAndClose();
+    try {
+      setLoading(true);
+      const payload = {
+        business_name: form.profile.businessName,
+
+        email: form.basic.adminEmail,
+
+        phone_number: form.profile.phone,
+
+        address: form.profile.streetAddress,
+
+        city: form.profile.city,
+
+        state: form.profile.state,
+
+        country: form.profile.nationality,
+
+        postal_code: form.profile.postalCode,
+
+        hierachy: "cashier",
+
+        related_vendor: Number(form.parentAgentId),
+
+        domain: form.basic.license,
+
+        sub_domain: form.basic.subdomain,
+
+        slug: form.basic.entityName
+          .toLowerCase()
+          .replace(/\s+/g, "-"),
+
+        trial_ends: form.basic.trialEnds,
+
+        description: form.profile.businessType,
+
+        industry: form.profile.businessType,
+
+        category: form.profile.businessType,
+
+        registration_number: form.kyc.taxId,
+
+        cac_registration_number: form.kyc.cacNumber,
+
+        website: form.profile.website,
+
+        contact_name: form.kyc.directorName,
+
+        email1: form.profile.contactEmail,
+
+        email2: form.profile.secondaryEmail,
+
+        bank_name: form.profile.bankName,
+
+        account_name: form.profile.accountName,
+
+        account_number: form.profile.accountNumber,
+
+        owner_name: form.kyc.directorName,
+
+        dob: form.kyc.dateOfBirth,
+
+        nationality: form.profile.nationality,
+
+        id_type: form.kyc.idType,
+
+        id_number: form.kyc.idNumber,
+
+        owner_address: form.profile.streetAddress,
+
+        entity_name: form.profile.businessName,
+
+        company_website: form.agreement.companyWebsite,
+
+        company_address: form.profile.streetAddress,
+
+        signatory_name: form.kyc.directorName,
+
+        signatory_phone_number: form.profile.phone,
+
+        signatory_email: form.profile.contactEmail,
+
+        funding_cap: form.controls.dailyFundingCap,
+
+        transaction_max: form.controls.maxPerTransaction,
+
+        commission_rate: form.controls.commissionRate,
+
+        monthly_target: form.controls.monthlyVolumeTarget,
+      };
+
+      console.log("PAYLOAD:", payload);
+
+      await createVendor(payload);
+
+      resetAndClose();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function setSection<K extends keyof Omit<CashierForm, "parentAgentId">>(section: K) {
@@ -117,8 +251,8 @@ export default function OnboardingCashier({ open, onClose }: Props) {
       onPrev={() => setStep((s) => Math.max(0, s - 1))}
       canSubmit={form.agreement.agreedToTerms}
     >
-      {step === 0 && <StepParentCashier selected={form.parentAgentId} onSelect={(v) => setForm((p) => ({ ...p, parentAgentId: v }))} />}
-      {/* {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Cashier" />} */}
+      {step === 0 && <StepParentCashier selected={form.parentAgentId} onSelect={(v) => setForm((p) => ({ ...p, parentAgentId: v }))} agents={agents}/>}
+      {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Cashier" />}
       {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} />}
       {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} />}
       {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} />}

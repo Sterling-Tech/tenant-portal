@@ -406,7 +406,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </ListItemButton>
                 </ListItem>
                 {/* Onboarding */}
-                {/* <ListItem disablePadding>
+                <ListItem disablePadding>
                     <ListItemButton
                         selected={location.pathname === '/onboarding'}
                         onClick={() => handleNavigation('/onboarding')}
@@ -428,7 +428,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </ListItemIcon>
                         <ListItemText primary="Onboarding" />
                     </ListItemButton>
-                </ListItem> */}
+                </ListItem>
                 {/* Settings */}
                 <ListItem disablePadding>
                     <ListItemButton

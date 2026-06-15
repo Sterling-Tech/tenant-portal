@@ -15,7 +15,7 @@ import {
 import { adminForm, createNewAdmin } from '../../services/settingService';
 import { Fullscreen } from '@mui/icons-material';
 
-const genderOptions = [
+export const genderOptions = [
     { value: 'male', label: 'Male' },
     { value: 'female', label: 'Female' },
     { value: 'other', label: 'Other' }

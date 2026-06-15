@@ -17,7 +17,6 @@ export default function ChangePassword() {
     old_password: "",
     new_password: "",
     confirm_password: "",
-    two_factor_enabled: false,
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -80,7 +79,6 @@ export default function ChangePassword() {
         old_password: "",
         new_password: "",
         confirm_password: "",
-        two_factor_enabled: false,
       });
 
       setErrors({});
@@ -195,25 +193,6 @@ export default function ChangePassword() {
             />
           </Grid>
 
-          <Grid item xs={12}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={
-                    securityForm.two_factor_enabled
-                  }
-                  onChange={(e) =>
-                    setSecurityForm({
-                      ...securityForm,
-                      two_factor_enabled:
-                        e.target.checked,
-                    })
-                  }
-                />
-              }
-              label="Enable Two-Factor Authentication"
-            />
-          </Grid>
         </Grid>
 
         <Box mt={4}>
@@ -221,11 +200,7 @@ export default function ChangePassword() {
             variant="contained"
             startIcon={<Save />}
             onClick={handleSaveSecurity}
-            // disabled={
-            //   loading ||
-            //   securityForm.new_password !==
-            //   securityForm.confirm_password
-            // }
+
             disabled={
               loading ||
               !securityForm.old_password ||

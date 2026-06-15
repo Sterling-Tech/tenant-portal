@@ -19,7 +19,8 @@ import CustomerAdmin from './pages/Customer/Dashboard';
 import Subaccount from './pages/Customer/Subaccount';
 import CustomerTrans from './pages/Customer/CustomerTrans';
 import OnboardingPage from './pages/Onboarding/Onboarding';
-
+import { ToastContainer} from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 // Enhanced theme
 const theme = createTheme({
     palette: {
@@ -218,6 +219,7 @@ const App: React.FC = () => {
                     </Router>
                 </VendorProvider>
             </ThemeProvider>
+            <ToastContainer />
         </Provider>
     );
 };

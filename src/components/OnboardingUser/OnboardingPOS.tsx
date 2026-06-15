@@ -3,7 +3,7 @@
  * Entity: POS   Parent: Agent (user selects)
  * API endpoint: POST /api/pos
  */
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Typography, FormControl, Select, MenuItem } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import WizardShell from "./WizardShell";
@@ -18,9 +18,10 @@ import {
   EMPTY_BASIC, EMPTY_PROFILE, EMPTY_KYC, EMPTY_CONTROLS, EMPTY_AGREEMENT,
   DEFAULT_TX_TYPES,
 } from "./WizardTypes";
+import { createVendor, getAllVendors, RelatedVendorResponse } from "../../services/onbordingService";
 
 export interface POSForm {
-  parentAgentId: string;
+  parentCashierId: string;
   basic: BasicFormData;
   profile: ProfileFormData;
   kyc: KYCFormData;
@@ -29,45 +30,60 @@ export interface POSForm {
 }
 
 const EMPTY_FORM: POSForm = {
-  parentAgentId: "",
-  basic:     { ...EMPTY_BASIC },
-  profile:   { ...EMPTY_PROFILE },
-  kyc:       { ...EMPTY_KYC },
-  controls:  { ...EMPTY_CONTROLS, permittedTxTypes: { ...DEFAULT_TX_TYPES } },
+  parentCashierId: "",
+  basic: { ...EMPTY_BASIC },
+  profile: { ...EMPTY_PROFILE },
+  kyc: { ...EMPTY_KYC },
+  controls: { ...EMPTY_CONTROLS, permittedTxTypes: { ...DEFAULT_TX_TYPES } },
   agreement: { ...EMPTY_AGREEMENT },
 };
 
 // TODO: fetch from GET /api/agents
 const AGENT_OPTIONS = ["Agent Lagos", "Agent Abuja", "Agent PH"];
 
-function StepParentPOS({ selected, onSelect }: { selected: string; onSelect: (v: string) => void }) {
+function StepParentPOS({
+  selected,
+  onSelect,
+  cashiers
+}: {
+  selected: string;
+  onSelect: (v: string) => void;
+  cashiers: RelatedVendorResponse[]
+}) {
   const chain = selected || "[Agent]";
   return (
     <Box sx={{ px: 3, py: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
       <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, bgcolor: "#FFF7ED", border: "1px solid #F5C98A", borderRadius: 2, px: 2, py: 1.5 }}>
         <ErrorOutlineIcon sx={{ color: "#C0521A", fontSize: 20, mt: "1px", flexShrink: 0 }} />
         <Typography variant="body2" sx={{ color: "#7A3B10", fontWeight: 500, lineHeight: 1.6 }}>
-          A POS must be assigned to a parent Agent before it can be created.
+          A POS must be assigned to a parent Cashier before it can be created.
         </Typography>
       </Box>
 
       <Box>
         <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.8 }}>
-          Select parent Agent <span style={{ color: "#C0392B" }}>*</span>
+          Select parent Cashier <span style={{ color: "#C0392B" }}>*</span>
         </Typography>
         <FormControl fullWidth size="small">
           <Select
             displayEmpty value={selected} onChange={(e) => onSelect(e.target.value)}
             renderValue={(val) =>
               val ? <Typography sx={{ fontSize: "0.88rem" }}>{val as string}</Typography>
-                  : <Typography sx={{ fontSize: "0.88rem", color: "#9AA4B2" }}>— choose a Agent —</Typography>
+                : <Typography sx={{ fontSize: "0.88rem", color: "#9AA4B2" }}>— choose a Cashier —</Typography>
             }
             sx={{ bgcolor: "#F5F7FA", "& fieldset": { borderColor: "#E0E4EA" } }}
           >
             <MenuItem value="" disabled>
-              <Typography sx={{ color: "#9AA4B2", fontSize: "0.88rem" }}>— choose a Agent —</Typography>
+              <Typography sx={{ color: "#9AA4B2", fontSize: "0.88rem" }}>— choose a Cashier —</Typography>
             </MenuItem>
-            {AGENT_OPTIONS.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+            {cashiers.map((vendor) => (
+              <MenuItem
+                key={vendor.id}
+                value={vendor.id.toString()}
+              >
+                {vendor.business_name}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Box>
@@ -89,13 +105,131 @@ interface Props { open: boolean; onClose: () => void; }
 export default function OnboardingPOS({ open, onClose }: Props) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<POSForm>(EMPTY_FORM);
+  const [cashiers, setCashiers] = useState<RelatedVendorResponse[]>([]);
+  const [loading, setLoading] = useState(false);
 
   function resetAndClose() { setStep(0); setForm(EMPTY_FORM); onClose(); }
 
+  useEffect(() => {
+    const fetchCashiers = async () => {
+      try {
+        const vendors = await getAllVendors();
+
+        setCashiers(
+          vendors.filter(
+            (item) =>
+              item.hierachy === "agent"
+          )
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchCashiers();
+  }, []);
+
   async function handleSubmit() {
-    // TODO: await api.post("/api/pos", form);
-    console.log("POST /api/pos", form);
-    resetAndClose();
+    try {
+      setLoading(true);
+      const payload = {
+        business_name: form.profile.businessName,
+
+        email: form.basic.adminEmail,
+
+        phone_number: form.profile.phone,
+
+        address: form.profile.streetAddress,
+
+        city: form.profile.city,
+
+        state: form.profile.state,
+
+        country: form.profile.nationality,
+
+        postal_code: form.profile.postalCode,
+
+        hierachy: "pos",
+
+        related_vendor: Number(form.parentCashierId),
+
+        domain: form.basic.license,
+
+        sub_domain: form.basic.subdomain,
+
+        slug: form.basic.entityName
+          .toLowerCase()
+          .replace(/\s+/g, "-"),
+
+        trial_ends: form.basic.trialEnds,
+
+        description: form.profile.businessType,
+
+        industry: form.profile.businessType,
+
+        category: form.profile.businessType,
+
+        registration_number: form.kyc.taxId,
+
+        cac_registration_number: form.kyc.cacNumber,
+
+        website: form.profile.website,
+
+        contact_name: form.kyc.directorName,
+
+        email1: form.profile.contactEmail,
+
+        email2: form.profile.secondaryEmail,
+
+        bank_name: form.profile.bankName,
+
+        account_name: form.profile.accountName,
+
+        account_number: form.profile.accountNumber,
+
+        owner_name: form.kyc.directorName,
+
+        dob: form.kyc.dateOfBirth,
+
+        nationality: form.profile.nationality,
+
+        id_type: form.kyc.idType,
+
+        id_number: form.kyc.idNumber,
+
+        owner_address: form.profile.streetAddress,
+
+        entity_name: form.profile.businessName,
+
+        company_website: form.agreement.companyWebsite,
+
+        company_address: form.profile.streetAddress,
+
+        signatory_name: form.kyc.directorName,
+
+        signatory_phone_number: form.profile.phone,
+
+        signatory_email: form.profile.contactEmail,
+
+        funding_cap: form.controls.dailyFundingCap,
+
+        transaction_max: form.controls.maxPerTransaction,
+
+        commission_rate: form.controls.commissionRate,
+
+        monthly_target: form.controls.monthlyVolumeTarget,
+      };
+
+      console.log("PAYLOAD:", payload);
+
+      await createVendor(payload);
+
+      resetAndClose();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function setSection<K extends keyof Omit<POSForm, "parentAgentId">>(section: K) {
@@ -117,8 +251,8 @@ export default function OnboardingPOS({ open, onClose }: Props) {
       onPrev={() => setStep((s) => Math.max(0, s - 1))}
       canSubmit={form.agreement.agreedToTerms}
     >
-      {step === 0 && <StepParentPOS selected={form.parentAgentId} onSelect={(v) => setForm((p) => ({ ...p, parentAgentId: v }))} />}
-      {/* {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="POS" />} */}
+      {step === 0 && <StepParentPOS selected={form.parentCashierId} onSelect={(v) => setForm((p) => ({ ...p, parentCashierId: v }))} cashiers={cashiers}/>}
+      {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="POS" />}
       {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} />}
       {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} />}
       {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} />}
