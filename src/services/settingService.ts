@@ -1,4 +1,5 @@
 import { get, post, patch, del, put } from './api';
+import { ConfigureVendorPayload } from './onbordingService';
 import { Tenant } from './tenantService';
 
 export interface CreateAdmin {
@@ -38,6 +39,12 @@ export interface ChangePasswordProp{
     new_password:string;
     confirm_password:string;
 }
+export interface UpdateUserForm{
+    name:string;
+    gender:string;
+    phone_number:string;
+    is_2fa_enabled:boolean;
+}
 export const createNewAdmin = (data: adminForm) => {
     return post<CreateAdmin>('/user/admin/', data);
 }
@@ -61,6 +68,19 @@ export const grantPermissions = (
 };
 
 export const changePassword=(data:ChangePasswordProp)=>{
-    return put("/user/change-password/",data)
+    return put("/user/change-password/", data)
 }
 
+export const updateUser=(data:UpdateUserForm)=>{
+    return put("/user/update-profile/", data)
+}
+
+export const configureVendor = async (
+    payload: ConfigureVendorPayload,
+    vendor_id: string | number
+) => {
+    return put(
+        `/vendor/configure/?vendor_id=${vendor_id}`,
+        payload
+    );
+};

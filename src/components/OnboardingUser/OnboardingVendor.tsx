@@ -22,7 +22,7 @@ import {
 } from "./WizardTypes";
 import {
     createVendor,
-    relatedVendort,
+    getAllVendors,
     RelatedVendorResponse,
 } from "../../services/onbordingService";
 // ─── Form shape ───────────────────────────────────────────────────────────────

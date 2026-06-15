@@ -4,16 +4,19 @@ import { clearApiKeyCredentials } from '../../utils/apiKeyStorage';
 export interface User {
     id: string;
     email: string;
+    name?: string;
     firstName?: string;
     lastName?: string;
     first_name?: string;
     last_name?: string;
-    phone?: string;
+    phone_number?: string;
     role?: string;
+    gender:string;
     is_superuser?: boolean;
     isSuperuser?: boolean;
     is_staff?: boolean;
     isStaff?: boolean;
+    is_2fa_enabled: boolean,
 }
 
 interface AuthState {
