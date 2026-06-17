@@ -31,10 +31,10 @@ export default function WizardShell({
       open={open}
       onClose={onClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth="md"
       PaperProps={{
         sx: {
-          borderRadius: 3,
+          borderRadius: 1.5,
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",

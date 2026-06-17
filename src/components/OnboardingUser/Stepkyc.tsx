@@ -116,14 +116,14 @@ export default function StepKYC({ data, onChange }: StepKYCProps) {
         </Box>
       </Box>
 
-      <Box sx={{ mt: 1 }}>
+      {/* <Box sx={{ mt: 1 }}>
         <SectionHeading>Document Uploads</SectionHeading>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <UploadBox label="CAC certificate" subtitle="PDF or image, max 5MB" required />
           <UploadBox label="Utility bill / proof of address" subtitle="Not older than 3 months" />
           <UploadBox label="Director / Owner ID" subtitle="Clear photo or scan" required />
         </Box>
-      </Box>
+      </Box> */}
     </Box>
   );
 }

@@ -43,7 +43,7 @@ import AllAdmin from "./AllAdmin";
 import AssignPermission from "./AssignPermission";
 import ChangePassword from "./ChangePassword";
 import UserUpdate from "./UserUpdate";
-import ConfigureVendor from "./ConfigureVendor";
+import ConfigureVendor from "../../components/OnboardingUser/ConfigureVendor";
 import { RelatedVendorResponse } from "../../services/onbordingService";
 
 //const API_BASE_URL = "http://188.166.161.13:8001/api/v1";
@@ -225,8 +225,8 @@ const Settings: React.FC = () => {
               iconPosition="start"
               label="Notifications"
             />*/}
-
-            {/* <Tab
+            {/* 
+            <Tab
               icon={<ConfigIcon />}
               iconPosition="start"
               label="Configuration"
