@@ -40,18 +40,6 @@ export default function StepBasic({ data, onChange, entityLabel = "Entity", }: S
                 />
             </Box>
 
-            {/* <Box>
-                <Label>Related Vendor</Label>
-                <FormControl size="small" fullWidth>
-                    <Select value={data.relatedVendor}
-                        onChange={(e) => onChange("relatedVendor", e.target.value)}
-                        sx={{ bgcolor: "#F5F7FA", "& fieldset": { borderColor: "#E0E4EA" } }}>
-                        {RELATEDVENDORS.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-                        
-                    </Select>
-                </FormControl>
-            </Box> */}
-
             <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
                 <Box>
                     <Label required>License / domain</Label>
@@ -81,7 +69,7 @@ export default function StepBasic({ data, onChange, entityLabel = "Entity", }: S
                 />
             </Box>
 
-            <Box>
+            {/* <Box>
                 <Label>Admin password</Label>
                 <TextField size="small" fullWidth sx={inputSx}
                     placeholder="Min 8 characters"
@@ -89,7 +77,7 @@ export default function StepBasic({ data, onChange, entityLabel = "Entity", }: S
                     value={data.adminPassword}
                     onChange={(e) => onChange("adminPassword", e.target.value)}
                 />
-            </Box>
+            </Box> */}
 
             <Box>
                 <Label>Trial Ends</Label>

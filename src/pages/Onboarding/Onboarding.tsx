@@ -20,6 +20,7 @@ import OnboardingCashier from "../../components/OnboardingUser/OnboardingCashier
 import OnboardingPOS from "../../components/OnboardingUser/OnboardingPOS";
 import { TAB_CONFIG, TAB_DATA, theme } from "../../components/OnboardingUser/constants";
 import { getAllVendors, RelatedVendorResponse } from "../../services/onbordingService";
+import ConfigureVendor from "../../components/OnboardingUser/ConfigureVendor";
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
 
@@ -71,30 +72,33 @@ export default function OnboardingPage() {
 
   const [loading, setLoading] = useState(false);
 
+  const [configOpen, setConfigOpen] = useState(false);
+  const [selectedVendorId, setSelectedVendorId] = useState("");
+
   const config = TAB_CONFIG[activeTab];
-  const rows = TAB_DATA[activeTab];
+  //const rows = TAB_DATA[activeTab];
 
   const TAB_COUNTS = {
     vendors: entities.filter(
-        (x) => x.hierachy === "vendor"
+      (x) => x.hierachy === "vendor"
     ).length,
 
     subvendors: entities.filter(
-        (x) => x.hierachy === "sub_vendor"
+      (x) => x.hierachy === "sub_vendor"
     ).length,
 
     agents: entities.filter(
-        (x) => x.hierachy === "agent"
+      (x) => x.hierachy === "agent"
     ).length,
 
     cashiers: entities.filter(
-        (x) => x.hierachy === "cashier"
+      (x) => x.hierachy === "cashier"
     ).length,
 
     pos: entities.filter(
-        (x) => x.hierachy === "pos"
+      (x) => x.hierachy === "pos"
     ).length,
-};
+  };
 
   const hierarchyMap: Record<TabKey, string> = {
     vendors: "vendor",
@@ -136,37 +140,37 @@ export default function OnboardingPage() {
   }, []);
 
   const filteredByTab = entities.filter((vendor) => {
-  switch (activeTab) {
-    case "vendors":
-      return vendor.hierachy === "vendor";
+    switch (activeTab) {
+      case "vendors":
+        return vendor.hierachy === "vendor";
 
-    case "subvendors":
-      return vendor.hierachy === "sub_vendor";
+      case "subvendors":
+        return vendor.hierachy === "sub_vendor";
 
-    case "agents":
-      return vendor.hierachy === "agent";
+      case "agents":
+        return vendor.hierachy === "agent";
 
-    case "cashiers":
-      return vendor.hierachy === "cashier";
+      case "cashiers":
+        return vendor.hierachy === "cashier";
 
-    case "pos":
-      return vendor.hierachy === "pos";
+      case "pos":
+        return vendor.hierachy === "pos";
 
-    default:
-      return false;
-  }
-});
-const stats = {
-  total: filteredByTab.length,
+      default:
+        return false;
+    }
+  });
+  const stats = {
+    total: filteredByTab.length,
 
-  active: filteredByTab.filter(
-    (item) => item.account_status === "active"
-  ).length,
+    active: filteredByTab.filter(
+      (item) => item.account_status === "active"
+    ).length,
 
-  inactive: filteredByTab.filter(
-    (item) => item.account_status === "inactive"
-  ).length,
-};
+    inactive: filteredByTab.filter(
+      (item) => item.account_status === "inactive"
+    ).length,
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -221,9 +225,9 @@ const stats = {
 
         {/* Stat cards */}
         <Box sx={{ display: "flex", gap: 2.5, mb: 3, flexWrap: "wrap" }}>
-          <StatCard label="TOTAL"  value={stats.total} accent="#0F2D6B" />
-          <StatCard label="ACTIVE"  value={stats.active} accent="#1A7F4B" />
-          <StatCard label="INACTIVE"  value={stats.inactive} accent="#C0392B" />
+          <StatCard label="TOTAL" value={stats.total} accent="#0F2D6B" />
+          <StatCard label="ACTIVE" value={stats.active} accent="#1A7F4B" />
+          <StatCard label="INACTIVE" value={stats.inactive} accent="#C0392B" />
         </Box>
 
         {/* Search + actions */}
@@ -237,11 +241,11 @@ const stats = {
             sx={{ "& .MuiOutlinedInput-root": { bgcolor: "#fff", "& fieldset": { borderColor: "#E0E4EA" }, "&:hover fieldset": { borderColor: "#B0BFD8" } } }}
           />
           <Button variant="outlined" startIcon={<FileDownloadOutlinedIcon />}
-            sx={{ whiteSpace: "nowrap", borderColor: "#D0D5DD", color: "text.primary", bgcolor: "#fff", "&:hover": { borderColor: "#B0B8C8", bgcolor: "#F9FAFB" }, px: 2 }}>
+            sx={{ whiteSpace: "nowrap", borderColor: "#D0D5DD", color: "text.primary", bgcolor: "#fff", "&:hover": { borderColor: "#B0B8C8", bgcolor: "#F9FAFB" }, px: 5 }}>
             Export
           </Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)}
-            sx={{ whiteSpace: "nowrap", px: 2.5, bgcolor: "#0F2D6B" }}>
+            sx={{ whiteSpace: "nowrap", px: 5, bgcolor: "#0F2D6B" }}>
             {config.buttonLabel}
           </Button>
         </Box>
@@ -256,7 +260,7 @@ const stats = {
                   <TableCell>Status</TableCell>
                   {/* <TableCell>Wallet</TableCell> */}
                   <TableCell>{config.parentLabel}</TableCell>
-                  {/* <TableCell align="right">Actions</TableCell> */}
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -339,14 +343,22 @@ const stats = {
                       {entity.hierachy}
                     </TableCell>
 
-                    {/* <TableCell align="right">
+                    <TableCell align="right">
                       <Button
                         variant="outlined"
                         size="small"
+
+                        onClick={() => {
+                          setSelectedVendorId(
+                            entity.id.toString()
+                          );
+                          setConfigOpen(true);
+                        }}
                       >
                         Configure
                       </Button>
-                    </TableCell> */}
+
+                    </TableCell>
                   </TableRow>
                 ))}
                 {filtered.length === 0 && (
@@ -359,7 +371,13 @@ const stats = {
               </TableBody>
             </Table>
           </TableContainer>
+          
         </Card>
+        <ConfigureVendor
+            open={configOpen}
+            onClose={() => setConfigOpen(false)}
+            vendorId={selectedVendorId}
+          />
       </Box>
 
       {/* ── Per-entity wizard modals ── */}

@@ -61,7 +61,7 @@ export default function StepControls({ data, onChange, onToggleTxType }: StepCon
         />
       </Box>
 
-      <Box>
+      {/* <Box>
         <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.1em", color: "#9AA4B2", textTransform: "uppercase", mb: 0.5 }}>
           Permitted Transaction Types
         </Typography>
@@ -90,7 +90,7 @@ export default function StepControls({ data, onChange, onToggleTxType }: StepCon
             </React.Fragment>
           ))}
         </Box>
-      </Box>
+      </Box> */}
     </Box>
   );
 }
