@@ -1,4 +1,9 @@
-export type VendorOrgLevel = 'vendor' | 'sub_vendor' | 'agent' | 'cashier';
+export type VendorOrgLevel =
+  | 'vendor'
+  | 'sub_vendor'
+  | 'agent'
+  | 'cashier'
+  | 'pos';
 
 export type VendorOrgStatus = 'active' | 'suspended' | 'invited';
 
@@ -7,11 +12,10 @@ export interface VendorOrg {
     tenant: string;
     name: string;
     slug: string;
-    level: VendorOrgLevel;
+    level: VendorOrgLevel | 'pos';
     status: VendorOrgStatus;
     parent: string | null;
     parent_name?: string | null;
-    configuration: Record<string, unknown>;
     created_at: string;
     updated_at: string;
     wallet_key?: string | null;

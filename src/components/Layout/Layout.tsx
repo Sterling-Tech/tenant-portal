@@ -24,6 +24,7 @@ import {
 import {
     Menu as MenuIcon,
     Domain,
+    People,
     Settings,
     Notifications,
     Logout,
@@ -33,6 +34,8 @@ import {
     ExpandLess,
     ExpandMore,
     AccountBalanceWallet,
+    History,
+    PersonAdd,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -40,18 +43,19 @@ import { logoutUser } from '../../store/slices/authSlice';
 import TenantSwitcher from '../TenantSwitcher/TenantSwitcher';
 import { useVendorHierarchy } from '../../contexts/VendorContext';
 import { useEnsureUserApiKey } from '../../hooks/useEnsureUserApiKey';
+import Onboarding from '../../pages/Onboarding/Onboarding';
 
 const drawerWidth = 240;
 
 interface Tenant {
     id: string;
-    name: string;
-    slug: string;
-    domain: string;
-    subdomain?: string;
-    is_active: boolean;
-    is_trial?: boolean;
-    trial_ends_at?: string;
+    business_name: string;
+    // slug: string;
+    // domain: string;
+    // subdomain?: string;
+    // is_active: boolean;
+    // is_trial?: boolean;
+    // trial_ends_at?: string;
     created_at?: string;
 }
 
@@ -72,7 +76,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
-    const [vendorMenuOpen, setVendorMenuOpen] = useState(true); // For collapsible vendor section
+    const [vendorMenuOpen, setVendorMenuOpen] = useState(true);
+    const [customerMenuOpen, setCustomerMenuOpen] = useState(false); // 👈 ADD THIS // For collapsible vendor section
+    const [reengineerMenuOpen, setReengineerMenuOpen] = useState(false); // 👈 ADD THIS // For collapsible vendor section
 
     // Load tenant from localStorage on mount only
     useEffect(() => {
@@ -203,7 +209,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <Store />
                         </ListItemIcon>
                         <ListItemText
-                            primary="Vendor Management"
+                            primary="Vendor Mgmt"
                             primaryTypographyProps={{ fontWeight: isVendorSection ? 600 : 400 }}
                         />
                         {vendorMenuOpen ? <ExpandLess /> : <ExpandMore />}
@@ -257,10 +263,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </ListItemIcon>
                             <ListItemText primary="Vendor Hierarchy" />
                         </ListItemButton>
-                        {/* Wallets */}
+                        {/* Transactions */}
                         <ListItemButton
-                            selected={location.pathname === '/vendors/wallets'}
-                            onClick={() => handleNavigation('/vendors/wallets')}
+                            selected={location.pathname === '/vendors/transactions'}
+                            onClick={() => handleNavigation('/vendors/transactions')}
                             sx={{
                                 pl: 4,
                                 '&.Mui-selected': {
@@ -276,13 +282,246 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             }}
                         >
                             <ListItemIcon>
-                                <AccountBalanceWallet fontSize="small" />
+                                <History fontSize="small" />
                             </ListItemIcon>
-                            <ListItemText primary="Wallets" />
+                            <ListItemText primary="Wallet" />
                         </ListItemButton>
                     </List>
                 </Collapse>
+                {/* Customer Management Section - Collapsible */}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        onClick={() => setCustomerMenuOpen(!customerMenuOpen)}
+                        sx={{
+                            bgcolor: isVendorSection ? 'action.selected' : 'inherit',
+                        }}
+                    >
+                        <ListItemIcon>
+                            <Store />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary="Customer Mgmt"
+                            primaryTypographyProps={{ fontWeight: isVendorSection ? 600 : 400 }}
+                        />
+                        {vendorMenuOpen ? <ExpandLess /> : <ExpandMore />}
+                    </ListItemButton>
+                </ListItem>
+                <Collapse in={customerMenuOpen} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
 
+                        {/* Customer */}
+                        <ListItemButton
+                            selected={location.pathname === '/customer'}
+                            onClick={() => handleNavigation('/customer')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <People fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Customer" />
+                        </ListItemButton>
+                        {/* maprefund */}
+                        
+                        {/* <ListItemButton
+                            selected={location.pathname === '/customer/maprefund'}
+                            onClick={() => handleNavigation('/customer/maprefund')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <People fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Map Refund" />
+                        </ListItemButton> */}
+                        {/* /customer transaction */}
+                        <ListItemButton
+                            selected={location.pathname === '/customer/transaction'}
+                            onClick={() => handleNavigation('/customer/transaction')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <History fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Transactions" />
+                        </ListItemButton>
+                    </List>
+                </Collapse>
+                {/* Re-engineering */}
+                {/* <ListItem disablePadding>
+                    <ListItemButton
+                        onClick={() => setReengineerMenuOpen(!reengineerMenuOpen)}
+                        sx={{
+                            bgcolor: reengineerMenuOpen ? 'action.selected' : 'inherit',
+                        }}
+                    >
+                        <ListItemIcon>
+                            <Store />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary="Re-engineering"
+                            primaryTypographyProps={{ fontWeight: isVendorSection ? 600 : 400 }}
+                        />
+                        {reengineerMenuOpen ? <ExpandLess /> : <ExpandMore />}
+                    </ListItemButton>
+                </ListItem>
+                <Collapse in={reengineerMenuOpen} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+
+                        <ListItemButton
+                            selected={location.pathname === '/re-engineer'}
+                            onClick={() => handleNavigation('/re-engineer')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <People fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Bulk Assign" />
+                        </ListItemButton>
+
+                        <ListItemButton
+                            selected={location.pathname === '/re-engineer/bulk'}
+                            onClick={() => handleNavigation('/re-engineer/bulk')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <History fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Bulk Engineering" />
+                        </ListItemButton>
+                    </List>
+                </Collapse> */}
+
+                {/* Sub account*/}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        selected={location.pathname === '/customer/subaccount'}
+                        onClick={() => handleNavigation('/customer/subaccount')}
+                        sx={{
+                            '&.Mui-selected': {
+                                backgroundColor: 'primary.main',
+                                color: 'white',
+                                '&:hover': {
+                                    backgroundColor: 'primary.dark',
+                                },
+                                '& .MuiListItemIcon-root': {
+                                    color: 'white',
+                                },
+                            },
+                        }}
+                    >
+                        <ListItemIcon>
+                            <People />
+                        </ListItemIcon>
+                        <ListItemText primary="Sub account" />
+                    </ListItemButton>
+                </ListItem>
+                {/* Onboarding */}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        selected={location.pathname === '/onboarding'}
+                        onClick={() => handleNavigation('/onboarding')}
+                        sx={{
+                            '&.Mui-selected': {
+                                backgroundColor: 'primary.main',
+                                color: 'white',
+                                '&:hover': {
+                                    backgroundColor: 'primary.dark',
+                                },
+                                '& .MuiListItemIcon-root': {
+                                    color: 'white',
+                                },
+                            },
+                        }}
+                    >
+                        <ListItemIcon>
+                            <PersonAdd />
+                        </ListItemIcon>
+                        <ListItemText primary="Onboarding" />
+                    </ListItemButton>
+                </ListItem>
+                {/* roles and permissions */}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        selected={location.pathname === '/role'}
+                        onClick={() => handleNavigation('/role')}
+                        sx={{
+                            '&.Mui-selected': {
+                                backgroundColor: 'primary.main',
+                                color: 'white',
+                                '&:hover': {
+                                    backgroundColor: 'primary.dark',
+                                },
+                                '& .MuiListItemIcon-root': {
+                                    color: 'white',
+                                },
+                            },
+                        }}
+                    >
+                        <ListItemIcon>
+                            <PersonAdd />
+                        </ListItemIcon>
+                        <ListItemText primary="Roles and Permissions" />
+                    </ListItemButton>
+                </ListItem>
                 {/* Settings */}
                 <ListItem disablePadding>
                     <ListItemButton
@@ -307,6 +546,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <ListItemText primary="Settings" />
                     </ListItemButton>
                 </ListItem>
+
             </List>
         </Box>
     );
@@ -343,7 +583,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         />
                         {currentTenant && (
                             <Typography variant="caption" sx={{ ml: 2, opacity: 0.7 }}>
-                                ({currentTenant.name})
+                                ({currentTenant.business_name})
                             </Typography>
                         )}
                     </Stack>

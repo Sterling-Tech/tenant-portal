@@ -1,798 +1,351 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState } from "react";
 import {
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Typography,
-    Stack,
-    Alert,
-    CircularProgress,
-    IconButton,
-    Menu,
-    MenuItem,
-    Chip,
-    Paper,
-    Divider,
-    FormControl,
-    InputLabel,
-    Select,
-    TextField,
-    InputAdornment,
-    Autocomplete,
-    Grid,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    Collapse,
-} from '@mui/material';
+  Box,
+  Typography,
+  Paper,
+  Stack,
+  Chip,
+  Button,
+  Autocomplete,
+  TextField,
+  IconButton,
+  Menu,
+  MenuItem,
+  CircularProgress,
+  Drawer,
+} from "@mui/material";
+import { Refresh, MoreVert } from "@mui/icons-material";
 import {
-    Add,
-    Edit,
-    Delete,
-    MoreVert,
-    AccountTree,
-    PersonAdd,
-    Refresh,
-    Search,
-    Business,
-    Domain,
-    ExpandLess,
-    ExpandMore,
-} from '@mui/icons-material';
-import { useVendorHierarchy } from '../../contexts/VendorContext';
-import { useTenants } from '../../hooks/useTenants';
-import { useOrgBindings } from '../../hooks/useOrgBindings';
-import { useOrgWallets } from '../../hooks/useOrgWallets';
-import { VendorOrg, VendorOrgLevel, VendorOrgStatus, VendorRoleBinding, BindingForm } from '../../types/vendor';
-import { tenantService } from '../../services/tenantService';
-import type { Tenant } from '../../services/tenantService';
-import AddVendorAdminModal from '../../components/VendorHierarchy/AddVendorAdminModal';
-import AddChildOrgModal from '../../components/VendorHierarchy/AddChildOrgModal';
-import EditOrgModal from '../../components/VendorHierarchy/EditOrgModal';
-import DeleteOrgModal from '../../components/VendorHierarchy/DeleteOrgModal';
-import AssignUserModal from '../../components/VendorHierarchy/AssignUserModal';
+  fetchVendors,
+  fetchVendorchildren,
+  Vendor,
+  fetchAllVendors,
+} from "../../services/vendorService";
 
-const VendorHierarchy: React.FC = () => {
-    const { tenants, selectedTenantId, selectTenant } = useTenants();
-    const {
-        tenantId,
-        setTenantId,
-        tree,
-        loading,
-        error,
-        selectedOrgId,
-        selectedOrg,
-        refresh,
-        selectOrg,
-        createOrg,
-        updateOrg,
-        removeOrg,
-    } = useVendorHierarchy();
-    const { bindings, loading: bindingsLoading, refresh: refreshBindings } = useOrgBindings(selectedOrgId);
-    const { wallets, loading: walletsLoading, totalBalance } = useOrgWallets(selectedOrgId);
+/* ================= COLUMN ================= */
 
-    // Modal states
-    const [addAdminModalOpen, setAddAdminModalOpen] = useState(false);
-    const [addChildModalOpen, setAddChildModalOpen] = useState(false);
-    const [editModalOpen, setEditModalOpen] = useState(false);
-    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [assignUserModalOpen, setAssignUserModalOpen] = useState(false);
+const Column = ({
+  title,
+  items,
+  loading,
+  onClick,
+  onMenu,
+}: any) => (
+  <Box flex={1} minWidth={240}>
+    <Typography fontWeight={600} mb={1}>
+      {title}
+    </Typography>
 
-    // Context menu state
-    const [contextMenu, setContextMenu] = useState<{
-        mouseX: number;
-        mouseY: number;
-        org: VendorOrg | null;
-    } | null>(null);
-
-    // Search state
-    const [tenantSearchTerm, setTenantSearchTerm] = useState('');
-    const [orgSearchTerm, setOrgSearchTerm] = useState('');
-
-    // Sync tenant selection - only when selectedTenantId changes
-    React.useEffect(() => {
-        if (selectedTenantId && selectedTenantId !== tenantId) {
-            console.log('[VendorHierarchy] Syncing tenant selection:', selectedTenantId);
-            setTenantId(selectedTenantId);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedTenantId]);
-
-    // Auto-select tenant if available but not set - run once on mount
-    React.useEffect(() => {
-        if (!tenantId && !selectedTenantId && tenants?.length > 0) {
-            console.log('[VendorHierarchy] Auto-selecting first tenant:', tenants[0].id);
-            selectTenant(tenants[0].id);
-            setTenantId(tenants[0].id);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tenants?.length]);
-
-    // Filtered tenants for search
-    const filteredTenants = useMemo(() => {
-        if (!tenants || !Array.isArray(tenants)) return [];
-        if (!tenantSearchTerm.trim()) return tenants;
-        const term = tenantSearchTerm.toLowerCase();
-        return tenants.filter(
-            (t) =>
-                t.name.toLowerCase().includes(term) ||
-                t.domain.toLowerCase().includes(term) ||
-                t.slug.toLowerCase().includes(term)
-        );
-    }, [tenants, tenantSearchTerm]);
-
-    // Filtered tree for search
-    const filteredTree = useMemo(() => {
-        if (!tree || !Array.isArray(tree)) return [];
-        if (!orgSearchTerm.trim()) return tree;
-        const term = orgSearchTerm.toLowerCase();
-        const filterOrg = (org: VendorOrg): VendorOrg | null => {
-            const matches = org.name.toLowerCase().includes(term) || org.slug.toLowerCase().includes(term);
-            const filteredChildren = org.children?.map(filterOrg).filter((c): c is VendorOrg => c !== null) || [];
-            if (matches || filteredChildren.length > 0) {
-                return { ...org, children: filteredChildren };
-            }
-            return null;
-        };
-        return tree.map(filterOrg).filter((o): o is VendorOrg => o !== null);
-    }, [tree, orgSearchTerm]);
-
-    const handleContextMenu = (event: React.MouseEvent, org: VendorOrg) => {
-        event.preventDefault();
-        setContextMenu(
-            contextMenu === null
-                ? {
-                    mouseX: event.clientX - 2,
-                    mouseY: event.clientY - 4,
-                    org,
-                }
-                : null
-        );
-    };
-
-    const handleCloseContextMenu = () => {
-        setContextMenu(null);
-    };
-
-    const handleAddChild = (org: VendorOrg | null) => {
-        setContextMenu(null);
-        if (org) {
-            selectOrg(org.id);
-        }
-        setAddChildModalOpen(true);
-    };
-
-    const handleEdit = (org: VendorOrg) => {
-        setContextMenu(null);
-        selectOrg(org.id);
-        setEditModalOpen(true);
-    };
-
-    const handleDelete = (org: VendorOrg) => {
-        setContextMenu(null);
-        selectOrg(org.id);
-        setDeleteModalOpen(true);
-    };
-
-    const handleAddAdmin = (org: VendorOrg | null) => {
-        setContextMenu(null);
-        if (org) {
-            selectOrg(org.id);
-        }
-        setAddAdminModalOpen(true);
-    };
-
-    const handleAssignUser = (org: VendorOrg | null) => {
-        setContextMenu(null);
-        if (org) {
-            selectOrg(org.id);
-        }
-        setAssignUserModalOpen(true);
-    };
-
-    const [expanded, setExpanded] = useState<Set<string>>(new Set());
-
-    const toggleExpand = (orgId: string) => {
-        setExpanded((prev) => {
-            const next = new Set(prev);
-            if (next.has(orgId)) {
-                next.delete(orgId);
-            } else {
-                next.add(orgId);
-            }
-            return next;
-        });
-    };
-
-    const renderTreeItem = (org: VendorOrg, level: number = 0): React.ReactNode => {
-        const isSelected = selectedOrgId === org.id;
-        const isExpanded = expanded.has(org.id);
-        const hasChildren = org.children && org.children.length > 0;
-
-        return (
-            <React.Fragment key={org.id}>
-                <ListItem
-                    disablePadding
-                    sx={{
-                        pl: level * 2,
-                        bgcolor: isSelected ? 'action.selected' : 'transparent',
-                        '&:hover': {
-                            bgcolor: 'action.hover',
-                        },
-                    }}
-                    onContextMenu={(e) => handleContextMenu(e, org)}
-                >
-                    <ListItemButton
-                        onClick={() => selectOrg(org.id)}
-                        sx={{ py: 0.5 }}
-                    >
-                        {hasChildren && (
-                            <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleExpand(org.id);
-                                }}
-                                sx={{ mr: 0.5 }}
-                            >
-                                {isExpanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
-                            </IconButton>
-                        )}
-                        {!hasChildren && <Box sx={{ width: 24 }} />}
-                        <ListItemIcon sx={{ minWidth: 36 }}>
-                            <AccountTree fontSize="small" color={isSelected ? 'primary' : 'action'} />
-                        </ListItemIcon>
-                        <ListItemText
-                            primary={
-                                <Stack direction="row" spacing={1} alignItems="center">
-                                    <Typography variant="body2" fontWeight={isSelected ? 600 : 400}>
-                                        {org.name}
-                                    </Typography>
-                                    <Chip
-                                        label={org.level}
-                                        size="small"
-                                        variant="outlined"
-                                        sx={{ height: 20, fontSize: '0.65rem' }}
-                                    />
-                                    <Chip
-                                        label={org.status}
-                                        size="small"
-                                        color={org.status === 'active' ? 'success' : 'default'}
-                                        sx={{ height: 20, fontSize: '0.65rem' }}
-                                    />
-                                </Stack>
-                            }
-                        />
-                        <IconButton
-                            size="small"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleContextMenu(e, org);
-                            }}
-                        >
-                            <MoreVert fontSize="small" />
-                        </IconButton>
-                    </ListItemButton>
-                </ListItem>
-                {hasChildren && (
-                    <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding>
-                            {org.children?.map((child) => renderTreeItem(child, level + 1))}
-                        </List>
-                    </Collapse>
-                )}
-            </React.Fragment>
-        );
-    };
-
-    if (!tenantId) {
-        return (
-            <Box p={3}>
-                <Alert severity="info">Please select a tenant to view vendor hierarchy</Alert>
-            </Box>
-        );
-    }
-
-    return (
-        <Box p={3}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h4">Vendor Hierarchy</Typography>
-                <Stack direction="row" spacing={2}>
-                    <Button variant="outlined" startIcon={<Refresh />} onClick={refresh} disabled={loading}>
-                        Refresh
-                    </Button>
-                    <Button
-                        variant="contained"
-                        startIcon={<PersonAdd />}
-                        onClick={() => {
-                            if (!tenantId) {
-                                alert('Please select a tenant first');
-                                return;
-                            }
-                            handleAddAdmin(null);
-                        }}
-                        disabled={!tenantId || loading}
-                        title={!tenantId ? 'Please select a tenant first' : 'Add Vendor Admin'}
-                    >
-                        Add Vendor Admin
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        startIcon={<Add />}
-                        onClick={() => {
-                            if (!tenantId) {
-                                alert('Please select a tenant first');
-                                return;
-                            }
-                            handleAddChild(null);
-                        }}
-                        disabled={!tenantId || loading}
-                        title={!tenantId ? 'Please select a tenant first' : 'Add Root Organization'}
-                    >
-                        Add Root Organization
-                    </Button>
-                </Stack>
-            </Stack>
-
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }} onClose={() => { }}>
-                    {error}
-                </Alert>
-            )}
-
-            <Grid container spacing={3}>
-                {/* Left Panel: Tenant & Organization Selection */}
-                <Grid item xs={12} md={4}>
-                    <Stack spacing={2}>
-                        {/* Tenant Selection */}
-                        <Card>
-                            <CardContent>
-                                <Stack spacing={2}>
-                                    <Typography variant="h6">Select Tenant</Typography>
-                                    <Autocomplete
-                                        options={filteredTenants}
-                                        getOptionLabel={(option) => `${option.name} (${option.domain})`}
-                                        value={tenants.find((t) => t.id === tenantId) || null}
-                                        onChange={(_, newValue) => {
-                                            if (newValue) {
-                                                selectTenant(newValue.id);
-                                                setTenantId(newValue.id);
-                                            }
-                                        }}
-                                        renderInput={(params) => (
-                                            <TextField
-                                                {...params}
-                                                placeholder="Search tenants..."
-                                                InputProps={{
-                                                    ...params.InputProps,
-                                                    startAdornment: (
-                                                        <>
-                                                            <InputAdornment position="start">
-                                                                <Domain />
-                                                            </InputAdornment>
-                                                            {params.InputProps.startAdornment}
-                                                        </>
-                                                    ),
-                                                }}
-                                            />
-                                        )}
-                                        loading={loading}
-                                    />
-                                </Stack>
-                            </CardContent>
-                        </Card>
-
-                        {/* Organization Tree */}
-                        <Card>
-                            <CardContent>
-                                <Stack spacing={2}>
-                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                        <Typography variant="h6">
-                                            Organizations ({filteredTree.length})
-                                        </Typography>
-                                        <TextField
-                                            size="small"
-                                            placeholder="Search..."
-                                            value={orgSearchTerm}
-                                            onChange={(e) => setOrgSearchTerm(e.target.value)}
-                                            InputProps={{
-                                                startAdornment: (
-                                                    <InputAdornment position="start">
-                                                        <Search fontSize="small" />
-                                                    </InputAdornment>
-                                                ),
-                                            }}
-                                            sx={{ width: 200 }}
-                                        />
-                                    </Stack>
-                                    {!tenantId ? (
-                                        <Alert severity="info">
-                                            Select a tenant from the header to load its vendor hierarchy.
-                                        </Alert>
-                                    ) : loading ? (
-                                        <Box display="flex" justifyContent="center" p={4}>
-                                            <CircularProgress />
-                                        </Box>
-                                    ) : filteredTree.length === 0 ? (
-                                        <Alert severity="info">
-                                            <Typography variant="body2" gutterBottom>
-                                                No organizations found for this tenant.
-                                            </Typography>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                startIcon={<Add />}
-                                                onClick={() => handleAddChild(null)}
-                                                sx={{ mt: 1 }}
-                                            >
-                                                Create First Organization
-                                            </Button>
-                                        </Alert>
-                                    ) : (
-                                        <List sx={{ maxHeight: 600, overflowY: 'auto' }}>
-                                            {filteredTree.map((org) => renderTreeItem(org))}
-                                        </List>
-                                    )}
-                                </Stack>
-                            </CardContent>
-                        </Card>
-                    </Stack>
-                </Grid>
-
-                {/* Right Panel: Organization Details */}
-                <Grid item xs={12} md={8}>
-                    {selectedOrg ? (
-                        <Card>
-                            <CardContent>
-                                <Stack spacing={3}>
-                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                        <Typography variant="h5">{selectedOrg.name}</Typography>
-                                        <Stack direction="row" spacing={1}>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                startIcon={<PersonAdd />}
-                                                onClick={() => selectedOrg && handleAddAdmin(selectedOrg)}
-                                                disabled={!selectedOrg || loading}
-                                                title={!selectedOrg ? 'Select an organization first' : 'Add Vendor Admin'}
-                                            >
-                                                Add Admin
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                startIcon={<Add />}
-                                                onClick={() => selectedOrg && handleAddChild(selectedOrg)}
-                                                disabled={!selectedOrg || loading}
-                                                title={!selectedOrg ? 'Select an organization first' : 'Add Child Organization'}
-                                            >
-                                                Add Child
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                startIcon={<Edit />}
-                                                onClick={() => selectedOrg && handleEdit(selectedOrg)}
-                                                disabled={!selectedOrg || loading}
-                                                title={!selectedOrg ? 'Select an organization first' : 'Edit Organization'}
-                                            >
-                                                Edit
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                color="error"
-                                                startIcon={<Delete />}
-                                                onClick={() => selectedOrg && handleDelete(selectedOrg)}
-                                                disabled={!selectedOrg || loading}
-                                                title={!selectedOrg ? 'Select an organization first' : 'Delete Organization'}
-                                            >
-                                                Delete
-                                            </Button>
-                                        </Stack>
-                                    </Stack>
-
-                                    <Divider />
-
-                                    {/* Organization Details */}
-                                    <Stack spacing={2}>
-                                        <Typography variant="subtitle1">Details</Typography>
-                                        <Grid container spacing={2}>
-                                            <Grid item xs={12} sm={6}>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Level
-                                                </Typography>
-                                                <Typography>{selectedOrg.level}</Typography>
-                                            </Grid>
-                                            <Grid item xs={12} sm={6}>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Status
-                                                </Typography>
-                                                <Chip
-                                                    label={selectedOrg.status}
-                                                    color={selectedOrg.status === 'active' ? 'success' : 'default'}
-                                                    size="small"
-                                                />
-                                            </Grid>
-                                            <Grid item xs={12} sm={6}>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Slug
-                                                </Typography>
-                                                <Typography>{selectedOrg.slug}</Typography>
-                                            </Grid>
-                                            {selectedOrg.parent_name && (
-                                                <Grid item xs={12} sm={6}>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        Parent
-                                                    </Typography>
-                                                    <Typography>{selectedOrg.parent_name}</Typography>
-                                                </Grid>
-                                            )}
-                                        </Grid>
-                                    </Stack>
-
-                                    <Divider />
-
-                                    {/* User Bindings */}
-                                    <Stack spacing={2}>
-                                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                            <Typography variant="subtitle1">
-                                                Assigned Users {bindings?.length > 0 && `(${bindings.length})`}
-                                            </Typography>
-                                            <Stack direction="row" spacing={1}>
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
-                                                    startIcon={<PersonAdd />}
-                                                    onClick={() => handleAddAdmin(selectedOrg)}
-                                                    disabled={!selectedOrg || loading}
-                                                    title={!selectedOrg ? 'Select an organization first' : 'Add Vendor Admin'}
-                                                >
-                                                    Add Admin
-                                                </Button>
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
-                                                    startIcon={<PersonAdd />}
-                                                    onClick={() => handleAssignUser(selectedOrg)}
-                                                    disabled={!selectedOrg || loading}
-                                                    title={!selectedOrg ? 'Select an organization first' : 'Assign User to Organization'}
-                                                >
-                                                    Assign User
-                                                </Button>
-                                            </Stack>
-                                        </Stack>
-                                        {bindingsLoading ? (
-                                            <Box display="flex" justifyContent="center" p={2}>
-                                                <CircularProgress size={24} />
-                                            </Box>
-                                        ) : !bindings?.length ? (
-                                            <Alert severity="info">
-                                                No users assigned to this organization. Click "Add Admin" or "Assign User" to add users.
-                                            </Alert>
-                                        ) : (
-                                            <Stack spacing={1}>
-                                                {(bindings || []).map((binding) => (
-                                                    <Paper key={binding.id} variant="outlined" sx={{ p: 2 }}>
-                                                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                                            <Stack spacing={0.5}>
-                                                                <Typography variant="body2" fontWeight={500}>
-                                                                    {binding.user_email}
-                                                                </Typography>
-                                                                <Stack direction="row" spacing={1}>
-                                                                    <Chip
-                                                                        label={binding.role}
-                                                                        size="small"
-                                                                        variant="outlined"
-                                                                        color="primary"
-                                                                    />
-                                                                    <Chip
-                                                                        label={binding.status}
-                                                                        size="small"
-                                                                        color={
-                                                                            binding.status === 'active'
-                                                                                ? 'success'
-                                                                                : binding.status === 'suspended'
-                                                                                    ? 'error'
-                                                                                    : 'default'
-                                                                        }
-                                                                    />
-                                                                </Stack>
-                                                                {binding.assigned_at && (
-                                                                    <Typography variant="caption" color="text.secondary">
-                                                                        Assigned: {new Date(binding.assigned_at).toLocaleDateString()}
-                                                                    </Typography>
-                                                                )}
-                                                            </Stack>
-                                                        </Stack>
-                                                    </Paper>
-                                                ))}
-                                            </Stack>
-                                        )}
-                                    </Stack>
-
-                                    <Divider />
-
-                                    {/* Wallet Summary */}
-                                    <Stack spacing={2}>
-                                        <Typography variant="subtitle1">Wallet Summary</Typography>
-                                        {walletsLoading ? (
-                                            <Box display="flex" justifyContent="center" p={2}>
-                                                <CircularProgress size={24} />
-                                            </Box>
-                                        ) : wallets.length === 0 ? (
-                                            <Alert severity="info">
-                                                No wallets found for this organisation. Wallets are created automatically when needed.
-                                            </Alert>
-                                        ) : (
-                                            <Stack spacing={2}>
-                                                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
-                                                    <Typography variant="caption" display="block" sx={{ opacity: 0.9 }}>
-                                                        Total Balance
-                                                    </Typography>
-                                                    <Typography variant="h5" fontWeight={600}>
-                                                        ₦{Number(totalBalance).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </Typography>
-                                                </Paper>
-                                                <Stack spacing={1}>
-                                                    {wallets.map((wallet) => (
-                                                        <Paper key={wallet.id} variant="outlined" sx={{ p: 2 }}>
-                                                            <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                                                <Stack spacing={0.5}>
-                                                                    <Typography variant="body2" fontWeight={500}>
-                                                                        {wallet.key} ({wallet.type})
-                                                                    </Typography>
-                                                                    <Typography variant="caption" color="text.secondary">
-                                                                        {wallet.role || 'No role'}
-                                                                    </Typography>
-                                                                </Stack>
-                                                                <Typography variant="h6" fontWeight={600}>
-                                                                    ₦{Number(wallet.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                </Typography>
-                                                            </Stack>
-                                                            {wallet.daily_limit && (
-                                                                <Stack direction="row" spacing={2} mt={1}>
-                                                                    <Typography variant="caption" color="text.secondary">
-                                                                        Daily Limit: ₦{Number(wallet.daily_limit).toLocaleString('en-NG')}
-                                                                    </Typography>
-                                                                    {wallet.daily_spent && (
-                                                                        <Typography variant="caption" color="text.secondary">
-                                                                            Spent: ₦{Number(wallet.daily_spent).toLocaleString('en-NG')}
-                                                                        </Typography>
-                                                                    )}
-                                                                </Stack>
-                                                            )}
-                                                        </Paper>
-                                                    ))}
-                                                </Stack>
-                                            </Stack>
-                                        )}
-                                    </Stack>
-                                </Stack>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <Stack spacing={2}>
-                            <Card>
-                                <CardContent>
-                                    <Typography color="text.secondary" align="center" p={4}>
-                                        Select an organization from the tree to view details
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                            {tree.length === 0 && tenantId && (
-                                <Card>
-                                    <CardContent>
-                                        <Alert severity="info">
-                                            <Typography variant="body2" gutterBottom>
-                                                No organizations found for this tenant.
-                                            </Typography>
-                                            <Button
-                                                size="small"
-                                                variant="contained"
-                                                startIcon={<Add />}
-                                                onClick={() => handleAddChild(null)}
-                                                sx={{ mt: 1 }}
-                                            >
-                                                Create First Organization
-                                            </Button>
-                                        </Alert>
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </Stack>
-                    )}
-                </Grid>
-            </Grid>
-
-            {/* Context Menu */}
-            <Menu
-                open={contextMenu !== null}
-                onClose={handleCloseContextMenu}
-                anchorReference="anchorPosition"
-                anchorPosition={
-                    contextMenu !== null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
-                }
-            >
-                <MenuItem onClick={() => contextMenu?.org && handleAddChild(contextMenu.org)}>
-                    <Add sx={{ mr: 1 }} fontSize="small" /> Add Child
-                </MenuItem>
-                <MenuItem onClick={() => contextMenu?.org && handleEdit(contextMenu.org)}>
-                    <Edit sx={{ mr: 1 }} fontSize="small" /> Edit
-                </MenuItem>
-                <MenuItem onClick={() => contextMenu?.org && handleAddAdmin(contextMenu.org)}>
-                    <PersonAdd sx={{ mr: 1 }} fontSize="small" /> Add Admin
-                </MenuItem>
-                <MenuItem onClick={() => contextMenu?.org && handleAssignUser(contextMenu.org)}>
-                    <PersonAdd sx={{ mr: 1 }} fontSize="small" /> Assign User
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={() => contextMenu?.org && handleDelete(contextMenu.org)}>
-                    <Delete sx={{ mr: 1 }} fontSize="small" color="error" /> Delete
-                </MenuItem>
-            </Menu>
-
-            {/* Modals */}
-            <AddVendorAdminModal
-                open={addAdminModalOpen}
-                onClose={() => {
-                    setAddAdminModalOpen(false);
-                }}
-                orgId={selectedOrgId}
-                onSuccess={async () => {
-                    // Refresh bindings list to show newly added admin
-                    console.log('[VendorHierarchy] Refreshing bindings after adding admin');
-                    await refreshBindings();
-                }}
-            />
-
-            <AddChildOrgModal
-                open={addChildModalOpen}
-                onClose={() => setAddChildModalOpen(false)}
-                parentOrg={selectedOrg || null}
-                tenantId={tenantId}
-                onSuccess={() => {
-                    refresh();
-                    setAddChildModalOpen(false);
-                }}
-            />
-
-            <EditOrgModal
-                open={editModalOpen}
-                onClose={() => setEditModalOpen(false)}
-                org={selectedOrg || null}
-                onSuccess={() => {
-                    refresh();
-                    setEditModalOpen(false);
-                }}
-            />
-
-            <DeleteOrgModal
-                open={deleteModalOpen}
-                onClose={() => setDeleteModalOpen(false)}
-                org={selectedOrg}
-                onSuccess={() => {
-                    refresh();
-                    selectOrg(null);
-                    setDeleteModalOpen(false);
-                }}
-            />
-
-            <AssignUserModal
-                open={assignUserModalOpen}
-                onClose={() => setAssignUserModalOpen(false)}
-                orgId={selectedOrgId}
-                onSuccess={() => {
-                    refreshBindings();
-                    setAssignUserModalOpen(false);
-                }}
-            />
+    <Paper
+      sx={{
+        p: 1,
+        borderRadius: 4,
+        height: 420,
+        overflowY: "auto",
+        position: "relative",
+      }}
+    >
+      {/* LOADER */}
+      {loading && (
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: "rgba(255,255,255,0.6)",
+            zIndex: 2,
+          }}
+        >
+          <CircularProgress size={28} />
         </Box>
-    );
+      )}
+
+      {/* EMPTY STATE */}
+      {!loading && items.length === 0 && (
+        <Box
+          height="100%"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Typography fontSize={13} color="text.secondary">
+            No data
+          </Typography>
+        </Box>
+      )}
+
+      {/* LIST */}
+      {!loading &&
+        items.map((item: any) => (
+          <Box
+            key={item.id}
+            sx={{
+              p: 1.5,
+              borderRadius: 3,
+              mb: 1,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              cursor: "pointer",
+              transition: "0.2s",
+              "&:hover": {
+                bgcolor: "#eef2ff",
+                transform: "translateY(-2px)",
+              },
+            }}
+          >
+            <Box onClick={() => onClick(item)}>
+              <Typography fontSize={13} fontWeight={600}>
+                {item.business_name}
+              </Typography>
+              <Typography fontSize={11} color="text.secondary">
+                {item.email || "No email"}
+              </Typography>
+            </Box>
+
+            <IconButton size="small" onClick={(e) => onMenu(e, item)}>
+              <MoreVert fontSize="small" />
+            </IconButton>
+          </Box>
+        ))}
+    </Paper>
+  </Box>
+);
+
+/* ================= MAIN ================= */
+
+const VendorHierarchy = () => {
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+
+  const [data, setData] = useState<Vendor[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [selected, setSelected] = useState<any>(null);
+
+  const [anchorEl, setAnchorEl] = useState<any>(null);
+  const [menuRow, setMenuRow] = useState<any>(null);
+
+  /* LOAD ROOT */
+
+  const loadVendors = async () => {
+    try {
+      setLoading(true);
+      // const res = await fetchVendors({
+      //   main_vendor: true,
+      // });
+      const res = await fetchAllVendors();
+
+      setVendors(res || []);
+    } catch (err) {
+      console.error(err);
+      setVendors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    loadVendors();
+  }, []);
+
+  /* LOAD CHILDREN (ONLY when explicitly called) */
+
+  const loadChildren = async (id: any) => {
+    // setLoading(true);
+    try {
+      setLoading(true);
+      const res: any = await fetchVendorchildren(id);
+
+      const list = Array.isArray(res?.results)
+        ? res.results
+        : Array.isArray(res)
+          ? res
+          : [];
+
+      setData(list); // ✅ replace ONLY when explicitly loading children
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* GROUPING */
+
+  const subVendors = data.filter((d) => d.hierachy === "sub_vendor");
+  const agents = data.filter((d) => d.hierachy === "agent");
+  const cashiers = data.filter((d) => d.hierachy === "cashier");
+  const pos = data.filter((d) => d.hierachy === "pos");
+
+  /* MENU */
+
+  const openMenu = (e: any, row: any) => {
+    setAnchorEl(e.currentTarget);
+    setMenuRow(row);
+  };
+
+  const closeMenu = () => {
+    setAnchorEl(null);
+    setMenuRow(null);
+  };
+
+  /* COUNTS */
+
+  const counts = {
+    sub: subVendors.length,
+    agent: agents.length,
+    cashier: cashiers.length,
+    pos: pos.length,
+  };
+
+  /* UI */
+
+  return (
+    <Box bgcolor="#f5f7fb">
+      {/* HEADER */}
+      <Stack direction="row" justifyContent="space-between" mb={3}>
+        <Box>
+          <Typography fontSize={28} fontWeight={700}>
+            Vendor Hierarchy
+          </Typography>
+          <Typography color="text.secondary">
+            Sub-vendors → Agents → Cashiers → POS
+          </Typography>
+        </Box>
+
+        <Button variant="outlined" startIcon={<Refresh />}
+          onClick={() => {
+            loadVendors()
+            setSelectedVendor(null);
+            setSelected(null);
+            setData([]);
+          }}
+          sx={{ height: 36, textTransform: "none", borderRadius: 2 }}
+        >
+          Refresh
+        </Button>
+      </Stack>
+
+      {/* SELECTOR */}
+      <Paper
+        sx={{
+          p: 2,
+          borderRadius: 4,
+          mb: 3,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Typography fontSize={13}>Vendor:</Typography>
+
+          <Autocomplete
+            size="small"
+            options={vendors}
+            value={selectedVendor}
+            sx={{ width: 260 }}
+            onChange={(_, v) => {
+              if (!v) return;
+              setSelectedVendor(v);
+              loadChildren(v.id); // ✅ ONLY here
+            }}
+            getOptionLabel={(o) => o.business_name}
+            renderInput={(params) => (
+              <TextField {...params} placeholder="Select vendor" />
+            )}
+          />
+        </Stack>
+
+        <Stack direction="row" spacing={2}>
+          <Chip label={`Sub ${counts.sub}`} />
+          <Chip label={`Agents ${counts.agent}`} />
+          <Chip label={`Cashiers ${counts.cashier}`} />
+          <Chip label={`POS ${counts.pos}`} />
+        </Stack>
+      </Paper>
+
+      {/* HIERARCHY */}
+      <Stack direction="row" spacing={2}>
+        <Column
+          title="Sub Vendors"
+          items={subVendors}
+          loading={loading}
+          onClick={(item: any) => {
+            setSelected(item); // ✅ ONLY open drawer
+          }}
+          onMenu={openMenu}
+        />
+
+        <Column
+          title="Agents"
+          items={agents}
+          loading={loading}
+          onClick={(item: any) => {
+            setSelected(item);
+          }}
+          onMenu={openMenu}
+        />
+
+        <Column
+          title="Cashiers"
+          items={cashiers}
+          loading={loading}
+          onClick={(item: any) => {
+            setSelected(item);
+          }}
+          onMenu={openMenu}
+        />
+
+        <Column
+          title="POS"
+          items={pos}
+          loading={loading}
+          onClick={(item: any) => setSelected(item)}
+          onMenu={openMenu}
+        />
+      </Stack>
+
+      {/* DRAWER */}
+      <Drawer
+        anchor="right"
+        open={!!selected}
+        onClose={() => setSelected(null)}
+      >
+        <Box width={320} p={3}>
+          <Typography fontSize={20} fontWeight={700}>
+            {selected?.business_name}
+          </Typography>
+
+          <Typography mt={1} color="text.secondary">
+            {selected?.email}
+          </Typography>
+
+          <Typography mt={2}>
+            {selected?.phone_number || "-"}
+          </Typography>
+
+          <Typography mt={2}>
+            Address: {selected?.address || "-"}
+          </Typography>
+
+          <Chip label={selected?.account_status} sx={{ mt: 2 }} />
+        </Box>
+      </Drawer>
+
+      {/* MENU */}
+      <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={closeMenu}>
+        <MenuItem
+          onClick={() => {
+            if (menuRow) loadChildren(menuRow.id); // ✅ ONLY here loads new data
+            closeMenu();
+          }}
+        >
+          View Children
+        </MenuItem>
+      </Menu>
+    </Box>
+  );
 };
-
 export default VendorHierarchy;
-

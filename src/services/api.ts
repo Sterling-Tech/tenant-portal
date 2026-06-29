@@ -34,10 +34,10 @@ export const getAuthHeaders = (): Record<string, string> => {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const tenantId = localStorage.getItem('tenantId');
-    if (tenantId) {
-        headers['X-Tenant-ID'] = tenantId;
-    }
+    // const tenantId = localStorage.getItem('tenantId');
+    // if (tenantId) {
+    //     headers['X-Tenant-ID'] = tenantId;
+    // }
 
     return headers;
 };
@@ -247,7 +247,13 @@ export async function patch<T>(endpoint: string, data: any): Promise<T> {
 /**
  * DELETE request
  */
-export async function del<T>(endpoint: string): Promise<T> {
-    return makeApiCall<T>(endpoint, { method: 'DELETE' });
-}
+// export async function del<T>(endpoint: string): Promise<T> {
+//     return makeApiCall<T>(endpoint, { method: 'DELETE' });
+// }
 
+export async function del<T>(endpoint: string, data?: any): Promise<T> {
+    return makeApiCall<T>(endpoint, {
+        method: 'DELETE',
+        body: data !== undefined ? JSON.stringify(data) : undefined,
+    });
+}

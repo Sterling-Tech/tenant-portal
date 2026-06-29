@@ -4,16 +4,19 @@ import { clearApiKeyCredentials } from '../../utils/apiKeyStorage';
 export interface User {
     id: string;
     email: string;
+    name?: string;
     firstName?: string;
     lastName?: string;
     first_name?: string;
     last_name?: string;
-    phone?: string;
+    phone_number?: string;
     role?: string;
+    gender:string;
     is_superuser?: boolean;
     isSuperuser?: boolean;
     is_staff?: boolean;
     isStaff?: boolean;
+    is_2fa_enabled: boolean,
 }
 
 interface AuthState {
@@ -53,9 +56,10 @@ const extractAuthPayload = (data: any) => {
 };
 
 export const login = createAsyncThunk(
-    'auth/login',
+    'user/login',
     async (credentials: { email: string; password: string }) => {
-        const response = await fetch('http://188.166.161.13:8001/api/v1/auth/login/', {
+        const response = await fetch('http://188.166.161.13:8061/user/login/', {
+        // const response = await fetch('http://188.166.99.136:8061/user/login/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(credentials),

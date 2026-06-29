@@ -13,7 +13,18 @@ import VendorManagement from './pages/Vendors/VendorManagement';
 import VendorHierarchy from './pages/Vendors/VendorHierarchy';
 import WalletManagement from './pages/Vendors/WalletManagement';
 import Layout from './components/Layout/Layout';
-
+import CustomerManagement from './pages/Customer/Customer';
+import VendorTransactions from './pages/Vendors/VendorTransactions';
+import CustomerAdmin from './pages/Customer/Dashboard';
+import Subaccount from './pages/Customer/Subaccount';
+import CustomerTrans from './pages/Customer/CustomerTrans';
+import OnboardingPage from './pages/Onboarding/Onboarding';
+import { ToastContainer} from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
+import BulkAssign from './pages/ReEngineering/BulkAssign';
+import BulkEngineering from './pages/ReEngineering/BulkEngineering';
+import MapRefund from './pages/Customer/MapRefund';
+import GroupManagement from './pages/Roles/Roles';
 // Enhanced theme
 const theme = createTheme({
     palette: {
@@ -103,6 +114,47 @@ const App: React.FC = () => {
                                 }
                             />
                             <Route
+                                path="/customer/admin"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <CustomerAdmin />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/customer/subaccount"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <Subaccount />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+
+                            <Route
+                                path="/onboarding"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <OnboardingPage />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path='/role'
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <GroupManagement />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
                                 path="/settings"
                                 element={
                                     <ProtectedRoute>
@@ -123,11 +175,71 @@ const App: React.FC = () => {
                                 }
                             />
                             <Route
+                                path="/customer"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <CustomerManagement/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/customer/transaction"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <CustomerTrans/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/customer/maprefund"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <MapRefund/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/re-engineer"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <BulkAssign/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/re-engineer/bulk"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <BulkEngineering/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
                                 path="/vendors/hierarchy"
                                 element={
                                     <ProtectedRoute>
                                         <Layout>
                                             <VendorHierarchy />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/vendors/transactions"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <VendorTransactions />
                                         </Layout>
                                     </ProtectedRoute>
                                 }
@@ -151,6 +263,7 @@ const App: React.FC = () => {
                     </Router>
                 </VendorProvider>
             </ThemeProvider>
+            <ToastContainer />
         </Provider>
     );
 };

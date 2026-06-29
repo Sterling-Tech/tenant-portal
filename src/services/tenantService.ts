@@ -7,24 +7,36 @@ import { get, post, patch, del } from './api';
 
 export interface Tenant {
     id: string;
-    name: string;
-    slug: string;
-    domain: string;
-    subdomain?: string;
-    configuration: Record<string, any>;
-    features: string[];
-    limits: Record<string, any>;
-    custom_settings: Record<string, any>;
-    database_name?: string;
-    database_url?: string;
-    is_active: boolean;
-    is_trial: boolean;
-    trial_ends_at?: string;
-    created_at: string;
-    updated_at: string;
-    created_by?: string;
+    business_name: string;
+    email: string;
+    phone_number: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    postal_code: string;
+    account_status: string; // e.g. "active"
+    hierachy: string; // note: backend typo preserved
+    related_vendor: number | null;
+    token: string;
+
+    wallet: {
+        wallet_type: {
+            name: string;
+            description: string;
+        };
+        balance: string; // API returns string "0.00"
+    };
+
+    created_at: string; // ISO datetime
 }
 
+export interface PaginatedVendorResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Tenant[];
+}
 export interface TenantSummary {
     total_tenants: number;
     active_tenants: number;
@@ -158,10 +170,12 @@ const buildQuery = (params?: Record<string, string | number | boolean | undefine
 
 export const tenantService = {
     // Tenant CRUD operations
+    // getAllTenants(params?: { search?: string; is_active?: boolean; ordering?: string }) {
+    //     return get<Tenant[]>(`/vendor/retrieve/${buildQuery(params)}`);
+    // },
     getAllTenants(params?: { search?: string; is_active?: boolean; ordering?: string }) {
-        return get<Tenant[]>(`/tenants/${buildQuery(params)}`);
+        return get<Tenant[]>(`/vendor/retrieve/`);
     },
-
     getTenantById(id: string) {
         return get<Tenant>(`/tenants/${id}/`);
     },
@@ -187,7 +201,7 @@ export const tenantService = {
     },
 
     getTenantSummary() {
-        return get<TenantSummary>('/tenants/summary/');
+        return get<TenantSummary>('/vendor/retrieve/');
     },
 
     getTenantStats(id: string) {
