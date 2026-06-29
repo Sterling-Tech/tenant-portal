@@ -21,6 +21,10 @@ import CustomerTrans from './pages/Customer/CustomerTrans';
 import OnboardingPage from './pages/Onboarding/Onboarding';
 import { ToastContainer} from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
+import BulkAssign from './pages/ReEngineering/BulkAssign';
+import BulkEngineering from './pages/ReEngineering/BulkEngineering';
+import MapRefund from './pages/Customer/MapRefund';
+import GroupManagement from './pages/Roles/Roles';
 // Enhanced theme
 const theme = createTheme({
     palette: {
@@ -141,6 +145,16 @@ const App: React.FC = () => {
                                 }
                             />
                             <Route
+                                path='/role'
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <GroupManagement />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
                                 path="/settings"
                                 element={
                                     <ProtectedRoute>
@@ -176,6 +190,36 @@ const App: React.FC = () => {
                                     <ProtectedRoute>
                                         <Layout>
                                             <CustomerTrans/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/customer/maprefund"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <MapRefund/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/re-engineer"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <BulkAssign/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/re-engineer/bulk"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <BulkEngineering/>
                                         </Layout>
                                     </ProtectedRoute>
                                 }

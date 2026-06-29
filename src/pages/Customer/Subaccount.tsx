@@ -759,7 +759,6 @@ export default function DebtManager() {
                 Fill in all fields — this debt will be automatically activated
               </Typography>
 
-              {/* DEBT TYPE */}
               <FormControl
                 fullWidth
                 error={!!errors.debtType}
@@ -796,12 +795,10 @@ export default function DebtManager() {
                 )}
               </FormControl>
 
-              {/* AMOUNT + RATE */}
               <Stack direction="row" spacing={2}>
                 <TextField
                   fullWidth
                   value={amount}
-                  // onChange={(e) => setAmount(e.target.value)}
                   onChange={(e) => {
                     setAmount(e.target.value);
 
@@ -851,7 +848,6 @@ export default function DebtManager() {
                 />
               </Stack>
 
-              {/* DATE */}
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   label="Effective Date"
@@ -878,7 +874,6 @@ export default function DebtManager() {
                 />
               </LocalizationProvider>
 
-              {/* DESCRIPTION */}
               <TextField
                 fullWidth
                 multiline
@@ -901,7 +896,7 @@ export default function DebtManager() {
                     borderRadius: 2,
                     fontSize: 13,
                     bgcolor: "#f9fafb",
-                    alignItems: "center", // 🔥 centers text vertically
+                    alignItems: "center", 
                     paddingTop: "8px",
                     paddingBottom: "8px",
                   },
@@ -913,7 +908,7 @@ export default function DebtManager() {
                 }}
               />
 
-              {/* PAYMENT PLAN (SINGLE SELECT) */}
+
               <FormControl sx={{
 
                 "& .MuiOutlinedInput-root": {
@@ -961,7 +956,7 @@ export default function DebtManager() {
                         <Checkbox
                           checked={selected}
                           onChange={(e) => {
-                            e.stopPropagation(); // ✅ prevent double toggle
+                            e.stopPropagation(); 
                             togglePlan();
                           }}
                           onClick={(e) => e.stopPropagation()}
@@ -1015,7 +1010,7 @@ export default function DebtManager() {
                 })}
               </FormControl>
 
-              {/* BUTTON */}
+
               <Button
                 fullWidth
                 onClick={handleCreateDebt}

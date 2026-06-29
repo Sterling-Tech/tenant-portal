@@ -55,6 +55,9 @@ export const getAllAdmin = () => {
 export const getPermissions = () => {
     return get<PermissionItem[]>("/user/permissions/");
 };
+export const getSystemPermissions=()=>{
+    return get<Permission[]>("/user/permissions/all/")
+}
 export const getUserPermissions = (userId: string) => {
     return get<PermissionItem[]>("/user/" + userId + "/permissions/");
 }
