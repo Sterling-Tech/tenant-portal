@@ -44,6 +44,7 @@ import TenantSwitcher from '../TenantSwitcher/TenantSwitcher';
 import { useVendorHierarchy } from '../../contexts/VendorContext';
 import { useEnsureUserApiKey } from '../../hooks/useEnsureUserApiKey';
 import Onboarding from '../../pages/Onboarding/Onboarding';
+import { usePermission } from '../../hooks/usePermission';
 
 const drawerWidth = 240;
 
@@ -154,7 +155,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             setMobileOpen(false);
         }
     };
-
+    const { can } = usePermission();
     // Check if we're in vendor section
     const isVendorSection = location.pathname.startsWith('/vendors');
 
@@ -263,7 +264,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </ListItemIcon>
                             <ListItemText primary="Vendor Hierarchy" />
                         </ListItemButton>
+
                         {/* Transactions */}
+                       
+                        
                         <ListItemButton
                             selected={location.pathname === '/vendors/transactions'}
                             onClick={() => handleNavigation('/vendors/transactions')}
@@ -286,8 +290,31 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </ListItemIcon>
                             <ListItemText primary="Wallet" />
                         </ListItemButton>
-                        
+                         <ListItemButton
+                            selected={location.pathname === '/vendors/funding'}
+                            onClick={() => handleNavigation('/vendors/funding')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <History fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Funding Request" />
+                        </ListItemButton>
                         {/* funding request */}
+                        {/* {
+                         can("fund_vendor_child") && (
                         <ListItemButton
                             selected={location.pathname === '/vendors/funding'}
                             onClick={() => handleNavigation('/vendors/funding')}
@@ -310,6 +337,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </ListItemIcon>
                             <ListItemText primary="Funding Request" />
                         </ListItemButton>
+                        )
+                        } */}
                     </List>
                 </Collapse>
                 {/* Customer Management Section - Collapsible */}
@@ -358,7 +387,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </ListItemButton>
                         {/* maprefund */}
                         
-                        {/* <ListItemButton
+                        <ListItemButton
                             selected={location.pathname === '/customer/maprefund'}
                             onClick={() => handleNavigation('/customer/maprefund')}
                             sx={{
@@ -379,7 +408,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 <People fontSize="small" />
                             </ListItemIcon>
                             <ListItemText primary="Map Refund" />
-                        </ListItemButton> */}
+                        </ListItemButton>
                         {/* /customer transaction */}
                         <ListItemButton
                             selected={location.pathname === '/customer/transaction'}
@@ -406,7 +435,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </List>
                 </Collapse>
                 {/* Re-engineering */}
-                {/* <ListItem disablePadding>
+                <ListItem disablePadding>
                     <ListItemButton
                         onClick={() => setReengineerMenuOpen(!reengineerMenuOpen)}
                         sx={{
@@ -472,7 +501,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <ListItemText primary="Bulk Engineering" />
                         </ListItemButton>
                     </List>
-                </Collapse> */}
+                </Collapse>
 
                 {/* Sub account*/}
                 <ListItem disablePadding>
