@@ -2,11 +2,12 @@
 import React, { useEffect, useState } from "react";
 import { Box, Card, Typography, Grid, Button, CircularProgress, List, ListItemButton, ListItemText, Checkbox, Divider, Chip, Stack, Alert, } from "@mui/material";
 
-import { getAllAdmin, getPermissions, grantPermissions, CreateAdmin, PermissionItem, } from "../../services/settingService";
+import { getAllAdmin,getSystemPermissions, getPermissions, grantPermissions, CreateAdmin,Permission, PermissionItem, } from "../../services/settingService";
 
 export default function AssignPermission() {
     const [admins, setAdmins] = useState<CreateAdmin[]>([]);
-    const [permissions, setPermissions] = useState<PermissionItem[]>([]);
+    const [permissions, setPermissions] = useState<Permission[]>([]);
+    // const [permissions, setPermissions] = useState<PermissionItem[]>([]);
 
     const [selectedAdmin, setSelectedAdmin] =
         useState<CreateAdmin | null>(null);
@@ -34,7 +35,8 @@ export default function AssignPermission() {
 
             const [adminsRes, permissionsRes] = await Promise.all([
                 getAllAdmin(),
-                getPermissions(),
+                getSystemPermissions(),
+                // getPermissions(),
             ]);
 
             console.log("permissionsRes", permissionsRes);
@@ -202,7 +204,8 @@ export default function AssignPermission() {
                         {permissions.map((item) => (
                             
                             <Box
-                                key={item.permission.id}
+                                 key={item.id}
+                                // key={item.permission.id}
                                 mb={2}
                             >
                                 <Stack
@@ -212,11 +215,13 @@ export default function AssignPermission() {
                                 >
                                     <Checkbox
                                         checked={selectedPermissions.includes(
-                                            item.permission.id
+                                             item.id
+                                            // item.permission.id
                                         )}
                                         onChange={() =>
                                             handlePermissionToggle(
-                                                item.permission.id
+                                                 item.id
+                                                // item.permission.id
                                             )
                                         }
                                     />
@@ -232,7 +237,8 @@ export default function AssignPermission() {
                                             }
                                         >
                                             {
-                                                item.permission.name
+                                                 item.name
+                                                // item.permission.name
                                             }
                                         </Typography>
 
@@ -241,14 +247,16 @@ export default function AssignPermission() {
                                             color="text.secondary"
                                         >
                                             {
-                                                item.permission.description
+                                                item.description
+                                                // item.permission.description
                                             }
                                         </Typography>
                                     </Box>
 
                                     <Chip
                                         label={
-                                            item.permission.code
+                                             item.code
+                                            // item.permission.code
                                         }
                                         size="small"
                                         color="primary"

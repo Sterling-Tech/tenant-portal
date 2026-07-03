@@ -378,7 +378,40 @@ export interface VendorPermissions {
     is_active: boolean;
     is_verified: boolean;
 }
+export interface VendorT {
+  id: number;
+  email: string;
+  business_name: string;
+  account_status: string;
+  hierachy: string;
+}
 
+export interface FundingRequest {
+  id: number;
+  transaction_ref: string;
+  vendor: VendorT;
+  amount: string;
+  status: "pending" | "approved" | "rejected";
+  request_time: string;
+}
+
+export interface FundingRequestResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: FundingRequest[];
+}
+
+export interface FundingRequestParams {
+  page?: number;
+  search?: string;
+  ordering?: string;
+  status?: string;
+}
+export interface FundingOperationPayload {
+    funding_request: number;
+    action: "approve" | "reject";
+}
 const buildQuery = (params?: Record<string, unknown>) => {
     if (!params || Object.keys(params).length === 0) return '';
     const query = new URLSearchParams();
@@ -592,3 +625,39 @@ export const updateVendorAdmin = (id: string, payload: Partial<VendorAdminProfil
 export const deleteVendorAdmin = (id: string) =>
     del<void>(`/vendors/vendor-admins/${id}/`);
 
+
+export const getFundingRequests = (
+    params?: FundingRequestParams
+) => {
+
+    const query = new URLSearchParams();
+
+    if (params?.page)
+        query.append("page", String(params.page));
+
+    if (params?.search)
+        query.append("search", params.search);
+
+    if (params?.ordering)
+        query.append("ordering", params.ordering);
+
+    if (params?.status)
+        query.append("status", params.status);
+
+    return get<FundingRequestResponse>(
+        `/vendor/request-funding/${
+            query.toString()
+                ? `?${query}`
+                : ""
+        }`
+    );
+};
+
+export const fundingOperation = (
+    payload: FundingOperationPayload
+) => {
+    return put(
+        "/vendor/funding/ops/",
+        payload
+    );
+};

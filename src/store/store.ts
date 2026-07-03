@@ -6,6 +6,7 @@ import walletReducer from './slices/walletSlice';
 import notificationReducer from './slices/notificationSlice';
 import posReducer from './slices/posSlice';
 import agentReducer from './slices/agentSlice';
+import permissionReducer from './slices/permissionSlice';
 
 export const store = configureStore({
     reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
         notification: notificationReducer,
         pos: posReducer,
         agent: agentReducer,
+        permissions: permissionReducer,
     },
 });
 

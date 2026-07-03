@@ -21,7 +21,9 @@ import {
   DialogContent,
   DialogActions,
   Pagination,
-  MenuItem, Snackbar, Alert
+  MenuItem, Snackbar, Alert,
+  Tab,TableContainer, 
+    TablePagination, Tabs,
 } from "@mui/material";
 import {
   Refresh,
@@ -30,6 +32,10 @@ import {
   AccountBalanceWallet,
   BarChart,
 } from "@mui/icons-material";
+import {
+   Assessment, Close, Download, Receipt,
+    Refresh as RefreshIcon, Search as SearchIcon, TrendingDown, TrendingUp,
+} from '@mui/icons-material';
 import { useTenants } from "../../hooks/useTenants";
 import { fetchTransactions, fetchVendors, fundVendorWallet, Ledger, PaginatedLedgerResponse, PaginatedVendorResponse, searchVendors, Vendor } from "../../services/vendorService";
 import { useOrgWallets } from "../../hooks/useOrgWallets";
@@ -70,12 +76,29 @@ const VendorTransactions: React.FC = () => {
   const today = new Date();
   const past = new Date();
   past.setDate(today.getDate() - 14);
+  
+  //new
+    const oneYearAgo = new Date(); oneYearAgo.setFullYear(today.getFullYear() - 1);
+    const fmt = (d: Date) => d.toISOString().split('T')[0];
 
   const format = (d: Date) => d.toISOString().split("T")[0];
   const [startDate, setStartDate] = useState(format(past));
   const tomorrow = new Date();
   tomorrow.setDate(today.getDate() + 1);
 
+   // ── Generate Report dialog ───────────────────────────────────────────────────
+    const [reportOpen, setReportOpen] = useState(false);
+    const [generating, setGenerating] = useState(false);
+    const [reportError, setReportError] = useState<string | null>(null);
+    const [reportForm, setReportForm] = useState({
+        start_date: fmt(oneYearAgo),
+        end_date: fmt(tomorrow),
+        purpose: 'all',
+        status: 'all',
+        direction: 'all',
+        // ── CHANGED: was "transaction_ref", now "vendor" search ──────────────────
+        vendor: '',
+    });
   type AlertType = "success" | "error" | "info" | "warning";
 
   const [alert, setAlert] = useState<{
@@ -348,6 +371,165 @@ const VendorTransactions: React.FC = () => {
     const index = name.charCodeAt(0) % colors.length;
     return colors[index];
   };
+
+// ── Fetch ALL pages for the report (loops through pagination) ────────────────
+    // const fetchAllForReport = async (params: typeof reportForm): Promise<Transaction[]> => {
+    // };
+  // ─────────────────────────────────────────────────────────────────────────────
+    // GENERATE REPORT — Excel template with required headers
+    // Headers: Date | Vendor | Reference | account_number | Status | Reversal | Credit | Date | closing_balance
+    // ─────────────────────────────────────────────────────────────────────────────
+    // const handleGenerateReport = async () => {
+    //     setGenerating(true); setReportError(null);
+    //     try {
+    //         // 1. Fetch all pages
+    //         let allTx = await fetchAllForReport(reportForm);
+
+    //         // 2. Client-side filters
+    //         if (reportForm.vendor.trim()) {
+    //             const v = reportForm.vendor.trim().toLowerCase();
+    //             allTx = allTx.filter(tx => tx.org_name.toLowerCase().includes(v));
+    //         }
+    //         if (reportForm.status !== 'all') {
+    //             allTx = allTx.filter(tx => tx.status === reportForm.status);
+    //         }
+    //         if (reportForm.direction !== 'all') {
+    //             allTx = allTx.filter(tx => tx.direction === reportForm.direction);
+    //         }
+    //         if (reportForm.purpose !== 'all') {
+    //             allTx = allTx.filter(tx => tx.category.toLowerCase().includes(reportForm.purpose.replace('_', ' ')));
+    //         }
+
+    //         if (allTx.length === 0) {
+    //             setReportError('No transactions match the selected filters. Try adjusting your criteria.');
+    //             return;
+    //         }
+
+    //         // 3. Build the Excel sheet with the required column layout
+    //         //    Required columns: Date | Vendor | Reference | account_number | Status | Reversal | Credit | Date | closing_balance
+
+    //         // ── Meta info rows ──
+    //         const meta = [
+    //             ['TRANSACTION REPORT'],
+    //             [],
+    //             ['Period',          `${reportForm.start_date}  →  ${reportForm.end_date}`],
+    //             ['Generated',       new Date().toLocaleString()],
+    //             ['Vendor Filter',   reportForm.vendor.trim() || 'All Vendors'],
+    //             ['Purpose',         PURPOSE_OPTIONS.find(p => p.value === reportForm.purpose)?.label || 'All'],
+    //             ['Status',          reportForm.status === 'all' ? 'All' : reportForm.status],
+    //             ['Type',            reportForm.direction === 'all' ? 'Credit & Debit' : reportForm.direction],
+    //             ['Total Records',   allTx.length],
+    //             [],
+    //         ];
+
+    //         // ── Column header row (exact header names as requested) ──
+    //         const colHeaders = [
+    //             'Date',
+    //             'Vendor',
+    //             'Reference',
+    //             'account_number',
+    //             'Status',
+    //             'Reversal',
+    //             'Credit',
+    //             'Date',           // second Date column — closing date / settlement date
+    //             'closing_balance',
+    //         ];
+
+    //         // ── Data rows ──
+    //         const dataRows = allTx.map((tx) => [
+    //             formatDateTime(tx.created_at),                            // Date
+    //             tx.org_name || '',                                         // Vendor
+    //             tx.reference || '',                                        // Reference
+    //             tx.account_number || '',                                   // account_number
+    //             tx.status?.toUpperCase() || '',                            // Status
+    //             tx.reversal || 'No',                                       // Reversal
+    //             tx.direction === 'credit'
+    //                 ? tx.value                                             // Credit (amount if credit)
+    //                 : '',                                                   // blank if debit
+    //             formatDateTime(tx.created_at),                            // Date (closing/settlement)
+    //             tx.closing_balance !== undefined ? tx.closing_balance : '', // closing_balance
+    //         ]);
+
+    //         // ── Summary rows ──
+    //         const totalCredit = allTx.filter(t => t.direction === 'credit').reduce((s, t) => s + t.value, 0);
+    //         const summary = [
+    //             [],
+    //             ['', '', '', '', '', '', '', '', ''],
+    //             ['SUMMARY', '', '', '', '', '', '', '', ''],
+    //             ['Total Transactions',  allTx.length,  '', '', '', '', '', '', ''],
+    //             ['Total Credit Amount', '',             '', '', '', '', totalCredit, '', ''],
+    //             ['Successful',          allTx.filter(t => t.status === 'success').length, '', '', '', '', '', '', ''],
+    //             ['Pending',             allTx.filter(t => t.status === 'pending').length,  '', '', '', '', '', '', ''],
+    //             ['Failed',              allTx.filter(t => t.status === 'failed').length,   '', '', '', '', '', '', ''],
+    //         ];
+
+    //         // 4. Assemble worksheet
+    //         const wsData = [...meta, colHeaders, ...dataRows, ...summary];
+    //         const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    //         // Column widths
+    //         ws['!cols'] = [
+    //             { wch: 22 }, // Date
+    //             { wch: 28 }, // Vendor
+    //             { wch: 40 }, // Reference
+    //             { wch: 18 }, // account_number
+    //             { wch: 12 }, // Status
+    //             { wch: 10 }, // Reversal
+    //             { wch: 18 }, // Credit
+    //             { wch: 22 }, // Date (closing)
+    //             { wch: 20 }, // closing_balance
+    //         ];
+
+    //         // Merge title cell across all 9 columns
+    //         ws['!merges'] = [
+    //             { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+    //         ];
+
+    //         // 5. Second sheet: clean Summary
+    //         const summarySheetData = [
+    //             ['TRANSACTION REPORT — SUMMARY'],
+    //             [],
+    //             ['Date Range',          `${reportForm.start_date} to ${reportForm.end_date}`],
+    //             ['Vendor Filter',       reportForm.vendor.trim() || 'All Vendors'],
+    //             ['Purpose',             PURPOSE_OPTIONS.find(p => p.value === reportForm.purpose)?.label || 'All'],
+    //             ['Status Filter',       reportForm.status === 'all' ? 'All' : reportForm.status],
+    //             ['Generated At',        new Date().toLocaleString()],
+    //             [],
+    //             ['Metric',              'Value'],
+    //             ['Total Records',       allTx.length],
+    //             ['Total Credit',        totalCredit],
+    //             ['Successful',          allTx.filter(t => t.status === 'success').length],
+    //             ['Pending',             allTx.filter(t => t.status === 'pending').length],
+    //             ['Failed',              allTx.filter(t => t.status === 'failed').length],
+    //         ];
+    //         const wsSummary = XLSX.utils.aoa_to_sheet(summarySheetData);
+    //         wsSummary['!cols'] = [{ wch: 26 }, { wch: 36 }];
+    //         wsSummary['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
+
+    //         // 6. Build workbook & download
+    //         const wb = XLSX.utils.book_new();
+    //         XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+    //         XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+    //         const fileName = `transaction-report-${reportForm.start_date}-to-${reportForm.end_date}.xlsx`;
+    //         XLSX.writeFile(wb, fileName);
+
+    //         setSuccess(`✓ Report generated — ${allTx.length} transactions exported`);
+    //         setReportOpen(false);
+    //     } catch (err: any) {
+    //         setReportError(err?.message || 'Failed to generate report. Please try again.');
+    //     } finally {
+    //         setGenerating(false);
+    //     }
+    // };
+
+    // const resetReportForm = () => {
+    //     setReportForm({ start_date: fmt(oneYearAgo), end_date: fmt(tomorrow), purpose: 'all', status: 'all', direction: 'all', vendor: '' });
+    //     setReportError(null);
+    // };
+
+    
+
   return (
     <Box
       // /p={2}
@@ -382,7 +564,7 @@ const VendorTransactions: React.FC = () => {
             Export CSV
           </Button> */}
           {/* <Button size="small" onClick={() => setOpenFund(true)} sx={{ height: 36, textTransform: "none", borderRadius: 2 }} variant="contained">
-            + Fund Wallet
+            + Generate Report
           </Button> */}
         </Stack>
       </Stack>
@@ -980,6 +1162,155 @@ const VendorTransactions: React.FC = () => {
           {alert.message}
         </Alert>
       </Snackbar>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+                GENERATE REPORT DIALOG
+            ══════════════════════════════════════════════════════════════════════ */}
+            {/* <Dialog open={reportOpen} onClose={() => { if (!generating) setReportOpen(false); }} maxWidth="sm" fullWidth
+                PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
+
+              
+                <Box sx={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', px: 3, py: 2.5, color: '#fff' }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                            <Assessment sx={{ fontSize: 26 }} />
+                            <Box>
+                                <Typography variant="h6" fontWeight={700} color="#fff">Generate Report</Typography>
+                                
+                            </Box>
+                        </Stack>
+                        <IconButton onClick={() => { if (!generating) setReportOpen(false); }} size="small" sx={{ color: '#93c5fd', '&:hover': { color: '#fff' } }}>
+                            <Close fontSize="small" />
+                        </IconButton>
+                    </Stack>
+                </Box>
+
+                <DialogContent sx={{ pt: 3, pb: 1 }}>
+                    {reportError && (
+                        <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2 }} onClose={() => setReportError(null)}>
+                            {reportError}
+                        </Alert>
+                    )}
+
+                    <Grid container spacing={2.5}>
+                        
+                        <Grid item xs={12} md={6}>
+                            <TextField fullWidth type="date" label="Start Date" value={reportForm.start_date}
+                                onChange={e => setReportForm(p => ({ ...p, start_date: e.target.value }))}
+                                InputLabelProps={{ shrink: true }}
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }} />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <TextField fullWidth type="date" label="End Date" value={reportForm.end_date}
+                                onChange={e => setReportForm(p => ({ ...p, end_date: e.target.value }))}
+                                InputLabelProps={{ shrink: true }}
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }} />
+                        </Grid>
+
+                        
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="Vendor"
+                                placeholder="Filter by vendor name…"
+                                value={reportForm.vendor}
+                                onChange={e => setReportForm(p => ({ ...p, vendor: e.target.value }))}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>
+                                    ),
+                                }}
+                                helperText="Leave empty to include all vendors"
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }}
+                            />
+                        </Grid>
+
+                        
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }}>
+                                <InputLabel>Purpose</InputLabel>
+                                <Select value={reportForm.purpose} label="Purpose" onChange={e => setReportForm(p => ({ ...p, purpose: e.target.value }))}>
+                                    {PURPOSE_OPTIONS.map(o => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+
+                      
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }}>
+                                <InputLabel>Status</InputLabel>
+                                <Select value={reportForm.status} label="Status" onChange={e => setReportForm(p => ({ ...p, status: e.target.value }))}>
+                                    <MenuItem value="all">All Status</MenuItem>
+                                    <MenuItem value="success">✓ Success</MenuItem>
+                                    <MenuItem value="pending">⏳ Pending</MenuItem>
+                                    <MenuItem value="failed">✕ Failed</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+
+                        
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }}>
+                                <InputLabel>Type</InputLabel>
+                                <Select value={reportForm.direction} label="Type" onChange={e => setReportForm(p => ({ ...p, direction: e.target.value }))}>
+                                    <MenuItem value="all">Credit &amp; Debit</MenuItem>
+                                    <MenuItem value="credit">Credit Only</MenuItem>
+                                    <MenuItem value="debit">Debit Only</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+
+                        <Grid item xs={12}>
+                            <Box sx={{ p: 2, bgcolor: '#f0f7ff', borderRadius: 2, border: '1px solid #bfdbfe' }}>
+                                <Typography variant="body2" color="primary.main" fontWeight={700} mb={1}>
+                                    Columns that will be exported in the report:
+                                </Typography>
+                                <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                                    {['Date', 'Vendor', 'Reference', 'account_number', 'Status', 'Reversal', 'Credit', 'Date', 'closing_balance'].map((col, i) => (
+                                        <Chip key={`${col}-${i}`} label={col} size="small" variant="outlined"
+                                            sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 600, borderColor: '#93c5fd', color: '#1e3a8a' }} />
+                                    ))}
+                                </Stack>
+                                
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+
+             
+                <Box sx={{ px: 3, py: 2.5, bgcolor: '#f8faff', borderTop: '1px solid #e8edf5' }}>
+                    <Stack direction="row" spacing={1.5} justifyContent="space-between" alignItems="center">
+                        <Button variant="text" onClick={resetReportForm} disabled={generating}
+                            sx={{ textTransform: 'none', color: '#64748b', borderRadius: 2 }}>
+                            Reset Filters
+                        </Button>
+                        <Stack direction="row" spacing={1.5}>
+                            <Button variant="outlined" onClick={() => setReportOpen(false)} disabled={generating}
+                                sx={{ textTransform: 'none', borderRadius: 2, borderColor: '#cbd5e1', color: '#475569' }}>
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="contained"
+                                onClick={handleGenerateReport}
+                                disabled={generating || !reportForm.start_date || !reportForm.end_date}
+                                sx={{ textTransform: 'none', borderRadius: 2, bgcolor: '#1e3a8a', '&:hover': { bgcolor: '#1e40af' }, fontWeight: 700, minWidth: 170 }}
+                            >
+                                {generating ? (
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <CircularProgress size={16} color="inherit" />
+                                        <span>Generating…</span>
+                                    </Stack>
+                                ) : (
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <Assessment fontSize="small" />
+                                        <span>Generate Report</span>
+                                    </Stack>
+                                )}
+                            </Button>
+                        </Stack>
+                    </Stack>
+                </Box>
+            </Dialog> */}
     </Box>
   );
 };

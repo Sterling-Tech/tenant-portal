@@ -26,8 +26,12 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../store/store';
 import { extractAuthPayload, setAuth } from '../../store/slices/authSlice';
-import type { User } from '../../store/slices/authSlice';
 import { toast } from 'react-toastify'
+import { loginUser, confirmOtp } from "../../services/authService";
+import { viewGroup } from '../../services/roleService';
+import { setPermissions } from '../../store/slices/permissionSlice';
+
+
 
 interface LoginFormData {
     email: string;
@@ -156,36 +160,7 @@ const Login: React.FC = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch(
-                "http://188.166.161.13:8061/user/login/",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(formData),
-                }
-            );
-
-            const contentType = response.headers.get("content-type");
-
-            if (!contentType?.includes("application/json")) {
-                const text = await response.text();
-
-                console.error("Non-JSON response:", {
-                    status: response.status,
-                    body: text,
-                });
-
-                toast.error(
-                    "Server returned an invalid response format."
-                );
-
-                return;
-            }
-
-            const data = await response.json();
-
+            const response = await loginUser(formData);
             // 2FA enabled → OTP sent
             if (response.status === 202) {
                 setLoginCredentials({
@@ -204,8 +179,8 @@ const Login: React.FC = () => {
             // Login failed
             if (!response.ok) {
                 toast.error(
-                    data.message ||
-                    data.detail ||
+                    response.data.message ||
+                    response.data.detail ||
                     "Login failed. Please try again."
                 );
                 return;
@@ -213,7 +188,7 @@ const Login: React.FC = () => {
 
             // Login successful (200)
             const { user, token, refreshToken } =
-                extractAuthPayload(data);
+                extractAuthPayload(response.data);
 
             if (!token) {
                 toast.error(
@@ -229,7 +204,15 @@ const Login: React.FC = () => {
                     user,
                 })
             );
+            // Fetch user group details if available
+            const group = await viewGroup(user.group.id);
+            const permissions =
+                group.permissions.map(
+                    p => p.permission.code
+                );
 
+            dispatch(setPermissions(permissions));
+            
             console.log(
                 "Login successful, redirecting to /tenants/admin"
             );
@@ -250,34 +233,21 @@ const Login: React.FC = () => {
     const handleConfirmOtp = async () => {
         try {
             setOtpLoading(true);
-
-            const response = await fetch(
-                "http://188.166.161.13:8061/user/login/confirm-otp/",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        email: pendingEmail,
-                        otp: otpValue,
-                    }),
-                }
-            );
-
-            const data = await response.json();
-
+            const response = await confirmOtp({
+                email: pendingEmail,
+                otp: otpValue,
+            });
             if (!response.ok) {
                 toast.error(
-                    data.message ||
-                    data.detail ||
+                    response.data.message ||
+                    response.data.detail ||
                     "Invalid OTP"
                 );
                 return;
             }
 
             const { user, token, refreshToken } =
-                extractAuthPayload(data);
+                extractAuthPayload(response.data);
 
             dispatch(
                 setAuth({
@@ -307,27 +277,12 @@ const Login: React.FC = () => {
         try {
             setResendingOtp(true);
             setOtpMessage("");
-
-            const response = await fetch(
-                "http://188.166.161.13:8061/user/login/",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type":
-                            "application/json",
-                    },
-                    body: JSON.stringify(
-                        loginCredentials
-                    ),
-                }
-            );
-
-            const data = await response.json();
+            const response = await loginUser(formData)
 
             if (response.status !== 202) {
                 toast.error(
-                    data.message ||
-                    data.detail ||
+                    response.data.message ||
+                    response.data.detail ||
                     "Unable to resend OTP"
                 );
                 return;
