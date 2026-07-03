@@ -15,16 +15,37 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-export type StatusFilter = "All" | "Pending" | "Approved" | "Rejected";
+// export interface RefundFiltersState {
+//   search: string;
 
+//   status: "All" | "success" | "pending" | "failed";
+
+//   month: "All" | "3" | "4" | "5" | "6" | "7";
+
+//   year: "All" | "2026";
+
+//   arrears_code:
+//     | "All"
+//     | "DEBMIG"
+//     | "DEBPCT"
+//     | "MAPDEF"
+//     | "MAPREA"
+//     | "MAPREF"
+//     | "MAPRER"
+//     | "RECCIP";
+
+//   email_delivered: "All" | "true" | "false";
+
+//   sms_sent: "All" | "true" | "false";
+// }
 export interface RefundFiltersState {
   search: string;
   status: StatusFilter;
-  month: string;   // "All" | "March" | "April" | "May" | "June"
-  year: string;     // "All" | "2026" | "2025"
-  arrearsCode: string;
-  emailDelivered: string;
-  smsSent: string;
+  month: MonthFilter;
+  year: YearFilter;
+  arrears_code: ArrearsFilter;
+  email_delivered: BooleanFilter;
+  sms_sent: BooleanFilter;
 }
 
 export interface RefundFiltersProps {
@@ -35,9 +56,51 @@ export interface RefundFiltersProps {
   activeCount: number;
 }
 
-const MONTHS = ["All", "March", "April", "May", "June"];
-const YEARS = ["All", "2026", "2025"];
-const STATUSES: StatusFilter[] = ["All", "Pending", "Approved", "Rejected"];
+interface FilterRadioGroupProps<T extends string> {
+  value: T;
+  options: readonly T[];
+  onChange: (value: T) => void;
+}
+
+function FilterRadioGroup<T extends string>({
+  value,
+  options,
+  onChange,
+}: FilterRadioGroupProps<T>) {
+  return (
+    <RadioGroup
+      value={value}
+      onChange={(e) => onChange(e.target.value as T)}
+    >
+      {options.map((option) => (
+        <FormControlLabel
+          key={option}
+          value={option}
+          control={<Radio size="small" sx={radioSx} />}
+          label={option}
+        />
+      ))}
+    </RadioGroup>
+  );
+}
+
+const MONTHS = ["All", "3", "4", "5", "6", "7",] as const;
+const STATUSES = ["All", "success", "pending", "failed",] as const;
+const YEARS = ["All", "2026", "2025", "2024", "2023"] as const;
+const ARREARS_CODES = ["DEBMIG", "DEBPCT", "MAPDEF", "MAPREA", "MAPREF", "MAPRER", "RECCIP",] as const;
+const BOOLEAN_OPTIONS = ["All", "true", "false",] as const;
+
+export type StatusFilter = typeof STATUSES[number];
+export type MonthFilter = typeof MONTHS[number];
+export type YearFilter = typeof YEARS[number];
+export type ArrearsFilter = typeof ARREARS_CODES[number];
+export type BooleanFilter = typeof BOOLEAN_OPTIONS[number];
+
+const radioSx = {
+  color: "#D0D5DD",
+  "&.Mui-checked": { color: "#3B5BDB" },
+  p: 0.6,
+};
 
 // ─── Collapsible filter group ─────────────────────────────────────────────────
 function FilterGroup({
@@ -88,12 +151,6 @@ export default function RefundFilters({
   function update<K extends keyof RefundFiltersState>(key: K, value: RefundFiltersState[K]) {
     onChange({ ...filters, [key]: value });
   }
-
-  const radioSx = {
-    color: "#D0D5DD",
-    "&.Mui-checked": { color: "#3B5BDB" },
-    p: 0.6,
-  };
 
   const labelSx = { fontSize: "0.86rem", color: "#3B5BDB" };
   const labelSxInactive = { fontSize: "0.86rem", color: "#475569" };
@@ -160,71 +217,56 @@ export default function RefundFilters({
         }}
       />
 
-      {/* By status */}
-      <FilterGroup title="By status" defaultOpen>
-        <RadioGroup value={filters.status} onChange={(e) => update("status", e.target.value as StatusFilter)}>
-          {STATUSES.map((s) => (
-            <FormControlLabel
-              key={s}
-              value={s}
-              control={<Radio size="small" sx={radioSx} />}
-              label={s}
-              sx={{ "& .MuiFormControlLabel-label": filters.status === s ? labelSx : labelSxInactive, mb: -0.5 }}
-            />
-          ))}
-        </RadioGroup>
+      <FilterGroup title="By Status" defaultOpen>
+        <FilterRadioGroup
+          value={filters.status}
+          options={STATUSES}
+          onChange={(value) => update("status", value)}
+        />
       </FilterGroup>
 
-      {/* By month */}
-      <FilterGroup title="By month" defaultOpen>
-        <RadioGroup value={filters.month} onChange={(e) => update("month", e.target.value)}>
-          {MONTHS.map((m) => (
-            <FormControlLabel
-              key={m}
-              value={m}
-              control={<Radio size="small" sx={radioSx} />}
-              label={m}
-              sx={{ "& .MuiFormControlLabel-label": filters.month === m ? labelSx : labelSxInactive, mb: -0.5 }}
-            />
-          ))}
-        </RadioGroup>
+      <FilterGroup title="By Month" defaultOpen>
+        <FilterRadioGroup
+          value={filters.month}
+          options={MONTHS}
+          onChange={(value) => update("month", value)}
+        />
       </FilterGroup>
 
-      {/* By year */}
-      <FilterGroup title="By year">
-        <RadioGroup value={filters.year} onChange={(e) => update("year", e.target.value)}>
-          {YEARS.map((y) => (
-            <FormControlLabel
-              key={y}
-              value={y}
-              control={<Radio size="small" sx={radioSx} />}
-              label={y}
-              sx={{ "& .MuiFormControlLabel-label": filters.year === y ? labelSx : labelSxInactive, mb: -0.5 }}
-            />
-          ))}
-        </RadioGroup>
+      <FilterGroup title="By Year">
+        <FilterRadioGroup
+          value={filters.year}
+          options={YEARS}
+          onChange={(value) => update("year", value)}
+        />
       </FilterGroup>
 
-      {/* By arrears code */}
-      <FilterGroup title="By arrears code" />
+      <FilterGroup title="By Arrears Code">
+        <FilterRadioGroup
+          value={filters.arrears_code}
+          options={ARREARS_CODES}
+          onChange={(value) => update("arrears_code", value)}
+        />
+      </FilterGroup>
 
-      {/* By email delivered */}
-      <FilterGroup title="By email delivered" />
+      <FilterGroup title="By Email Delivered">
+        <FilterRadioGroup
+          value={filters.email_delivered}
+          options={BOOLEAN_OPTIONS}
+          onChange={(value) => update("email_delivered", value)}
+        />
+      </FilterGroup>
 
-      {/* By sms sent */}
-      <Box sx={{ py: 1.5 }}>
-        <Box
-          sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
-        >
-          <Typography sx={{ fontWeight: 700, fontSize: "0.88rem", color: "#0D1B2A" }}>
-            By sms sent
-          </Typography>
-          <KeyboardArrowRightIcon sx={{ fontSize: 18, color: "#9AA4B2" }} />
-        </Box>
-      </Box>
+      <FilterGroup title="By SMS Sent">
+        <FilterRadioGroup
+          value={filters.sms_sent}
+          options={BOOLEAN_OPTIONS}
+          onChange={(value) => update("sms_sent", value)}
+        />
+      </FilterGroup>
 
       {/* Apply button */}
-      <Button
+      {/* <Button
         fullWidth
         variant="contained"
         onClick={onApply}
@@ -240,7 +282,7 @@ export default function RefundFilters({
         }}
       >
         Apply Filters
-      </Button>
+      </Button> */}
     </Box>
   );
 }

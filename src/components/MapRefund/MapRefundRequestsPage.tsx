@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Box } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
@@ -6,7 +6,11 @@ import RefundRequestsHeader from "./RefundRequestsHeader";
 import PipelineStatusBar from "./PipelineStatusBar";
 import RefundStatsCards, { RefundStats } from "./RefundStatsCards";
 import RefundFilters, { RefundFiltersState } from "./RefundFilters";
-import RefundRequestsTable, { RefundRequestRow } from "./RefundRequestsTable";
+import RefundRequestsTable, { RefundRequestRow, RefundStatus } from "./RefundRequestsTable";
+import { getRefundRequests, RefundRequest } from "../../services/mapRefundService";
+import { toast } from "react-toastify";
+import RefundDetailsDialog from "./RefundDetailsDialog";
+import AddRefundRequestDialog from "./AddRefundRequestDialog";
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const theme = createTheme({
@@ -25,32 +29,9 @@ const theme = createTheme({
 });
 
 // ─── Mock data — replace with API data ────────────────────────────────────────
-const MOCK_STATS: RefundStats = {
-  totalRequests: 2148,
-  approved: 1962,
-  pending: 36,
-  rejected: 150,
-  totalRefunded: "₦3.3M",
-  emailNotified: 1840,
-  smsNotified: 1605,
-};
 
-const MOCK_ROWS: RefundRequestRow[] = [
-  { id: "1", meterNumber: "0159006332445", account: "5846649755", customer: "Customer A", amount: "₦1,288.53", status: "Approved", reference: "RFD-2596690152106", arrearsCode: "MAPREF", emailSent: true,  smsSent: true,  createdAt: "Jun 20, 4:54 PM" },
-  { id: "2", meterNumber: "0163211033259", account: "5269057153", customer: "Customer B", amount: "₦734.36",   status: "Approved", reference: "RFD-1070798934847", arrearsCode: "MAPREF", emailSent: true,  smsSent: false, createdAt: "Jun 20, 4:54 PM" },
-  { id: "3", meterNumber: "0101220007518", account: "7223589898", customer: "Customer C", amount: "₦734.36",   status: "Pending",  reference: "RFD-3873820180182", arrearsCode: "MAPREA", emailSent: false, smsSent: false, createdAt: "Jun 20, 4:54 PM" },
-  { id: "4", meterNumber: "0163211036567", account: "1811616238", customer: "Customer D", amount: "₦734.36",   status: "Approved", reference: "RFD-3223990467259", arrearsCode: "MAPREF", emailSent: true,  smsSent: true,  createdAt: "Jun 20, 4:54 PM" },
-  { id: "5", meterNumber: "0163211115452", account: "7826499053", customer: "Customer E", amount: "₦734.36",   status: "Rejected", reference: "RFD-0436436835123", arrearsCode: "MAPRER", emailSent: true,  smsSent: false, createdAt: "Jun 20, 4:54 PM" },
-  { id: "6", meterNumber: "0101220035121", account: "7856929952", customer: "Customer F", amount: "₦734.36",   status: "Approved", reference: "RFD-1927429546582", arrearsCode: "MAPREF", emailSent: true,  smsSent: true,  createdAt: "Jun 20, 4:54 PM" },
-  { id: "7", meterNumber: "0101220009720", account: "1102754456", customer: "Customer G", amount: "₦734.36",   status: "Approved", reference: "RFD-5278531039237", arrearsCode: "MAPDEF", emailSent: true,  smsSent: true,  createdAt: "Jun 20, 4:54 PM" },
-  { id: "8", meterNumber: "0163211116211", account: "2629610934", customer: "Customer H", amount: "₦734.36",   status: "Pending",  reference: "RFD-5191014434871", arrearsCode: "MAPREF", emailSent: false, smsSent: false, createdAt: "Jun 20, 4:54 PM" },
-];
 
-const PAGE_SIZE = 10;
-const TOTAL_RESULTS = 2148;
-const TOTAL_PAGES = Math.ceil(TOTAL_RESULTS / PAGE_SIZE);
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function MapRefundRequestsPage() {
   const [period, setPeriod] = useState("June 2026");
   const [page, setPage] = useState(1);
@@ -59,17 +40,32 @@ export default function MapRefundRequestsPage() {
     status: "All",
     month: "All",
     year: "All",
-    arrearsCode: "",
-    emailDelivered: "",
-    smsSent: "",
+    arrears_code: "MAPREA",
+    email_delivered: "All",
+    sms_sent: "All",
   });
 
+  const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [selectedRefund, setSelectedRefund] = useState<RefundRequestRow | null>(null);
+  const [openViewDialog, setOpenViewDialog] = useState(false);
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const PAGE_SIZE = 10;
+
+  const totalPages = Math.ceil(
+    totalCount / PAGE_SIZE
+  );
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.status !== "All") count++;
     if (filters.month !== "All") count++;
     if (filters.year !== "All") count++;
-    if (filters.arrearsCode) count++;
+    if (filters.arrears_code) count++;
     return count || 4; // matches screenshot default of "4 active"
   }, [filters]);
 
@@ -81,10 +77,99 @@ export default function MapRefundRequestsPage() {
   function handleResetFilters() {
     setFilters({
       search: "", status: "All", month: "All", year: "All",
-      arrearsCode: "", emailDelivered: "", smsSent: "",
+      arrears_code: "MAPREA", email_delivered: "All", sms_sent: "All",
     });
   }
+  const loadRefundRequests = async () => {
+    console.log("Loading refund requests...");
+    try {
+      setLoading(true);
 
+      const response = await getRefundRequests({
+        page,
+        search: filters.search || undefined,
+        status:
+          filters.status === "All"
+            ? undefined
+            : filters.status.toLowerCase(),
+        month:
+          filters.month === "All"
+            ? undefined
+            : Number(filters.month),
+        year:
+          filters.year === "All"
+            ? undefined
+            : Number(filters.year),
+        arrears_code:
+          filters.arrears_code || undefined,
+        email_delivered:
+          filters.email_delivered === "All"
+            ? undefined
+            : filters.email_delivered === "true",
+        sms_sent:
+          filters.sms_sent === "All"
+            ? undefined
+            : filters.sms_sent === "true",
+        ordering: "-created_at",
+      });
+      setRefundRequests(response.results);
+      setTotalCount(response.count);
+    } catch (err: any) {
+      toast.error(
+        err.message ||
+        "Failed to load refund requests"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    console.log("useEffect fired");
+    loadRefundRequests();
+  }, [page, filters]);
+
+  const stats = useMemo(() => {
+    const success = refundRequests.filter(
+      r => r.status === "success"
+    ).length;
+
+    const pending = refundRequests.filter(
+      r => r.status === "pending"
+    ).length;
+
+    const failed = refundRequests.filter(
+      r => r.status === "failed"
+    ).length;
+
+    const refunded = refundRequests
+      .filter(r => r.status === "success")
+      .reduce(
+        (sum, r) => sum + Number(r.amount),
+        0
+      );
+
+    const email = refundRequests.filter(
+      r => r.email_delivered
+    ).length;
+
+    const sms = refundRequests.filter(
+      r => r.sms_sent
+    ).length;
+
+    return {
+      totalRequests: totalCount,
+      success,
+      pending,
+      failed,
+      totalRefunded: `₦${refunded.toLocaleString()}`,
+      email_delivered: email,
+      sms_sent: sms,
+    };
+  }, [refundRequests, totalCount]);
+
+  const createRefund = ()=>{
+    console.log('funded')
+  }
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: { xs: 2, md: 4 } }}>
@@ -96,7 +181,8 @@ export default function MapRefundRequestsPage() {
           onTriggerPipeline={() => console.log("Trigger pipeline")}
           onSendNotifications={() => console.log("Send notifications")}
           onUploadCsv={() => console.log("Upload CSV")}
-          onAddRefundRequest={() => console.log("Add refund request")}
+          // onAddRefundRequest={() => setOpenAddDialog(true)}
+          onAddRefundRequest={() => setAddOpen(true)}
         />
 
         {/* 2 — Pipeline status bar */}
@@ -111,7 +197,11 @@ export default function MapRefundRequestsPage() {
         />
 
         {/* 3 — Stats cards */}
-        <RefundStatsCards stats={MOCK_STATS} period={period} />
+        {/* <RefundStatsCards stats={MOCK_STATS} period={period} /> */}
+        <RefundStatsCards
+          stats={stats}
+          // period={period}
+        />
 
         {/* 4 — Filters + Table */}
         <Box sx={{ display: "flex", gap: 2.5, alignItems: "flex-start", flexDirection: { xs: "column", md: "row" } }}>
@@ -123,18 +213,58 @@ export default function MapRefundRequestsPage() {
             activeCount={activeFilterCount}
           />
           <RefundRequestsTable
-            rows={MOCK_ROWS}
-            totalRefundedThisPeriod={MOCK_STATS.totalRefunded}
-            approvedCount={MOCK_STATS.approved}
+            // rows={MOCK_ROWS}
+            rows={refundRequests.map((item) => {
+              const statusStr = item.status
+                ? item.status.charAt(0).toUpperCase() + item.status.slice(1)
+                : "Pending";
+              return {
+                id: item.id.toString(),
+                meterNumber: item.meter_number,
+                account: item.account_number,
+                customer: item.customer_name,
+                amount: `₦${Number(item.amount).toLocaleString()}`,
+                status: statusStr as RefundStatus,
+                reference: item.token,
+                arrearsCode: item.arrears_code,
+                emailSent: item.email_delivered,
+                smsSent: item.sms_sent,
+                createdAt: new Date(item.created_at).toLocaleString(),
+              } as RefundRequestRow;
+            })}
+            totalRefundedThisPeriod={stats.totalRefunded}
+            approvedCount={stats.success}
             period={period}
             page={page}
-            totalPages={TOTAL_PAGES}
-            totalResults={TOTAL_RESULTS}
+            totalPages={totalPages}
+            totalResults={totalCount}
             pageSize={PAGE_SIZE}
             onPageChange={setPage}
-            onView={(row) => console.log("View", row)}
+            // onView={(row) => {
+            //   setSelectedRefund(row);
+            //   setOpenViewDialog(true);
+            // }}
+            onView={(row) => {
+              setSelectedRefund(row);
+              setDetailsOpen(true);
+            }}
             onNotify={(row) => console.log("Notify", row)}
             onViewAll={() => console.log("View all requests")}
+          />
+
+          <RefundDetailsDialog
+            // open={openViewDialog}
+            open={detailsOpen}
+            refund={selectedRefund}
+            onClose={() => {
+              setDetailsOpen(false);
+              setSelectedRefund(null);
+            }}
+          />
+          <AddRefundRequestDialog
+            open={addOpen}
+            onClose={() => setAddOpen(false)}
+            onSubmit={createRefund}
           />
         </Box>
       </Box>

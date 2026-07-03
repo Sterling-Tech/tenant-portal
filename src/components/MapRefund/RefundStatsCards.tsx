@@ -1,5 +1,5 @@
-import React from "react";
-import { Box, Card, Typography } from "@mui/material";
+import React, { useEffect } from "react";
+import { Box, Card, Skeleton, Typography } from "@mui/material";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
@@ -7,23 +7,26 @@ import CloseIcon from "@mui/icons-material/Close";
 import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import SmsOutlinedIcon from "@mui/icons-material/SmsOutlined";
+import { getStats, RefundStatsResponse } from "../../services/mapRefundService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface RefundStats {
   totalRequests: number;
-  approved: number;
+  success: number;
   pending: number;
-  rejected: number;
+  failed: number;
   totalRefunded: string;     // pre-formatted, e.g. "₦3.3M"
-  emailNotified: number;
-  smsNotified: number;
+  email_delivered: number;
+  sms_sent: number;
 }
 
-export interface RefundStatsCardsProps {
+export interface RefundStatsCardsP {
   stats: RefundStats;
-  period: string; // e.g. "June 2026" -> used for "This period" sublabel context if needed
+  // period: string; // e.g. "June 2026" -> used for "This period" sublabel context if needed
 }
-
+export interface RefundStatsCardsProps {
+  stats: RefundStatsResponse;
+}
 // ─── Single card ──────────────────────────────────────────────────────────────
 interface StatCardConfig {
   key: string;
@@ -102,29 +105,148 @@ function StatCard({ cfg }: { cfg: StatCardConfig }) {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function RefundStatsCards({ stats }: RefundStatsCardsProps) {
-  const approvedPct = stats.totalRequests > 0 ? ((stats.approved / stats.totalRequests) * 100).toFixed(1) : "0.0";
-  const pendingPct = stats.totalRequests > 0 ? ((stats.pending / stats.totalRequests) * 100).toFixed(1) : "0.0";
-  const rejectedPct = stats.totalRequests > 0 ? ((stats.rejected / stats.totalRequests) * 100).toFixed(1) : "0.0";
-  const emailPct = stats.totalRequests > 0 ? ((stats.emailNotified / stats.totalRequests) * 100).toFixed(1) : "0.0";
-  const smsPct = stats.totalRequests > 0 ? ((stats.smsNotified / stats.totalRequests) * 100).toFixed(1) : "0.0";
+export default function RefundStatsCards({ stats }: RefundStatsCardsP) {
+  const [statsData, setStatsData] = React.useState<RefundStatsResponse | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  //const approvedPct = stats.totalRequests > 0 ? ((stats.success / stats.totalRequests) * 100).toFixed(1) : "0.0";
+  //const pendingPct = stats.totalRequests > 0 ? ((stats.pending / stats.totalRequests) * 100).toFixed(1) : "0.0";
+  //const rejectedPct = stats.totalRequests > 0 ? ((stats.failed / stats.totalRequests) * 100).toFixed(1) : "0.0";
+  //const emailPct = stats.totalRequests > 0 ? ((stats.email_delivered / stats.totalRequests) * 100).toFixed(1) : "0.0";
+  //const smsPct = stats.totalRequests > 0 ? ((stats.sms_sent / stats.totalRequests) * 100).toFixed(1) : "0.0";
+
+
+
+  // const cards: StatCardConfig[] = [
+  //   {
+  //     key: "total",
+  //     label: "Total Requests",
+  //     value: stats.totalRequests.toLocaleString(),
+  //     sublabel: "This period",
+  //     accent: "#3B5BDB",
+  //     iconBg: "#EAEEFD",
+  //     iconColor: "#3B5BDB",
+  //     icon: <DescriptionOutlinedIcon sx={{ fontSize: 17 }} />,
+  //   },
+  //   {
+  //     key: "Successful",
+  //     label: "Successful",
+  //     value: stats.success.toLocaleString(),
+  //     sublabel: `${approvedPct}%`,
+  //     accent: "#1A9D5C",
+  //     iconBg: "#E5F7ED",
+  //     iconColor: "#1A9D5C",
+  //     icon: <CheckCircleOutlineIcon sx={{ fontSize: 17 }} />,
+  //   },
+  //   {
+  //     key: "pending",
+  //     label: "Pending",
+  //     value: stats.pending.toLocaleString(),
+  //     sublabel: `${pendingPct}%`,
+  //     accent: "#D98C0F",
+  //     iconBg: "#FDF2E2",
+  //     iconColor: "#D98C0F",
+  //     icon: <HourglassEmptyIcon sx={{ fontSize: 17 }} />,
+  //   },
+  //   {
+  //     key: "failed",
+  //     label: "Failed",
+  //     value: stats.failed.toLocaleString(),
+  //     sublabel: `${rejectedPct}%`,
+  //     accent: "#D9362F",
+  //     iconBg: "#FCEAE9",
+  //     iconColor: "#D9362F",
+  //     icon: <CloseIcon sx={{ fontSize: 17 }} />,
+  //   },
+  //   {
+  //     key: "refunded",
+  //     label: "Total Refunded",
+  //     value: stats.totalRefunded,
+  //     sublabel: "Approved value",
+  //     accent: "#7C4DD9",
+  //     iconBg: "#F1EAFB",
+  //     iconColor: "#7C4DD9",
+  //     icon: <PaidOutlinedIcon sx={{ fontSize: 17 }} />,
+  //   },
+  //   {
+  //     key: "email",
+  //     label: "Email Notified",
+  //     value: stats.email_delivered.toLocaleString(),
+  //     sublabel: `${emailPct}%`,
+  //     accent: "#0F8B8D",
+  //     iconBg: "#E3F4F4",
+  //     iconColor: "#0F8B8D",
+  //     icon: <MailOutlineIcon sx={{ fontSize: 17 }} />,
+  //   },
+  //   {
+  //     key: "sms",
+  //     label: "SMS Notified",
+  //     value: stats.sms_sent.toLocaleString(),
+  //     sublabel: `${smsPct}%`,
+  //     accent: "#13A89E",
+  //     iconBg: "#E1F6F4",
+  //     iconColor: "#13A89E",
+  //     icon: <SmsOutlinedIcon sx={{ fontSize: 17 }} />,
+  //   },
+  // ];
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+
+        const response = await getStats();
+        console.log("API Response:", response);
+        setStatsData(response);
+      } catch (error) {
+        console.error("Failed to fetch refund stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <Box display="flex" gap={2}>
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton
+            key={i}
+            variant="rounded"
+            width={220}
+            height={140}
+          />
+        ))}
+      </Box>
+    );
+  }
+
+  if (!statsData) {
+    return null;
+  }
+
+  const pendingRate =
+    statsData.total > 0
+      ? ((statsData.pending / statsData.total) * 100).toFixed(1)
+      : "0";
 
   const cards: StatCardConfig[] = [
     {
       key: "total",
       label: "Total Requests",
-      value: stats.totalRequests.toLocaleString(),
-      sublabel: "This period",
+      value: statsData?.total.toLocaleString() || "0",
+      sublabel: statsData?.period || "This period",
       accent: "#3B5BDB",
       iconBg: "#EAEEFD",
       iconColor: "#3B5BDB",
       icon: <DescriptionOutlinedIcon sx={{ fontSize: 17 }} />,
     },
     {
-      key: "approved",
-      label: "Approved",
-      value: stats.approved.toLocaleString(),
-      sublabel: `${approvedPct}%`,
+      key: "success",
+      label: "Successful",
+      value: statsData?.success.toLocaleString() || "0",
+      sublabel: `${statsData?.success_rate}%`,
       accent: "#1A9D5C",
       iconBg: "#E5F7ED",
       iconColor: "#1A9D5C",
@@ -133,18 +255,18 @@ export default function RefundStatsCards({ stats }: RefundStatsCardsProps) {
     {
       key: "pending",
       label: "Pending",
-      value: stats.pending.toLocaleString(),
-      sublabel: `${pendingPct}%`,
+      value: statsData?.pending.toLocaleString() || "0",
+      sublabel: `${pendingRate}%`,
       accent: "#D98C0F",
       iconBg: "#FDF2E2",
       iconColor: "#D98C0F",
       icon: <HourglassEmptyIcon sx={{ fontSize: 17 }} />,
     },
     {
-      key: "rejected",
-      label: "Rejected",
-      value: stats.rejected.toLocaleString(),
-      sublabel: `${rejectedPct}%`,
+      key: "failed",
+      label: "Failed",
+      value: statsData?.failed.toLocaleString() || "0",
+      sublabel: `${statsData?.failure_rate}%`,
       accent: "#D9362F",
       iconBg: "#FCEAE9",
       iconColor: "#D9362F",
@@ -159,26 +281,6 @@ export default function RefundStatsCards({ stats }: RefundStatsCardsProps) {
       iconBg: "#F1EAFB",
       iconColor: "#7C4DD9",
       icon: <PaidOutlinedIcon sx={{ fontSize: 17 }} />,
-    },
-    {
-      key: "email",
-      label: "Email Notified",
-      value: stats.emailNotified.toLocaleString(),
-      sublabel: `${emailPct}%`,
-      accent: "#0F8B8D",
-      iconBg: "#E3F4F4",
-      iconColor: "#0F8B8D",
-      icon: <MailOutlineIcon sx={{ fontSize: 17 }} />,
-    },
-    {
-      key: "sms",
-      label: "SMS Notified",
-      value: stats.smsNotified.toLocaleString(),
-      sublabel: `${smsPct}%`,
-      accent: "#13A89E",
-      iconBg: "#E1F6F4",
-      iconColor: "#13A89E",
-      icon: <SmsOutlinedIcon sx={{ fontSize: 17 }} />,
     },
   ];
 
