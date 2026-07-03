@@ -25,6 +25,7 @@ import BulkAssign from './pages/ReEngineering/BulkAssign';
 import BulkEngineering from './pages/ReEngineering/BulkEngineering';
 import MapRefund from './pages/Customer/MapRefund';
 import GroupManagement from './pages/Roles/Roles';
+import FundingRequest from './pages/Vendors/FundingRequest'
 // Enhanced theme
 const theme = createTheme({
     palette: {
@@ -253,6 +254,17 @@ const App: React.FC = () => {
                                         </Layout>
                                     </ProtectedRoute>
                                 }
+                            />
+                            <Route 
+                                path='/vendors/funding'
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <FundingRequest />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            
                             />
                             <Route path="/" element={<Navigate to="/tenants/admin" replace />} />
                             <Route path="/dashboard" element={<Navigate to="/tenants/admin" replace />} />

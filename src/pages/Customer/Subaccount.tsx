@@ -421,7 +421,7 @@ export default function DebtManager() {
         <Grid container spacing={3} ref={detailsRef}>
 
           {/* LEFT */}
-          <Grid item xs={12} md={8}>
+          <Grid item xs={12} md={12}>
             <Card sx={{ borderRadius: 4, overflow: "hidden" }}>
 
               {/* HEADER */}
@@ -750,7 +750,7 @@ export default function DebtManager() {
           </Grid>
 
           {/* RIGHT */}
-          <Grid item xs={12} md={4}>
+          {/* <Grid item xs={12} md={4}>
             <Card sx={{ p: 3, borderRadius: 4 }}>
               <Typography fontWeight={800} mb={1}>
                 Create New Debt Record
@@ -1030,7 +1030,7 @@ export default function DebtManager() {
                 {creating ? <LinearProgress /> : "+ Create Debt Record"}
               </Button>
             </Card>
-          </Grid>
+          </Grid> */}
 
         </Grid>
       ) : (

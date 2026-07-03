@@ -286,6 +286,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </ListItemIcon>
                             <ListItemText primary="Wallet" />
                         </ListItemButton>
+                        
+                        {/* funding request */}
+                        <ListItemButton
+                            selected={location.pathname === '/vendors/funding'}
+                            onClick={() => handleNavigation('/vendors/funding')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <History fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Funding Request" />
+                        </ListItemButton>
                     </List>
                 </Collapse>
                 {/* Customer Management Section - Collapsible */}

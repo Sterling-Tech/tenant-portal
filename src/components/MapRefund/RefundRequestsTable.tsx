@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -25,7 +25,7 @@ import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-export type RefundStatus = "Approved" | "Pending" | "Rejected";
+export type RefundStatus = "Success" | "Pending" | "Failed";
 
 export interface RefundRequestRow {
   id: string;
@@ -59,17 +59,47 @@ export interface RefundRequestsTableProps {
 
 // ─── Status chip ──────────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<RefundStatus, { dot: string; text: string }> = {
-  Approved: { dot: "#1A9D5C", text: "#1A9D5C" },
-  Pending:  { dot: "#D98C0F", text: "#D98C0F" },
-  Rejected: { dot: "#D9362F", text: "#D9362F" },
+  Success: { dot: "#1A9D5C", text: "#1A9D5C" },
+  Pending: { dot: "#D98C0F", text: "#D98C0F" },
+  Failed: { dot: "#D9362F", text: "#D9362F" },
 };
 
-function StatusDot({ status }: { status: RefundStatus }) {
-  const cfg = STATUS_COLORS[status];
+// function StatusDot({ status }: { status: RefundStatus }) {
+//   const cfg = STATUS_COLORS[status];
+//   return (
+//     <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+//       <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: cfg.dot, flexShrink: 0 }} />
+//       <Typography sx={{ fontSize: "0.8rem", fontWeight: 600, color: cfg.text }}>{status}</Typography>
+//     </Box>
+//   );
+// }
+function StatusDot({ status }: { status: string }) {
+  const cfg =
+    STATUS_COLORS[status as RefundStatus] ?? {
+      dot: "#9CA3AF",
+      text: "#6B7280",
+    };
+
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
-      <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: cfg.dot, flexShrink: 0 }} />
-      <Typography sx={{ fontSize: "0.8rem", fontWeight: 600, color: cfg.text }}>{status}</Typography>
+    <Box sx={{ display: "flex", alignItems: "center", gap: .6 }}>
+      <Box
+        sx={{
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          bgcolor: cfg.dot,
+        }}
+      />
+
+      <Typography
+        sx={{
+          fontSize: ".8rem",
+          fontWeight: 600,
+          color: cfg.text,
+        }}
+      >
+        {status}
+      </Typography>
     </Box>
   );
 }
@@ -135,6 +165,7 @@ export default function RefundRequestsTable({
 }: RefundRequestsTableProps) {
   const startIdx = (page - 1) * pageSize + 1;
   const endIdx = Math.min(page * pageSize, totalResults);
+
 
   return (
     <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -204,9 +235,10 @@ export default function RefundRequestsTable({
                 }}
               >
                 <MenuItem value="">----------</MenuItem>
-                <MenuItem value="approve">Approve selected</MenuItem>
-                <MenuItem value="reject">Reject selected</MenuItem>
-                <MenuItem value="notify">Notify selected</MenuItem>
+                <MenuItem value="delete">Delete selected meter token requests</MenuItem>
+                <MenuItem value="retry">Retry selected failed records</MenuItem>
+                <MenuItem value="export">Export selected as CSV</MenuItem>
+                <MenuItem value="pending">Retry selected pending records</MenuItem>
               </Select>
             </FormControl>
             <Button
@@ -259,13 +291,14 @@ export default function RefundRequestsTable({
                 <TableRow
                   key={row.id}
                   hover
-                  sx={{ "& td": { borderBottom: "1px solid #F4F5F7", py: 1.5 } }}
+                  // onClick={() => onView?.(row)}
+                  sx={{ "& td": { borderBottom: "1px solid #F4F5F7", py: 1.5, "&:hover": { bgcolor: "#F8FAFC", }, } }}
                 >
                   <TableCell padding="checkbox" sx={{ pl: 2.5 }}>
                     <Checkbox size="small" />
                   </TableCell>
-                  <TableCell>
-                    <Typography sx={{ fontWeight: 700, fontSize: "0.84rem", color: "#0D1B2A" }}>
+                  <TableCell onClick={(e) => {onView?.(row) ; e.stopPropagation();}}>
+                    <Typography sx={{ fontWeight: 700, fontSize: "0.84rem", color: "#0D1B2A", cursor: "pointer", underline: "none", "&:hover": { textDecoration: "underline", color: "#3B5BDB" } }}>
                       {row.meterNumber}
                     </Typography>
                   </TableCell>
@@ -304,10 +337,10 @@ export default function RefundRequestsTable({
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: "flex", gap: 0.5 }}>
-                      <IconButton size="small" onClick={() => onView?.(row)} sx={{ border: "1px solid #E0E4EA", borderRadius: 1.5 }}>
+                      <IconButton size="small" onClick={(e) => {onView?.(row) ; e.stopPropagation();}} sx={{ border: "1px solid #E0E4EA", borderRadius: 1.5 }}>
                         <VisibilityOutlinedIcon sx={{ fontSize: 16, color: "#475569" }} />
                       </IconButton>
-                      <IconButton size="small" onClick={() => onNotify?.(row)} sx={{ border: "1px solid #E0E4EA", borderRadius: 1.5 }}>
+                      <IconButton size="small" onClick={(e) => {onNotify?.(row);  e.stopPropagation();}} sx={{ border: "1px solid #E0E4EA", borderRadius: 1.5 }}>
                         <MailOutlineIcon sx={{ fontSize: 16, color: "#475569" }} />
                       </IconButton>
                     </Box>

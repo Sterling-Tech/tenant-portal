@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -14,6 +14,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import AddIcon from "@mui/icons-material/Add";
+import { toast } from "react-toastify";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface RefundRequestsHeaderProps {
@@ -47,6 +48,7 @@ export default function RefundRequestsHeader({
     onPeriodChange?.(p);
     handlePeriodClose();
   };
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const outlinedBtnSx = {
     borderColor: "#E0E4EA",
@@ -59,6 +61,25 @@ export default function RefundRequestsHeader({
     whiteSpace: "nowrap",
     "&:hover": { borderColor: "#C5CDD8", bgcolor: "#F9FAFB" },
   };
+const handleFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    const formData = new FormData();
+
+    formData.append("file", file);
+
+    try {
+        // await uploadRefundCsv(formData);
+
+        toast.success("CSV uploaded");
+    } catch (err) {
+        toast.error("Upload failed");
+    }
+};
 
   return (
     <Box
@@ -125,13 +146,21 @@ export default function RefundRequestsHeader({
         {/* Upload CSV */}
         <Button
           variant="outlined"
-          onClick={onUploadCsv}
+          onClick={() =>
+            inputRef.current?.click()
+          }
           startIcon={<FileUploadOutlinedIcon sx={{ fontSize: 16 }} />}
           sx={outlinedBtnSx}
         >
           Upload CSV
         </Button>
-
+        <input
+          hidden
+          type="file"
+          accept=".csv"
+          ref={inputRef}
+          onChange={handleFileChange}
+        />
         {/* Add refund request — primary */}
         <Button
           variant="contained"
