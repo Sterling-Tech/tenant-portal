@@ -20,7 +20,10 @@ interface Props {
     open: boolean;
     loading?: boolean;
     request: FundingRequest | null;
-    action: "approve" | "reject";
+    action:
+    | "review"
+    | "approve"
+    | "reject";
     onClose: () => void;
     onConfirm: () => Promise<void>;
 }
@@ -36,7 +39,27 @@ export default function ApproveFundingDialog({
     if (!request) return null;
 
     const approving = action === "approve";
+    const reviewing = action === "review";
+    const rejecting = action === "reject";
 
+    const chipColor =
+        request.status === "approved"
+            ? "success.main"
+            : request.status === "rejected"
+                ? "error.main"
+                : "warning.main";
+
+    const dialogTitle = reviewing
+        ? "Review Funding Request"
+        : approving
+            ? "Approve Funding Request"
+            : "Reject Funding Request";
+
+    const actionLabel = reviewing
+        ? "Review"
+        : approving
+            ? "Approve"
+            : "Reject";
     return (
         <Dialog
             open={open}
@@ -67,30 +90,32 @@ export default function ApproveFundingDialog({
                     alignItems="center"
                 >
                     <Box display="flex" alignItems="center" gap={1.5}>
-                        {approving ? (
-                            <CheckCircleOutlineIcon
-                                sx={{
-                                    color: "#4ADE80",
-                                    fontSize: 28,
-                                }}
-                            />
-                        ) : (
-                            <CancelOutlinedIcon
-                                sx={{
-                                    color: "#F87171",
-                                    fontSize: 28,
-                                }}
-                            />
-                        )}
+                        {
+                            (approving || reviewing) ? (
+                                <CheckCircleOutlineIcon
+                                    sx={{
+                                        color: "#4ADE80",
+                                        fontSize: 28,
+                                    }}
+                                />
+                            ) : (
+                                <CancelOutlinedIcon
+                                    sx={{
+                                        color: "#F87171",
+                                        fontSize: 28,
+                                    }}
+                                />
+                            )
+                        }
 
                         <Box>
                             <Typography
                                 fontWeight={700}
                                 fontSize={20}
                             >
-                                {approving
-                                    ? "Approve Funding Request"
-                                    : "Reject Funding Request"}
+                                {
+                                    dialogTitle
+                                }
                             </Typography>
 
                             <Typography
@@ -127,12 +152,16 @@ export default function ApproveFundingDialog({
                         component="span"
                         sx={{
                             fontWeight: 700,
-                            color: approving
-                                ? "success.main"
-                                : "error.main",
+                            color: reviewing
+                                ? "warning.main"
+                                : approving
+                                    ? "success.main"
+                                    : "error.main",
                         }}
                     >
-                        {approving ? "APPROVE" : "REJECT"}
+                        {
+                            actionLabel.toUpperCase()
+                        }
                     </Box>{" "}
                     this funding request?
                 </Typography>
@@ -201,14 +230,12 @@ export default function ApproveFundingDialog({
                         <Typography
                             fontWeight={700}
                             color={
-                                request.status === "approved"
-                                    ? "success.main"
-                                    : request.status === "rejected"
-                                    ? "error.main"
-                                    : "warning.main"
+                                chipColor
                             }
                         >
-                            {request.status.toUpperCase()}
+                            {request.status
+                                .replace("_", " ")
+                                .toUpperCase()}
                         </Typography>
                     </Box>
 
@@ -254,20 +281,28 @@ export default function ApproveFundingDialog({
                 <Button
                     variant="contained"
                     color={
-                        approving
-                            ? "success"
-                            : "error"
+                        reviewing
+                            ? "warning"
+                            : approving
+                                ? "success"
+                                : "error"
                     }
                     disabled={loading}
                     onClick={onConfirm}
                 >
-                    {loading
-                        ? approving
-                            ? "Approving..."
-                            : "Rejecting..."
-                        : approving
-                        ? "Approve"
-                        : "Reject"}
+                    {
+                        loading
+                            ? reviewing
+                                ? "Reviewing..."
+                                : approving
+                                    ? "Approving..."
+                                    : "Rejecting..."
+                            : reviewing
+                                ? "Review"
+                                : approving
+                                    ? "Approve"
+                                    : "Reject"
+                    }
                 </Button>
             </DialogActions>
         </Dialog>

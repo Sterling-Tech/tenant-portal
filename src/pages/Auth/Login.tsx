@@ -205,14 +205,17 @@ const Login: React.FC = () => {
                 })
             );
             // Fetch user group details if available
-            const group = await viewGroup(user.group.id);
-            const permissions =
-                group.permissions.map(
+            if (user?.group) {
+                const group = await viewGroup(user.group.id);
+
+                const permissions = group.permissions.map(
                     p => p.permission.code
                 );
 
-            dispatch(setPermissions(permissions));
-            
+                dispatch(
+                    setPermissions(permissions)
+                );
+            }
             console.log(
                 "Login successful, redirecting to /tenants/admin"
             );

@@ -385,14 +385,20 @@ export interface VendorT {
   account_status: string;
   hierachy: string;
 }
+export type FundingRequestStatus =
+    | "pending_review"
+    | "pending_approval"
+    | "approved"
+    | "rejected";
 
 export interface FundingRequest {
-  id: number;
-  transaction_ref: string;
-  vendor: VendorT;
-  amount: string;
-  status: "pending" | "approved" | "rejected";
-  request_time: string;
+    id: number;
+    transaction_ref: string;
+    vendor: VendorT;
+    amount: string;
+    //request_status: FundingRequestStatus;
+    status: FundingRequestStatus;
+    request_time: string;
 }
 
 export interface FundingRequestResponse {
@@ -406,12 +412,18 @@ export interface FundingRequestParams {
   page?: number;
   search?: string;
   ordering?: string;
-  status?: string;
+  request_status?: FundingRequestStatus;
 }
+export type FundingAction =
+    | "review"
+    | "approve"
+    | "reject";
+
 export interface FundingOperationPayload {
     funding_request: number;
-    action: "approve" | "reject";
+    action: FundingAction;
 }
+
 const buildQuery = (params?: Record<string, unknown>) => {
     if (!params || Object.keys(params).length === 0) return '';
     const query = new URLSearchParams();
@@ -641,8 +653,11 @@ export const getFundingRequests = (
     if (params?.ordering)
         query.append("ordering", params.ordering);
 
-    if (params?.status)
-        query.append("status", params.status);
+    if (params?.request_status)
+    query.append(
+        "request_status",
+        params.request_status
+    );
 
     return get<FundingRequestResponse>(
         `/vendor/request-funding/${
