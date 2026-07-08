@@ -1,19 +1,30 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { clearApiKeyCredentials } from '../../utils/apiKeyStorage';
 
+export interface UserGroup {
+    id: number;
+    name: string;
+    description: string;
+    created_at: string;
+}
+
 export interface User {
     id: string;
     email: string;
+    name?: string;
     firstName?: string;
     lastName?: string;
     first_name?: string;
     last_name?: string;
-    phone?: string;
+    phone_number?: string;
     role?: string;
+    gender:string;
     is_superuser?: boolean;
     isSuperuser?: boolean;
     is_staff?: boolean;
     isStaff?: boolean;
+    is_2fa_enabled: boolean,
+    group: UserGroup | null;
 }
 
 interface AuthState {
@@ -51,39 +62,6 @@ const extractAuthPayload = (data: any) => {
 
     return { token, refreshToken, user };
 };
-
-export const login = createAsyncThunk(
-    'user/login',
-    async (credentials: { email: string; password: string }) => {
-        const response = await fetch('http://188.166.161.13:8061/user/login/', {
-        // const response = await fetch('http://188.166.99.136:8061/user/login/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(credentials),
-        });
-
-        if (!response.ok) {
-            throw new Error('Login failed');
-        }
-
-        const data = await response.json();
-        const { token, refreshToken, user } = extractAuthPayload(data);
-
-        if (token) {
-            localStorage.setItem('token', token);
-        }
-        if (refreshToken) {
-            localStorage.setItem('refreshToken', refreshToken);
-        } else {
-            localStorage.removeItem('refreshToken');
-        }
-        if (user) {
-            localStorage.setItem('user', JSON.stringify(user));
-        }
-
-        return { token, refreshToken, user };
-    }
-);
 
 const authSlice = createSlice({
     name: 'auth',
@@ -150,24 +128,6 @@ const authSlice = createSlice({
             }
             state.isAuthenticated = Boolean(state.token);
         },
-    },
-    extraReducers: (builder) => {
-        builder
-            .addCase(login.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(login.fulfilled, (state, action) => {
-                state.loading = false;
-                state.user = action.payload.user;
-                state.token = action.payload.token;
-                state.refreshToken = action.payload.refreshToken ?? null;
-                state.isAuthenticated = true;
-            })
-            .addCase(login.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.error.message || 'Login failed';
-            });
     },
 });
 

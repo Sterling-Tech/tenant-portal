@@ -18,7 +18,14 @@ import VendorTransactions from './pages/Vendors/VendorTransactions';
 import CustomerAdmin from './pages/Customer/Dashboard';
 import Subaccount from './pages/Customer/Subaccount';
 import CustomerTrans from './pages/Customer/CustomerTrans';
-
+import OnboardingPage from './pages/Onboarding/Onboarding';
+import { ToastContainer} from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
+import BulkAssign from './pages/ReEngineering/BulkAssign';
+import BulkEngineering from './pages/ReEngineering/BulkEngineering';
+import MapRefund from './pages/Customer/MapRefund';
+import GroupManagement from './pages/Roles/Roles';
+import FundingRequest from './pages/Vendors/FundingRequest'
 // Enhanced theme
 const theme = createTheme({
     palette: {
@@ -128,7 +135,26 @@ const App: React.FC = () => {
                                 }
                             />
 
-                            
+                            <Route
+                                path="/onboarding"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <OnboardingPage />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path='/role'
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <GroupManagement />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
                             <Route
                                 path="/settings"
                                 element={
@@ -170,6 +196,36 @@ const App: React.FC = () => {
                                 }
                             />
                             <Route
+                                path="/customer/maprefund"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <MapRefund/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/re-engineer"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <BulkAssign/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/re-engineer/bulk"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <BulkEngineering/>
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
                                 path="/vendors/hierarchy"
                                 element={
                                     <ProtectedRoute>
@@ -199,6 +255,17 @@ const App: React.FC = () => {
                                     </ProtectedRoute>
                                 }
                             />
+                            <Route 
+                                path='/vendors/funding'
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <FundingRequest />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            
+                            />
                             <Route path="/" element={<Navigate to="/tenants/admin" replace />} />
                             <Route path="/dashboard" element={<Navigate to="/tenants/admin" replace />} />
                             <Route path="/tenants/dashboard" element={<Navigate to="/tenants/admin" replace />} />
@@ -208,6 +275,7 @@ const App: React.FC = () => {
                     </Router>
                 </VendorProvider>
             </ThemeProvider>
+            <ToastContainer />
         </Provider>
     );
 };

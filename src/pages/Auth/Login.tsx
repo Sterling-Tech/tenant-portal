@@ -10,7 +10,14 @@ import {
     CircularProgress,
     InputAdornment,
     IconButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Divider,
+    Link,
 } from '@mui/material';
+
 import {
     Visibility,
     VisibilityOff,
@@ -19,7 +26,12 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../store/store';
 import { extractAuthPayload, setAuth } from '../../store/slices/authSlice';
-import type { User } from '../../store/slices/authSlice';
+import { toast } from 'react-toastify'
+import { loginUser, confirmOtp } from "../../services/authService";
+import { viewGroup } from '../../services/roleService';
+import { setPermissions } from '../../store/slices/permissionSlice';
+
+
 
 interface LoginFormData {
     email: string;
@@ -37,6 +49,33 @@ const Login: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const hasCheckedAuth = useRef(false);
+    //otp
+    const [otpOpen, setOtpOpen] = useState(false);
+    //const [otp, setOtp] = useState("");
+    const [pendingEmail, setPendingEmail] = useState("");
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+    //resend otp
+    const [resendingOtp, setResendingOtp] = useState(false);
+    const [otpMessage, setOtpMessage] = useState("");
+    const [loginCredentials, setLoginCredentials] = useState({
+        email: "",
+        password: "",
+    });
+
+    const OTP_DURATION = 5 * 60; // 5 mins
+    const [timeLeft, setTimeLeft] = useState(OTP_DURATION);
+
+    const otpValue = otp.join("");
+
+    const canResend = timeLeft === 0;
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
+    };
 
     // Redirect if already authenticated (only once on mount)
     useEffect(() => {
@@ -62,66 +101,238 @@ const Login: React.FC = () => {
         if (error) setError(null);
     };
 
+    const handleOtpChange = (
+        value: string,
+        index: number
+    ) => {
+        if (!/^\d?$/.test(value)) return;
+
+        const newOtp = [...otp];
+        newOtp[index] = value;
+
+        setOtp(newOtp);
+
+        if (value && index < 5) {
+            const nextInput = document.getElementById(
+                `otp-${index + 1}`
+            );
+
+            nextInput?.focus();
+        }
+    };
+
+    const handleOtpKeyDown = (
+        e: React.KeyboardEvent<HTMLElement>,
+        index: number
+    ) => {
+        if (
+            e.key === "Backspace" &&
+            !otp[index] &&
+            index > 0
+        ) {
+            const prevInput = document.getElementById(
+                `otp-${index - 1}`
+            );
+
+            prevInput?.focus();
+        }
+    };
+
+    const handleOtpPaste = (
+        e: React.ClipboardEvent
+    ) => {
+        e.preventDefault();
+
+        const pastedData = e.clipboardData
+            .getData("text")
+            .replace(/\D/g, "")
+            .slice(0, 6);
+
+        if (pastedData.length === 6) {
+            setOtp(pastedData.split(""));
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
         setError(null);
         setIsLoading(true);
 
         try {
-            // Call backend API directly
-            //const response = await fetch('http://188.166.161.13:8001/api/v1/auth/login/', {
-            // const response = await fetch('http://188.166.99.136:8061/user/login/', {
-            const response = await fetch('http://188.166.161.13:8061/user/login/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
-            });
-            // Check content type before parsing
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('Non-JSON response:', { status: response.status, body: text });
-                setError('Server returned invalid response format');
-                setIsLoading(false);
+            const response = await loginUser(formData);
+            // 2FA enabled → OTP sent
+            if (response.status === 202) {
+                setLoginCredentials({
+                    email: formData.email,
+                    password: formData.password,
+                });
+                setPendingEmail(formData.email);
+                setOtpOpen(true);
+
+                toast.info(
+                    "Verification code sent to your email"
+                );
                 return;
             }
 
-            const data = await response.json();
-
+            // Login failed
             if (!response.ok) {
-                setError(data.message || data.detail || 'Login failed. Please try again.');
-                setIsLoading(false);
+                toast.error(
+                    response.data.message ||
+                    response.data.detail ||
+                    "Login failed. Please try again."
+                );
                 return;
             }
 
-            const { user, token, refreshToken } = extractAuthPayload(data);
+            // Login successful (200)
+            const { user, token, refreshToken } =
+                extractAuthPayload(response.data);
+
             if (!token) {
-                setError('Login response did not include an access token');
-                setIsLoading(false);
+                toast.error(
+                    "Login response did not include an access token."
+                );
                 return;
             }
 
-            const authPayload: { token: string; refreshToken?: string | null; user?: User | null } = { token };
-            if (refreshToken !== undefined) {
-                authPayload.refreshToken = refreshToken;
-            }
-            if (user !== undefined) {
-                authPayload.user = user;
-            }
+            dispatch(
+                setAuth({
+                    token,
+                    refreshToken,
+                    user,
+                })
+            );
+            // Fetch user group details if available
+            if (user?.group) {
+                const group = await viewGroup(user.group.id);
 
-            dispatch(setAuth(authPayload));
+                const permissions = group.permissions.map(
+                    p => p.permission.code
+                );
 
-            console.log('Login successful, redirecting to /tenants/admin');
-            navigate('/tenants/admin');
+                dispatch(
+                    setPermissions(permissions)
+                );
+            }
+            console.log(
+                "Login successful, redirecting to /tenants/admin"
+            );
+
+            navigate("/tenants/admin");
         } catch (err: any) {
-            console.error('Login error:', err);
-            setError(err.message || 'Login failed. Please try again.');
+            console.error("Login error:", err);
+
+            setError(
+                err.message ||
+                "Login failed. Please try again."
+            );
         } finally {
             setIsLoading(false);
         }
     };
+
+    const handleConfirmOtp = async () => {
+        try {
+            setOtpLoading(true);
+            const response = await confirmOtp({
+                email: pendingEmail,
+                otp: otpValue,
+            });
+            if (!response.ok) {
+                toast.error(
+                    response.data.message ||
+                    response.data.detail ||
+                    "Invalid OTP"
+                );
+                return;
+            }
+
+            const { user, token, refreshToken } =
+                extractAuthPayload(response.data);
+
+            dispatch(
+                setAuth({
+                    token,
+                    refreshToken,
+                    user,
+                })
+            );
+
+            toast.success("Login successful");
+
+            setOtpOpen(false);
+            navigate("/tenants/admin");
+        } catch (error: any) {
+            toast.error(
+                error.message ||
+                "Failed to verify OTP"
+            );
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        if (!canResend) return;
+
+        try {
+            setResendingOtp(true);
+            setOtpMessage("");
+            const response = await loginUser(formData)
+
+            if (response.status !== 202) {
+                toast.error(
+                    response.data.message ||
+                    response.data.detail ||
+                    "Unable to resend OTP"
+                );
+                return;
+            }
+
+            // clear old otp
+            setOtp(["", "", "", "", "", ""]);
+
+            // restart timer
+            setTimeLeft(OTP_DURATION);
+
+            toast.success(
+                "A new OTP has been sent to your email."
+            );
+
+            // focus first box
+            document
+                .getElementById("otp-0")
+                ?.focus();
+        } catch (error) {
+            toast.error(
+                "Failed to resend OTP."
+            );
+        } finally {
+            setResendingOtp(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!otpOpen) return;
+
+        setTimeLeft(OTP_DURATION);
+
+        const interval = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    return 0;
+                }
+
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [otpOpen]);
+
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
@@ -155,6 +366,7 @@ const Login: React.FC = () => {
                             {error}
                         </Alert>
                     )}
+
 
                     <form onSubmit={handleSubmit}>
                         <TextField
@@ -216,6 +428,193 @@ const Login: React.FC = () => {
                     </Box>
                 </CardContent>
             </Card>
+            {/* otp */}
+            <Dialog
+                open={otpOpen}
+                maxWidth="xs"
+                fullWidth
+
+            >
+                <DialogTitle
+                    sx={{
+                        textAlign: "center",
+                        fontWeight: 700,
+                        pb: 1,
+                    }}
+                >
+                    Verify Login
+                </DialogTitle>
+
+                <DialogContent>
+                    <Typography
+                        variant="body2"
+                        textAlign="center"
+                        color="text.secondary"
+                        sx={{ mb: 3 }}
+                    >
+                        We've sent a 6-digit verification code to
+                    </Typography>
+
+                    {otpMessage && (
+                        <Alert
+                            severity={
+                                otpMessage.includes("sent")
+                                    ? "success"
+                                    : "error"
+                            }
+                            sx={{ mt: 2 }}
+                        >
+                            {otpMessage}
+                        </Alert>
+                    )}
+
+                    <Typography
+                        textAlign="center"
+                        fontWeight={600}
+                        sx={{ mb: 4 }}
+                    >
+                        {pendingEmail}
+                    </Typography>
+
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            gap: 1,
+                        }}
+                    >
+                        {otp.map((digit, index) => (
+                            <TextField
+                                key={index}
+                                id={`otp-${index}`}
+                                value={digit}
+                                onPaste={handleOtpPaste}
+                                onChange={(e) =>
+                                    handleOtpChange(
+                                        e.target.value,
+                                        index
+                                    )
+                                }
+                                onKeyDown={(e) =>
+                                    handleOtpKeyDown(
+                                        e,
+                                        index
+                                    )
+                                }
+                                inputProps={{
+                                    maxLength: 1,
+                                    inputMode: "numeric",
+                                    style: {
+                                        textAlign: "center",
+                                        fontSize: "1.4rem",
+                                        fontWeight: 700,
+                                    },
+                                }}
+                                sx={{
+                                    width: 52,
+                                    "& .MuiOutlinedInput-root": {
+                                        borderRadius: 2,
+                                        height: 56,
+                                    },
+                                }}
+                            />
+                        ))}
+                    </Box>
+
+                    <Typography
+                        variant="caption"
+                        display="block"
+                        textAlign="center"
+                        color="text.secondary"
+                        sx={{ mt: 3 }}
+                    >
+                        Enter the 6-digit code sent to your email
+                    </Typography>
+
+                    <Typography
+                        textAlign="center"
+                        sx={{
+                            mt: 3,
+                            fontWeight: 600,
+                            color: timeLeft < 60
+                                ? "error.main"
+                                : "text.secondary",
+                        }}
+                    >
+                        OTP expires in {formatTime(timeLeft)}
+                    </Typography>
+                </DialogContent>
+
+                <Box
+                    sx={{
+                        mt: 3,
+                        textAlign: "center",
+                    }}
+                >
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                    >
+                        Didn't receive OTP
+                    </Typography>
+
+                    <Button
+                        size="small"
+                        variant="text"
+                        disabled={
+                            !canResend ||
+                            resendingOtp
+                        }
+                        onClick={handleResendOtp}
+                    >
+                        {resendingOtp
+                            ? "Sending..."
+                            : canResend
+                                ? "Resend OTP"
+                                : `Resend in ${formatTime(
+                                    timeLeft
+                                )}`}
+                    </Button>
+
+                    {otpMessage && (
+                        <Typography
+                            variant="caption"
+                            display="block"
+                            sx={{ mt: 1 }}
+                        >
+                            {otpMessage}
+                        </Typography>
+                    )}
+                </Box>
+
+                <DialogActions
+                    sx={{
+                        justifyContent: "center",
+                        pb: 3,
+                        px: 3,
+                    }}
+                >
+                    <Button
+                        fullWidth
+                        variant="contained"
+                        size="large"
+                        disabled={
+                            otpLoading ||
+                            otpValue.length !== 6
+                        }
+                        onClick={handleConfirmOtp}
+                    >
+                        {otpLoading ? (
+                            <CircularProgress
+                                size={22}
+                                color="inherit"
+                            />
+                        ) : (
+                            "Verify OTP"
+                        )}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
