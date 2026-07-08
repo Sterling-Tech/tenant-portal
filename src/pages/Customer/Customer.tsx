@@ -27,6 +27,8 @@ import {
     CircularProgress,
     Tabs,
   Tab,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import {
   ResponsiveContainer,
@@ -78,6 +80,9 @@ const [transactions, setTransactions] = useState<any[]>([]);
 const [transactionLoading, setTransactionLoading] = useState(false);
 const [transactionCount, setTransactionCount] = useState(0);
 const [transactionPage, setTransactionPage] = useState(1);
+const [editingCustomerId, setEditingCustomerId] = useState<
+  number | string | null
+>(null);
 
 const safeValue = (value: any, fallback = "N/A") => {
   if (
@@ -200,35 +205,87 @@ useEffect(() => {
     // }, 100);
   };
   const handleCreateClick = () => {
-				setFormMode('create');
-				setCustomerForm({
-								name: '',
-								phone_number: '',
-								customer_category: undefined,
-								customer_class: undefined,
-								metering_type: undefined,
-							});
-        setOpenModal(true);
-		};
+  setFormMode("create");
 
-  const handleSaveVendor = async () => {
-  if (
-    !customerForm.name ||
-    !customerForm.email ||
-    !customerForm.phone_number ||
-    !customerForm.customer_category ||
-    !customerForm.customer_class ||
-    !customerForm.metering_type
-  ) {
-    setNotification({
-      type: "error",
-      message: "All fields are required",
-    });
-    return;
-  }
+  setEditingCustomerId(null);
 
-  setSaving(true);
+  setCustomerForm({
+    name: "",
+    email: "",
+    phone_number: "",
+    address: "",
+    customer_category: undefined,
+    customer_class: undefined,
+    metering_type: undefined,
+    district: "",
+    feeder: "",
+    transformer: "",
+    service_center: "",
+    band: "",
+    tariff: "",
+    krn: "",
+    ti: "",
+    sgc: "",
+    kct1: "",
+    kct2: "",
+  });
+
+  setOpenModal(true);
+};
+
+const handleSaveVendor = async () => {
   try {
+    // ✅ VALIDATION
+    if (!customerForm.name?.trim()) {
+      setNotification({
+        type: "error",
+        message: "Customer name is required",
+      });
+      return;
+    }
+
+    if (!customerForm.email?.trim()) {
+      setNotification({
+        type: "error",
+        message: "Email address is required",
+      });
+      return;
+    }
+
+    if (!customerForm.phone_number?.trim()) {
+      setNotification({
+        type: "error",
+        message: "Phone number is required",
+      });
+      return;
+    }
+
+    if (!customerForm.customer_category) {
+      setNotification({
+        type: "error",
+        message: "Please select customer category",
+      });
+      return;
+    }
+
+    if (!customerForm.customer_class) {
+      setNotification({
+        type: "error",
+        message: "Please select customer class",
+      });
+      return;
+    }
+
+    if (!customerForm.metering_type) {
+      setNotification({
+        type: "error",
+        message: "Please select metering type",
+      });
+      return;
+    }
+
+    setSaving(true);
+
     const payload: CustomerForm = {
       name: customerForm.name || "",
       email: customerForm.email || "",
@@ -254,29 +311,92 @@ useEffect(() => {
       kct2: customerForm.kct2 || "",
     };
 
-    await createCustomer(payload);
+    let response;
 
-    // ✅ SUCCESS FLOW
-    setNotification({
-      type: "success",
-      message: "Customer created successfully",
-    });
+    // ✅ CREATE
+    if (formMode === "create") {
+      response = await createCustomer(payload);
+      console.log(response, "response i nedd")
+      setNotification({
+        type: "success",
+        message: "Customer created successfully",
+      });
+    }
 
-    setOpenModal(false);       // 🔥 CLOSE MODAL
-    setCustomerForm({});       // 🔥 RESET FORM
-    load();                    // 🔥 REFRESH TABLE
+    // ✅ UPDATE
+    if (formMode === "edit" && editingCustomerId) {
+      response = await createCustomer(payload);
+
+      setNotification({
+        type: "success",
+        message: "Customer updated successfully",
+      });
+    }
+
+    // ✅ ONLY CLOSE IF SUCCESSFUL
+    if (response) {
+      setOpenModal(false);
+      setCustomerForm({});
+      setEditingCustomerId(null);
+
+      await load();
+    }
 
   } catch (err: any) {
-    console.error(err); // 🔥 SEE REAL ERROR
+  console.error("CUSTOMER ERROR =>", err);
 
-    setNotification({
-      type: "error",
-      message: err?.response?.data?.message || "Failed to create customer",
-    });
-  } finally {
+  let errorMessage = "Something went wrong";
+
+  // ✅ SUPPORT MULTIPLE ERROR STRUCTURES
+  const data =
+    err?.response?.data ||
+    err?.data ||
+    err?.error ||
+    err;
+
+  // STRING ERROR
+  if (typeof data === "string") {
+    errorMessage = data;
+  }
+
+  // NON FIELD ERRORS
+  else if (data?.non_field_errors?.length) {
+    errorMessage = data.non_field_errors.join(", ");
+  }
+
+  // NESTED ERROR OBJECT
+  else if (data?.error?.non_field_errors?.length) {
+    errorMessage =
+      data.error.non_field_errors.join(", ");
+  }
+
+  // FIELD ERRORS
+  else if (typeof data === "object") {
+    errorMessage = Object.entries(data)
+      .map(([key, value]: any) => {
+        if (Array.isArray(value)) {
+          return value.join(", ");
+        }
+
+        if (typeof value === "object") {
+          return Object.values(value).flat().join(", ");
+        }
+
+        return value;
+      })
+      .join("\n");
+  }
+
+  // ✅ FORCE SNACKBAR
+  setNotification({
+    type: "error",
+    message: errorMessage,
+  });
+} finally {
     setSaving(false);
   }
 };
+
 const handleFilterChange = (key: string, value: string) => {
   setLoading(true); // ✅ START SPINNER
 
@@ -712,6 +832,7 @@ const chartData = useMemo(() => {
       const full = await fetchCustomer({ customer_id: menuRow!.id });
 
       setFormMode("edit");
+      setEditingCustomerId(full.id);
       setCustomerForm({
         name: full.name,
        // email: full.email,
@@ -891,96 +1012,205 @@ const chartData = useMemo(() => {
   )}
 
   {/* CIS INFORMATION */}
-  {viewTab === "cis" && (
-    <Box p={3}>
 
-      <Grid container spacing={3}>
 
-        <Grid item xs={6}>
-          <Typography fontSize={12} color="#94A3B8">
-            District / Branch
-          </Typography>
+  {/* TRANSACTIONS */}
+  {/* CIS INFORMATION */}
+{viewTab === "cis" && (
+  <Box p={3}>
+    <Grid container spacing={3}>
 
-          <Typography fontWeight={700}>
-            {safeValue(selected?.extra_info?.district)}
-          </Typography>
-        </Grid>
+      {/* DISTRICT */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          District / Branch
+        </Typography>
 
-        <Grid item xs={6}>
-          <Typography fontSize={12} color="#94A3B8">
-            Customer Category
-          </Typography>
-
-          <Typography fontWeight={700}>
-            {safeValue(selected?.customer_category?.name)}
-          </Typography>
-        </Grid>
-
-        <Grid item xs={6}>
-          <Typography fontSize={12} color="#94A3B8">
-            Feeder
-          </Typography>
-
-          <Typography fontWeight={700}>
-            {safeValue(selected?.extra_info?.feeder)}
-          </Typography>
-        </Grid>
-
-        <Grid item xs={6}>
-          <Typography fontSize={12} color="#94A3B8">
-            Transformer
-          </Typography>
-
-          <Typography fontWeight={700}>
-            {safeValue(selected?.extra_info?.transformer)}
-          </Typography>
-        </Grid>
-
-        <Grid item xs={6}>
-          <Typography fontSize={12} color="#94A3B8">
-            Service Center
-          </Typography>
-
-          <Typography fontWeight={700}>
-            {safeValue(selected?.extra_info?.service_center)}
-          </Typography>
-        </Grid>
-
-        <Grid item xs={6}>
-          <Typography fontSize={12} color="#94A3B8">
-            Band
-          </Typography>
-
-          <Typography fontWeight={700}>
-            {safeValue(selected?.extra_info?.band)}
-          </Typography>
-        </Grid>
-
-        <Grid item xs={6}>
-          <Typography fontSize={12} color="#94A3B8">
-            Tariff
-          </Typography>
-
-          <Typography fontWeight={700}>
-            {safeValue(selected?.extra_info?.tariff)}
-          </Typography>
-        </Grid>
-
-        <Grid item xs={12}>
-          <Typography fontSize={12} color="#94A3B8">
-            Address
-          </Typography>
-
-          <Typography fontWeight={700}>
-            {safeValue(selected?.extra_info?.address)}
-          </Typography>
-        </Grid>
-
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.district)}
+        </Typography>
       </Grid>
 
-    </Box>
-  )}
+      {/* CUSTOMER CATEGORY */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          Customer Category
+        </Typography>
 
+        <Typography fontWeight={700}>
+          {safeValue(
+            selected?.customer_category?.name ||
+            selected?.customer_category
+          )}
+        </Typography>
+      </Grid>
+
+      {/* CUSTOMER CLASS */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          Customer Class
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(
+            selected?.customer_class?.name ||
+            selected?.customer_class
+          )}
+        </Typography>
+      </Grid>
+
+      {/* CLASS */}
+      {/* CLASS */}
+<Grid item xs={6}>
+  <Typography fontSize={12} color="#94A3B8">
+    Class
+  </Typography>
+
+  <Typography fontWeight={700}>
+    {safeValue(
+      selected?.customer_class?.name
+    )}
+  </Typography>
+</Grid>
+
+      {/* METERING TYPE */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          Metering Type
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(
+            selected?.metering_type?.name ||
+            selected?.metering_type
+          )}
+        </Typography>
+      </Grid>
+
+      {/* FEEDER */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          Feeder
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.feeder)}
+        </Typography>
+      </Grid>
+
+      {/* TRANSFORMER */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          Transformer
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.transformer)}
+        </Typography>
+      </Grid>
+
+      {/* SERVICE CENTER */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          Service Center
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.service_center)}
+        </Typography>
+      </Grid>
+
+      {/* BAND */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          Band
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.band)}
+        </Typography>
+      </Grid>
+
+      {/* TARIFF */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          Tariff
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.tariff)}
+        </Typography>
+      </Grid>
+
+      {/* KRN */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          KRN
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.krn)}
+        </Typography>
+      </Grid>
+
+      {/* TI */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          TI
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.ti)}
+        </Typography>
+      </Grid>
+
+      {/* SGC */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          SGC
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.sgc)}
+        </Typography>
+      </Grid>
+
+      {/* KCT1 */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          KCT1
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.kct1)}
+        </Typography>
+      </Grid>
+
+      {/* KCT2 */}
+      <Grid item xs={6}>
+        <Typography fontSize={12} color="#94A3B8">
+          KCT2
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.kct2)}
+        </Typography>
+      </Grid>
+
+      {/* ADDRESS */}
+      <Grid item xs={12}>
+        <Typography fontSize={12} color="#94A3B8">
+          Address
+        </Typography>
+
+        <Typography fontWeight={700}>
+          {safeValue(selected?.extra_info?.address)}
+        </Typography>
+      </Grid>
+
+    </Grid>
+  </Box>
+)}
   {/* TRANSACTIONS */}
   {viewTab === "transactions" && (
   <Box p={3}>
@@ -1160,7 +1390,6 @@ const chartData = useMemo(() => {
 
   </Box>
 )}
-
   {/* CHARTS */}
   {/* CHARTS */}
 {viewTab === "charts" && (
@@ -1734,13 +1963,49 @@ const chartData = useMemo(() => {
             px: 4,
           }}
         >
-          {saving
-            ? "Creating..."
-            : "Create Customer"}
+          {saving ? (
+  <Stack direction="row" spacing={1} alignItems="center">
+    <CircularProgress size={18} sx={{ color: "#fff" }} />
+    <span>
+      {formMode === "create"
+        ? "Creating..."
+        : "Updating..."}
+    </span>
+  </Stack>
+) : formMode === "create" ? (
+  "Create Customer"
+) : (
+  "Update Customer"
+)}
         </Button>
       </Box>
     </Card>
   </Box>
+)}
+
+{notification && (
+  <Snackbar
+    open={true}
+    autoHideDuration={4000}
+    onClose={() => setNotification(null)}
+    anchorOrigin={{
+      vertical: "top",
+      horizontal: "right",
+    }}
+  >
+    <Alert
+      severity={notification.type}
+      variant="filled"
+      onClose={() => setNotification(null)}
+      sx={{
+        width: "100%",
+        borderRadius: 3,
+        fontWeight: 600,
+      }}
+    >
+      {notification.message}
+    </Alert>
+  </Snackbar>
 )}
     </Box>
   );

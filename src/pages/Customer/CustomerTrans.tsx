@@ -202,8 +202,8 @@ const handleCreateDebt = async () => {
 			<Grid container spacing={2} mb={3}>
 				{[
 	{
-		label: "TOTAL CUSTOMERS WITH DEBT",
-		value: analytics?.customers_with_debt || 0,
+		label: "Total Postpaid Collected (Month)",
+		value:  0,
 		color: "#ef4444"
 	},
 	{
