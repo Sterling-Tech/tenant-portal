@@ -475,7 +475,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <ListItemIcon>
                                 <People fontSize="small" />
                             </ListItemIcon>
-                            <ListItemText primary="Bulk Assign" />
+                            <ListItemText primary="Engineering" />
                         </ListItemButton>
 
                         <ListItemButton
