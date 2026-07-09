@@ -8,6 +8,17 @@ export interface ApiResponse<T> {
     status?: number;
 }
 
+export class ApiErrors extends Error {
+  status: number;
+  data: any;
+ 
+  constructor(message: string, status: number, data: any) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
+}
 export interface ApiError {
     message: string;
     status?: number;
