@@ -14,30 +14,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-// export interface RefundFiltersState {
-//   search: string;
-
-//   status: "All" | "success" | "pending" | "failed";
-
-//   month: "All" | "3" | "4" | "5" | "6" | "7";
-
-//   year: "All" | "2026";
-
-//   arrears_code:
-//     | "All"
-//     | "DEBMIG"
-//     | "DEBPCT"
-//     | "MAPDEF"
-//     | "MAPREA"
-//     | "MAPREF"
-//     | "MAPRER"
-//     | "RECCIP";
-
-//   email_delivered: "All" | "true" | "false";
-
-//   sms_sent: "All" | "true" | "false";
-// }
 export interface RefundFiltersState {
   search: string;
   status: StatusFilter;
@@ -264,25 +240,6 @@ export default function RefundFilters({
           onChange={(value) => update("sms_sent", value)}
         />
       </FilterGroup>
-
-      {/* Apply button */}
-      {/* <Button
-        fullWidth
-        variant="contained"
-        onClick={onApply}
-        sx={{
-          mt: 1,
-          bgcolor: "#0D1B2A",
-          fontWeight: 700,
-          py: 1.1,
-          borderRadius: 2,
-          textTransform: "none",
-          fontSize: "0.9rem",
-          "&:hover": { bgcolor: "#1A2B40" },
-        }}
-      >
-        Apply Filters
-      </Button> */}
     </Box>
   );
 }

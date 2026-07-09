@@ -23,6 +23,8 @@ import {
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { ExportMeterRequestParams, exportMeterRequests, RetryFailedParams, retryFailedRequests, RetryFailedResponse, retryPendingRequests } from "../../services/mapRefundService";
+import { toast } from "react-toastify";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type RefundStatus = "Success" | "Pending" | "Failed";
@@ -55,6 +57,7 @@ export interface RefundRequestsTableProps {
   onNotify?: (row: RefundRequestRow) => void;
   onViewAll?: () => void;
   isLive?: boolean;
+  filters: ExportMeterRequestParams;
 }
 
 // ─── Status chip ──────────────────────────────────────────────────────────────
@@ -162,9 +165,115 @@ export default function RefundRequestsTable({
   onNotify,
   onViewAll,
   isLive = true,
+  filters,
 }: RefundRequestsTableProps) {
   const startIdx = (page - 1) * pageSize + 1;
   const endIdx = Math.min(page * pageSize, totalResults);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState("");
+
+  const handleSelectRow = (id: string) => {
+    setSelectedRows((prev) =>
+      prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : [...prev, id]
+    );
+  };
+  const handleSelectAll = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (event.target.checked) {
+      setSelectedRows(rows.map((r) => r.id));
+    } else {
+      setSelectedRows([]);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportMeterRequests(filters);
+
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `meter_requests_${Date.now()}.csv`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+
+      toast.success("CSV exported successfully");
+    } catch (err) {
+      toast.error("Unable to export CSV");
+    }
+  };
+
+  const retrySelected = async (
+    status: RefundStatus,
+    retryFn: (
+      params: RetryFailedParams
+    ) => Promise<RetryFailedResponse>
+  ) => {
+    const ids = rows
+      .filter(
+        row =>
+          selectedRows.includes(row.id) &&
+          row.status === status
+      )
+      .map(row => Number(row.id));
+
+    if (ids.length === 0) {
+      toast.warning(`Please select at least one ${status.toLowerCase()} request.`);
+      return;
+    }
+
+    try {
+      const response = await retryFn({ ids });
+
+      toast.success(
+        `${response.queued} ${status.toLowerCase()} request(s) queued successfully`
+      );
+
+      setSelectedRows([]);
+
+      // await loadRefundRequests();
+    } catch (err: any) {
+      toast.error(err.message || "Operation failed");
+    }
+  };
+
+  const handleRetryFailed = () =>
+    retrySelected("Failed", retryFailedRequests);
+
+  const handleRetryPending = () =>
+    retrySelected("Pending", retryPendingRequests);
+
+  const handleBulkAction = async () => {
+    switch (bulkAction) {
+      case "export":
+        await handleExport();
+        break;
+
+      case "delete":
+        // next
+        break;
+
+      case "retry":
+        await handleRetryFailed();
+        break;
+
+      case "pending":
+        await handleRetryPending();
+        break;
+
+      default:
+        toast.info("Select an action");
+    }
+  };
+
 
 
   return (
@@ -226,6 +335,10 @@ export default function RefundRequestsTable({
             <FormControl size="small">
               <Select
                 defaultValue=""
+                value={bulkAction}
+                onChange={(e) =>
+                  setBulkAction(e.target.value)
+                }
                 displayEmpty
                 sx={{
                   minWidth: 130,
@@ -244,6 +357,7 @@ export default function RefundRequestsTable({
             <Button
               variant="outlined"
               size="small"
+              onClick={handleBulkAction}
               sx={{
                 borderColor: "#E0E4EA",
                 color: "#0D1B2A",
@@ -257,7 +371,8 @@ export default function RefundRequestsTable({
             </Button>
           </Box>
           <Typography sx={{ fontSize: "0.8rem", color: "#9AA4B2" }}>
-            0 of {rows.length} selected
+            {/* 0 of {rows.length} selected */}
+            {selectedRows.length} of {rows.length} selected
           </Typography>
         </Box>
 
@@ -267,7 +382,19 @@ export default function RefundRequestsTable({
             <TableHead>
               <TableRow sx={{ "& th": { borderBottom: "1px solid #EEF0F3", borderTop: "1px solid #EEF0F3" } }}>
                 <TableCell padding="checkbox" sx={{ pl: 2.5 }}>
-                  <Checkbox size="small" />
+                  {/* <Checkbox size="small" /> */}
+                  <Checkbox
+                    size="small"
+                    checked={
+                      rows.length > 0 &&
+                      selectedRows.length === rows.length
+                    }
+                    indeterminate={
+                      selectedRows.length > 0 &&
+                      selectedRows.length < rows.length
+                    }
+                    onChange={handleSelectAll}
+                  />
                 </TableCell>
                 {["METER NUMBER", "ACCOUNT", "CUSTOMER", "AMOUNT", "STATUS", "REFERENCE", "ARREARS CODE", "NOTIFIED", "CREATED"].map((h) => (
                   <TableCell
@@ -295,9 +422,15 @@ export default function RefundRequestsTable({
                   sx={{ "& td": { borderBottom: "1px solid #F4F5F7", py: 1.5, "&:hover": { bgcolor: "#F8FAFC", }, } }}
                 >
                   <TableCell padding="checkbox" sx={{ pl: 2.5 }}>
-                    <Checkbox size="small" />
+                    {/* <Checkbox size="small" /> */}
+                    <Checkbox
+                      size="small"
+                      checked={selectedRows.includes(row.id)}
+                      onChange={() => handleSelectRow(row.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
                   </TableCell>
-                  <TableCell onClick={(e) => {onView?.(row) ; e.stopPropagation();}}>
+                  <TableCell onClick={(e) => { onView?.(row); e.stopPropagation(); }}>
                     <Typography sx={{ fontWeight: 700, fontSize: "0.84rem", color: "#0D1B2A", cursor: "pointer", underline: "none", "&:hover": { textDecoration: "underline", color: "#3B5BDB" } }}>
                       {row.meterNumber}
                     </Typography>
@@ -337,10 +470,10 @@ export default function RefundRequestsTable({
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: "flex", gap: 0.5 }}>
-                      <IconButton size="small" onClick={(e) => {onView?.(row) ; e.stopPropagation();}} sx={{ border: "1px solid #E0E4EA", borderRadius: 1.5 }}>
+                      <IconButton size="small" onClick={(e) => { onView?.(row); e.stopPropagation(); }} sx={{ border: "1px solid #E0E4EA", borderRadius: 1.5 }}>
                         <VisibilityOutlinedIcon sx={{ fontSize: 16, color: "#475569" }} />
                       </IconButton>
-                      <IconButton size="small" onClick={(e) => {onNotify?.(row);  e.stopPropagation();}} sx={{ border: "1px solid #E0E4EA", borderRadius: 1.5 }}>
+                      <IconButton size="small" onClick={(e) => { onNotify?.(row); e.stopPropagation(); }} sx={{ border: "1px solid #E0E4EA", borderRadius: 1.5 }}>
                         <MailOutlineIcon sx={{ fontSize: 16, color: "#475569" }} />
                       </IconButton>
                     </Box>
@@ -389,7 +522,7 @@ export default function RefundRequestsTable({
             }}
           />
 
-          <Button
+          {/* <Button
             onClick={onViewAll}
             endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
             sx={{
@@ -405,7 +538,7 @@ export default function RefundRequestsTable({
             }}
           >
             View All Requests
-          </Button>
+          </Button> */}
         </Box>
       </Card>
     </Box>

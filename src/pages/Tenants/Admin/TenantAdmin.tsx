@@ -41,17 +41,18 @@ import { useAppSelector } from '../../../store/hooks';
 import TenantDomainModal, { TenantDomainFormValues } from '../../../components/TenantAdmin/TenantDomainModal';
 import type { Tenant, TenantConfiguration as TenantConfigurationType, TenantUser, CreateTenantRequest } from '../../../services/tenantService';
 import { LineChart, PieChart } from '@mui/x-charts';
-import { fetchVendors,createVendor, type VendorForm, Vendor, searchVendors, toggleVendorStatus,AnalyticsBreakdown, AnalyticsCount, fetchanalytics, fetchAnalyticsBreakdown, fetchAnalyticsDashboad, AnalyticsDashboad } from '../../../services/vendorService';
+import { fetchVendors, createVendor, type VendorForm, Vendor, searchVendors, toggleVendorStatus, AnalyticsBreakdown, AnalyticsCount, fetchanalytics, fetchAnalyticsBreakdown, fetchAnalyticsDashboad, AnalyticsDashboad } from '../../../services/vendorService';
+import { RootState } from '../../../store/store';
 type CustomerSummary = {
-  total_customers?: number | string;
-  active_customers?: number | string;
-  inactive_customers?: number | string;
+        total_customers?: number | string;
+        active_customers?: number | string;
+        inactive_customers?: number | string;
 };
 
 type VendorSummary = {
-  all?: number | string;
-  active?: number | string;
-  inactive?: number | string;
+        all?: number | string;
+        active?: number | string;
+        inactive?: number | string;
 };
 const TenantAdmin: React.FC = () => {
         const {
@@ -74,12 +75,12 @@ const TenantAdmin: React.FC = () => {
 
         const { tree, selectedOrg, selectedOrgId, selectOrg } = useVendorHierarchy();
         const { profile, loading: profileLoading, error: profileError } = useTenantAdminProfile(selectedTenantId);
-        
-        const user = useAppSelector((state) => state.auth.user);
-    
-    
+
+        const user = useAppSelector((state: RootState) => state.auth.user);
+
+
         const [selectedTenant, setVendors] = useState<Vendor[]>([]);
-          const [count, setCount] = useState(0);
+        const [count, setCount] = useState(0);
 
         const [searchTerm, setSearchTerm] = useState('');
         const [searchLoading, setSearchLoading] = useState(false);
@@ -92,7 +93,7 @@ const TenantAdmin: React.FC = () => {
         const [domainModalOpen, setDomainModalOpen] = useState(false);
         const [customerFilter, setCustomerFilter] = useState<'all' | 'active' | 'inactive'>('all');
         const [vendorFilter, setVendorFilter] = useState<'all' | 'active' | 'inactive'>('all');
-       
+
         const today = new Date().toISOString().split('T')[0];
 
         const [startDate, setStartDate] = useState<string>(today);
@@ -112,131 +113,131 @@ const TenantAdmin: React.FC = () => {
         });
 
 
-// const dailyTransactionsMock = useMemo(() => {
-//   const days = 30;
-//   const data: number[] = [];
-//   const labels: string[] = [];
+        // const dailyTransactionsMock = useMemo(() => {
+        //   const days = 30;
+        //   const data: number[] = [];
+        //   const labels: string[] = [];
 
 
-//   for (let i = days - 1; i >= 0; i--) {
-//     const d = new Date();
-//     d.setDate(d.getDate() - i);
+        //   for (let i = days - 1; i >= 0; i--) {
+        //     const d = new Date();
+        //     d.setDate(d.getDate() - i);
 
-//     labels.push(
-//       d.toLocaleDateString('en-GB', {
-//         day: '2-digit',
-//         month: 'short',
-//       })
-//     );
+        //     labels.push(
+        //       d.toLocaleDateString('en-GB', {
+        //         day: '2-digit',
+        //         month: 'short',
+        //       })
+        //     );
 
-//     // fake realistic variation
-//     data.push(Math.floor(Math.random() * 50000) + 10000);
-//   }
+        //     // fake realistic variation
+        //     data.push(Math.floor(Math.random() * 50000) + 10000);
+        //   }
 
-//   return { labels, data };
-// }, []);
+        //   return { labels, data };
+        // }, []);
 
-const dailyTransactionsMock = useMemo(() => {
-  const transactions = breakdownData?.daily_transaction || [];
+        const dailyTransactionsMock = useMemo(() => {
+                const transactions = breakdownData?.daily_transaction || [];
 
-  if (!transactions.length) {
-    return { labels: [], data: [] };
-  }
+                if (!transactions.length) {
+                        return { labels: [], data: [] };
+                }
 
-  // Sort by date ASC (important for chart)
-  const sorted = [...transactions].sort(
-    (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
-  );
+                // Sort by date ASC (important for chart)
+                const sorted = [...transactions].sort(
+                        (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
+                );
 
-  const labels = sorted.map((item) =>
-    new Date(item.day).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-    })
-  );
+                const labels = sorted.map((item) =>
+                        new Date(item.day).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                        })
+                );
 
-  const data = sorted.map((item) => Number(item.total || 0));
+                const data = sorted.map((item) => Number(item.total || 0));
 
-  return { labels, data };
-}, [breakdownData]);
+                return { labels, data };
+        }, [breakdownData]);
 
-const customerSummary: CustomerSummary =
-  analyticfetchData?.customer_summary || {};
+        const customerSummary: CustomerSummary =
+                analyticfetchData?.customer_summary || {};
 
-const vendorSummary: VendorSummary =
-  analyticfetchData?.vendor_summary || {};
+        const vendorSummary: VendorSummary =
+                analyticfetchData?.vendor_summary || {};
 
-const customerValue =
-  customerFilter === 'active'
-    ? customerSummary.active_customers
-    : customerSummary.total_customers;
+        const customerValue =
+                customerFilter === 'active'
+                        ? customerSummary.active_customers
+                        : customerSummary.total_customers;
 
-const vendorValue =
-  vendorFilter === 'active'
-    ? vendorSummary.active
-    : vendorFilter === 'inactive'
-    ? vendorSummary.inactive
-    : vendorSummary.all;
+        const vendorValue =
+                vendorFilter === 'active'
+                        ? vendorSummary.active
+                        : vendorFilter === 'inactive'
+                                ? vendorSummary.inactive
+                                : vendorSummary.all;
 
         const loadAnalytics = async (start?: string, end?: string) => {
-            setAnalyticsLoading(true);
-            try {
-                const [analyticsRes, breakdownRes, analyticfetchRes] = await Promise.all([
-                    fetchanalytics({
-                        start_date: start,
-                        end_date: end,
-                    }),
-                    fetchAnalyticsBreakdown(),
-                    fetchAnalyticsDashboad(),
-                ]);
-                console.log(analyticfetchRes || null, "this th works", breakdownRes || null, "this th works", analyticsRes || null)
-                // API returns array → take first item
-                setAnalyticsData(analyticsRes || null);
-                setBreakdownData(breakdownRes || null);
-                setAnalyticfetchData(analyticfetchRes || null);
-            } catch (err) {
-                console.error("Analytics error:", err);
-            } finally {
-                setAnalyticsLoading(false);
-            }
+                setAnalyticsLoading(true);
+                try {
+                        const [analyticsRes, breakdownRes, analyticfetchRes] = await Promise.all([
+                                fetchanalytics({
+                                        start_date: start,
+                                        end_date: end,
+                                }),
+                                fetchAnalyticsBreakdown(),
+                                fetchAnalyticsDashboad(),
+                        ]);
+                        console.log(analyticfetchRes || null, "this th works", breakdownRes || null, "this th works", analyticsRes || null)
+                        // API returns array → take first item
+                        setAnalyticsData(analyticsRes || null);
+                        setBreakdownData(breakdownRes || null);
+                        setAnalyticfetchData(analyticfetchRes || null);
+                } catch (err) {
+                        console.error("Analytics error:", err);
+                } finally {
+                        setAnalyticsLoading(false);
+                }
         };
 
         const prepaid = breakdownData?.metering_type.find((m) => m.name === "Prepaid")?.count || 0;
-    const postpaid = breakdownData?.metering_type.find((m) => m.name === "Postpaid")?.count || 0;
-    const totalCustomers = prepaid + postpaid;
+        const postpaid = breakdownData?.metering_type.find((m) => m.name === "Postpaid")?.count || 0;
+        const totalCustomers = prepaid + postpaid;
         const prepaidPercent = totalCustomers > 0 ? (prepaid / totalCustomers) * 100 : 0;
-    const postpaidPercent = totalCustomers > 0 ? (postpaid / totalCustomers) * 100 : 0;
+        const postpaidPercent = totalCustomers > 0 ? (postpaid / totalCustomers) * 100 : 0;
 
 
-    const load = async (pageNumber = 1) => {
-      try {
-// 🔍 SEARCH MODE: only if user has typed something
-            
-        // 📦 NORMAL MODE (no search)
-        const res = await fetchVendors({
-          page: pageNumber,
-        });
-    
-        setVendors(res?.results || []);
-        setCount(res?.count || 0);
-        console.error("LOAD res:", res);
-      } catch (err) {
-        console.error("LOAD ERROR:", err);
-        setVendors([]);
-        setCount(0);
-      }
-    };
-    
-      useEffect(() => {
-        load();
-      }, []);
-    
+        const load = async (pageNumber = 1) => {
+                try {
+                        // 🔍 SEARCH MODE: only if user has typed something
+
+                        // 📦 NORMAL MODE (no search)
+                        const res = await fetchVendors({
+                                page: pageNumber,
+                        });
+
+                        setVendors(res?.results || []);
+                        setCount(res?.count || 0);
+                        console.error("LOAD res:", res);
+                } catch (err) {
+                        console.error("LOAD ERROR:", err);
+                        setVendors([]);
+                        setCount(0);
+                }
+        };
+
+        useEffect(() => {
+                load();
+        }, []);
 
 
 
 
-    useEffect(() => {
-            loadAnalytics(startDate, endDate);
+
+        useEffect(() => {
+                loadAnalytics(startDate, endDate);
         }, []);
         useEffect(() => {
                 if (!searchInitializedRef.current) {
@@ -261,37 +262,37 @@ const vendorValue =
                 return () => clearTimeout(handler);
         }, [searchTerm, refreshTenants]);
 
-    const last7Days = useMemo(() => {
-            if (!breakdownData?.daily_transaction) return [];
+        const last7Days = useMemo(() => {
+                if (!breakdownData?.daily_transaction) return [];
 
-            return [...breakdownData.daily_transaction]
-                .sort((a, b) => new Date(b.day).getTime() - new Date(a.day).getTime())
-                .slice(0, 7)
-                .map((item, index, arr) => {
-                    const prev = arr[index + 1];
+                return [...breakdownData.daily_transaction]
+                        .sort((a, b) => new Date(b.day).getTime() - new Date(a.day).getTime())
+                        .slice(0, 7)
+                        .map((item, index, arr) => {
+                                const prev = arr[index + 1];
 
-                    const change = prev
-                        ? ((item.total - prev.total) / prev.total) * 100
-                        : 0;
+                                const change = prev
+                                        ? ((item.total - prev.total) / prev.total) * 100
+                                        : 0;
 
-                    return {
-                        date: new Date(item.day).toLocaleDateString('en-GB', {
-                            day: '2-digit',
-                            month: 'short',
-                        }).toUpperCase(),
+                                return {
+                                        date: new Date(item.day).toLocaleDateString('en-GB', {
+                                                day: '2-digit',
+                                                month: 'short',
+                                        }).toUpperCase(),
 
-                        amount: `₦${item.total.toLocaleString()}`,
-                        change: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`,
-                        up: change >= 0,
-                    };
-                });
+                                        amount: `₦${item.total.toLocaleString()}`,
+                                        change: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`,
+                                        up: change >= 0,
+                                };
+                        });
         }, [breakdownData]);
 
         const revenueData = last7Days.length
-            ? last7Days
-            : [
-                    { date: '18 MAR', amount: '₦13.1M', change: '+5.4%', up: true },
-                    { date: '17 MAR', amount: '₦12.4M', change: '+1.8%', up: true },
+                ? last7Days
+                : [
+                        { date: '18 MAR', amount: '₦13.1M', change: '+5.4%', up: true },
+                        { date: '17 MAR', amount: '₦12.4M', change: '+1.8%', up: true },
                 ];
         useEffect(() => {
                 if (configuration) {
@@ -313,10 +314,10 @@ const vendorValue =
 
         // Use backend search results directly when search is active
         // Only use local filtering as fallback if backend search hasn't completed
-     
+
         const closeDomainModal = () => setDomainModalOpen(false);
 
-       
+
 
         // Bulk operations state
         const [selectedTenants, setSelectedTenants] = useState<Set<string>>(new Set());
@@ -333,8 +334,8 @@ const vendorValue =
         };
 
         return (
-                <Box 
-               // p={3}
+                <Box
+                // p={3}
                 >
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                                 <Typography variant="h4">Customer Administration</Typography>
@@ -347,8 +348,8 @@ const vendorValue =
                                         >
                                                 Refresh
                                         </Button>
-                                        
-                                            {/* Date Here */}
+
+                                        {/* Date Here */}
                                         {/* <Stack direction="row" spacing={1} alignItems="center">
                                         <TextField
                                             type="date"
@@ -373,8 +374,8 @@ const vendorValue =
                                             Apply
                                         </Button>
                                     </Stack> */}
-                                
-                        
+
+
                                 </Stack>
                         </Box>
 
@@ -415,8 +416,8 @@ const vendorValue =
                                                                         Avg Daily Revenue
                                                                 </Typography>
                                                                 <Typography variant="h5">
-                                                                    ₦{Number(analyticsData?.analytics.average_revenue || 0).toLocaleString()}
-                                                                    {/* ₦{(400776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
+                                                                        ₦{Number(analyticsData?.analytics.average_revenue || 0).toLocaleString()}
+                                                                        {/* ₦{(400776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
                                                                 </Typography>
                                                         </CardContent>
                                                 </Card>
@@ -438,126 +439,126 @@ const vendorValue =
                                                                         Outstanding Debt
                                                                 </Typography>
                                                                 <Typography variant="h5">
-                                                                    ₦{Number(analyticsData?.analytics?.total_debt || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                                                    </Typography>
+                                                                        ₦{Number(analyticsData?.analytics?.total_debt || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                                                </Typography>
                                                         </CardContent>
                                                 </Card>
                                         </Grid>
                                         <Grid item xs={12} md={4}>
                                                 <Card>
                                                         <CardContent sx={{
-    height: 91,
-  }}>
-  <CardHeader
-    title={
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Typography variant="body2" color="text.secondary">
-          {customerFilter === 'all'
-            ? 'Total Customers'
-            : customerFilter === 'active'
-            ? 'Active Customers'
-            : 'Inactive Customers'}
-        </Typography>
+                                                                height: 91,
+                                                        }}>
+                                                                <CardHeader
+                                                                        title={
+                                                                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                                                        <Typography variant="body2" color="text.secondary">
+                                                                                                {customerFilter === 'all'
+                                                                                                        ? 'Total Customers'
+                                                                                                        : customerFilter === 'active'
+                                                                                                                ? 'Active Customers'
+                                                                                                                : 'Inactive Customers'}
+                                                                                        </Typography>
 
-        <TextField
-  select
-  size="small"
-  value={customerFilter}
-  onChange={(e) => setCustomerFilter(e.target.value as any)}
-  variant="standard"
-  InputProps={{ disableUnderline: true }}
-  sx={{
-    width: 90,
-    '& .MuiInputBase-root': {
-      padding: 0,
-      margin: 0,
-    },
-    '& .MuiSelect-select': {
-      padding: '4px 8px',
-    },
-  }}
->
-  <MenuItem value="all">All</MenuItem>
-  <MenuItem value="active">Active</MenuItem>
-</TextField>
-      </Box>
-    }
-    sx={{
-    height: 0,
-    paddingBottom: 0,
-    '& .MuiInputBase-root': {
-      padding: 0,
-      margin: 0,
-    },
-    '& .MuiSelect-select': {
-      padding: '0px 0px',
-    },
-  }}
-  />
-  <CardContent>
-    <Typography variant="h5">
-      {Number(customerValue || 0).toLocaleString()}
-    </Typography>
-  </CardContent>
+                                                                                        <TextField
+                                                                                                select
+                                                                                                size="small"
+                                                                                                value={customerFilter}
+                                                                                                onChange={(e) => setCustomerFilter(e.target.value as any)}
+                                                                                                variant="standard"
+                                                                                                InputProps={{ disableUnderline: true }}
+                                                                                                sx={{
+                                                                                                        width: 90,
+                                                                                                        '& .MuiInputBase-root': {
+                                                                                                                padding: 0,
+                                                                                                                margin: 0,
+                                                                                                        },
+                                                                                                        '& .MuiSelect-select': {
+                                                                                                                padding: '4px 8px',
+                                                                                                        },
+                                                                                                }}
+                                                                                        >
+                                                                                                <MenuItem value="all">All</MenuItem>
+                                                                                                <MenuItem value="active">Active</MenuItem>
+                                                                                        </TextField>
+                                                                                </Box>
+                                                                        }
+                                                                        sx={{
+                                                                                height: 0,
+                                                                                paddingBottom: 0,
+                                                                                '& .MuiInputBase-root': {
+                                                                                        padding: 0,
+                                                                                        margin: 0,
+                                                                                },
+                                                                                '& .MuiSelect-select': {
+                                                                                        padding: '0px 0px',
+                                                                                },
+                                                                        }}
+                                                                />
+                                                                <CardContent>
+                                                                        <Typography variant="h5">
+                                                                                {Number(customerValue || 0).toLocaleString()}
+                                                                        </Typography>
+                                                                </CardContent>
                                                         </CardContent>
                                                 </Card>
                                         </Grid>
                                         <Grid item xs={12} md={4}>
-                                             <Card>
-                                                        <CardContent sx={{height: 91}}>
-                                                               
-  <CardHeader
-    title={
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Typography variant="body2" color="text.secondary">
-          {vendorFilter === 'all'
-            ? 'Total Vendors'
-            : vendorFilter === 'active'
-            ? 'Active Vendors'
-            : 'Inactive Vendors'}
-        </Typography>
+                                                <Card>
+                                                        <CardContent sx={{ height: 91 }}>
 
-         <TextField
-  select
-  size="small"
-  value={vendorFilter}
-  onChange={(e) => setVendorFilter(e.target.value as any)}
-  variant="standard"
-  InputProps={{ disableUnderline: true }}
-  sx={{
-    width: 90,
-    '& .MuiInputBase-root': {
-      padding: 0,
-      margin: 0,
-    },
-    '& .MuiSelect-select': {
-      padding: '4px 8px',
-    },
-  }}
->
-  <MenuItem value="all">All</MenuItem>
-  <MenuItem value="active">Active</MenuItem>
-  <MenuItem value="inactive">Inactive</MenuItem>
-</TextField>
-      </Box>
-    }
-    sx={{
-    height: 0,
-    paddingBottom: 0,
-    '& .MuiInputBase-root': {
-      padding: 0,
-      margin: 0,
-    },
-    '& .MuiSelect-select': {
-      padding: '0px 0px',
-    },
-  }}
-  />
-  <CardContent>
-    <Typography variant="h5">
-      {Number(vendorValue || 0).toLocaleString()}
-    </Typography>
-  </CardContent>
+                                                                <CardHeader
+                                                                        title={
+                                                                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                                                        <Typography variant="body2" color="text.secondary">
+                                                                                                {vendorFilter === 'all'
+                                                                                                        ? 'Total Vendors'
+                                                                                                        : vendorFilter === 'active'
+                                                                                                                ? 'Active Vendors'
+                                                                                                                : 'Inactive Vendors'}
+                                                                                        </Typography>
+
+                                                                                        <TextField
+                                                                                                select
+                                                                                                size="small"
+                                                                                                value={vendorFilter}
+                                                                                                onChange={(e) => setVendorFilter(e.target.value as any)}
+                                                                                                variant="standard"
+                                                                                                InputProps={{ disableUnderline: true }}
+                                                                                                sx={{
+                                                                                                        width: 90,
+                                                                                                        '& .MuiInputBase-root': {
+                                                                                                                padding: 0,
+                                                                                                                margin: 0,
+                                                                                                        },
+                                                                                                        '& .MuiSelect-select': {
+                                                                                                                padding: '4px 8px',
+                                                                                                        },
+                                                                                                }}
+                                                                                        >
+                                                                                                <MenuItem value="all">All</MenuItem>
+                                                                                                <MenuItem value="active">Active</MenuItem>
+                                                                                                <MenuItem value="inactive">Inactive</MenuItem>
+                                                                                        </TextField>
+                                                                                </Box>
+                                                                        }
+                                                                        sx={{
+                                                                                height: 0,
+                                                                                paddingBottom: 0,
+                                                                                '& .MuiInputBase-root': {
+                                                                                        padding: 0,
+                                                                                        margin: 0,
+                                                                                },
+                                                                                '& .MuiSelect-select': {
+                                                                                        padding: '0px 0px',
+                                                                                },
+                                                                        }}
+                                                                />
+                                                                <CardContent>
+                                                                        <Typography variant="h5">
+                                                                                {Number(vendorValue || 0).toLocaleString()}
+                                                                        </Typography>
+                                                                </CardContent>
                                                         </CardContent>
                                                 </Card>
                                         </Grid>
@@ -565,10 +566,10 @@ const vendorValue =
                                                 <Card>
                                                         <CardContent>
                                                                 <Typography color="text.secondary" variant="body2">
-                                                                    Vendors Aggregated Balance                         
+                                                                        Vendors Aggregated Balance
                                                                 </Typography>
                                                                 <Typography variant="h5">
-                                                                     ₦{Number(analyticfetchData?.vendor_summary.aggregated_wallet_balance || 0).toLocaleString()}
+                                                                        ₦{Number(analyticfetchData?.vendor_summary.aggregated_wallet_balance || 0).toLocaleString()}
                                                                         {/* ₦{(90000776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
                                                                 </Typography>
                                                         </CardContent>
@@ -579,45 +580,45 @@ const vendorValue =
 
                         <Grid container spacing={3}>
                                 <Grid item xs={12} md={4}>
-                                                                      <Card>
-                                                                                <CardHeader
-                                                                                        avatar={<Assessment color="primary" />}
-                                                                                        title="Debt Exposure"
-                                                                                        subheader="BY CATEGORY"
-                                                                                />
-                                                                                <CardContent>
-                                           <Stack spacing={2}>
+                                        <Card>
+                                                <CardHeader
+                                                        avatar={<Assessment color="primary" />}
+                                                        title="Debt Exposure"
+                                                        subheader="BY CATEGORY"
+                                                />
+                                                <CardContent>
+                                                        <Stack spacing={2}>
 
-                                                                                    {(breakdownData?.debt_exposure || []).map((item, i) => {
-                                                                                            const value = Number(item.total_collections || 0);
-                                                                                        return (
-                                                                                            <Box key={i}>
-                                                                                                <Box display="flex" justifyContent="space-between">
-                                                                                                    <Typography variant="body2">{item.category_name}</Typography>
-                                                                                                    <Typography fontWeight={500}>₦{value.toLocaleString()}</Typography>
-                                                                                                </Box>
-                                                                                                <Box
-                                                                                                    sx={{
+                                                                {(breakdownData?.debt_exposure || []).map((item, i) => {
+                                                                        const value = Number(item.total_collections || 0);
+                                                                        return (
+                                                                                <Box key={i}>
+                                                                                        <Box display="flex" justifyContent="space-between">
+                                                                                                <Typography variant="body2">{item.category_name}</Typography>
+                                                                                                <Typography fontWeight={500}>₦{value.toLocaleString()}</Typography>
+                                                                                        </Box>
+                                                                                        <Box
+                                                                                                sx={{
                                                                                                         height: 6,
                                                                                                         bgcolor: '#eee',
                                                                                                         borderRadius: 5,
                                                                                                         mt: 0.5,
-                                                                                                    }}
-                                                                                                >
-                                                                                                    <Box
+                                                                                                }}
+                                                                                        >
+                                                                                                <Box
                                                                                                         sx={{
-                                                                                                            width: `${value > 0 ? Math.min(value / 1000, 100) : 0}%`,
-                                                                                                            height: '100%',
-                                                                                                            bgcolor: 'primary.main',
-                                                                                                            borderRadius: 5,
+                                                                                                                width: `${value > 0 ? Math.min(value / 1000, 100) : 0}%`,
+                                                                                                                height: '100%',
+                                                                                                                bgcolor: 'primary.main',
+                                                                                                                borderRadius: 5,
                                                                                                         }}
-                                                                                                    />
-                                                                                                </Box>
-                                                                                            </Box>
-                                                                                            );
-})}
+                                                                                                />
+                                                                                        </Box>
+                                                                                </Box>
+                                                                        );
+                                                                })}
 
-                                                                                        {/* <Typography mt={2} textAlign="center">Payment Plan Uptake</Typography>
+                                                                {/* <Typography mt={2} textAlign="center">Payment Plan Uptake</Typography>
 
                                                                                         <PieChart
                                                                                             series={[
@@ -631,74 +632,74 @@ const vendorValue =
                                                                                             ]}
                                                                                             height={200}
                                                                                         /> */}
-                                                                                    </Stack>
-                                                                                </CardContent>
-                                                                        </Card>  
-                                                                </Grid>
+                                                        </Stack>
+                                                </CardContent>
+                                        </Card>
+                                </Grid>
 
                                 <Grid item xs={12} md={8}>
-                                        
-                                                <Stack spacing={3} data-tenant-details>
 
-                                                    <Card>
-                                                                <CardHeader avatar={<Security color="primary" />} title="Overview" />
-                                                                <CardContent>
-                                                                        <Stack direction="row" spacing={2} mb={2}  flexWrap="wrap">
-                                                                                <Chip label={`Inactive Users: ${(analyticfetchData?.user_summary.inactive_users || 0).toLocaleString()}`} size="small" />
-                                                                                <Chip label={`Total Postpaid Customer: ${(postpaid).toLocaleString()}`} size="small" />
-                                                                                <Chip label={`Total Prepaid Customer: ${(prepaid).toLocaleString()}`} size="small" />
-                                                                                <Chip label={`Total Unmetered Customers: ${(889540).toLocaleString()}`} size="small" />
-                                                                                <Chip label={`Suspended Customers: ${(analyticsData?.analytics.suspended_custommers || 0).toLocaleString()}`} size="small" />
-                                                                        </Stack>
-                                                                </CardContent>
-                                                        </Card>
+                                        <Stack spacing={3} data-tenant-details>
 
-                                                        <Grid container spacing={2}>
-                                                                <Grid item xs={12}>
-                                                                        <Card>
-                                                                                <CardHeader
-                                                                                        avatar={<Analytics color="primary" />}
-                                                                                        title="Daily Transactions"
-                                                                                        subheader="Last 30 Days"
-                                                                                        action={
-                                                                                                <Stack direction="row" spacing={1}>
-                                                                                                        <Button
-                                                                                                                size="small"
-                                                                                                                variant={analyticsView === 'summary' ? 'contained' : 'outlined'}
-                                                                                                                onClick={() => setAnalyticsView('summary')}
-                                                                                                        >
-                                                                                                            Chart	View
-                                                                                                        </Button>
-                                                                                                        {/* <Button
+                                                <Card>
+                                                        <CardHeader avatar={<Security color="primary" />} title="Overview" />
+                                                        <CardContent>
+                                                                <Stack direction="row" spacing={2} mb={2} flexWrap="wrap">
+                                                                        <Chip label={`Inactive Users: ${(analyticfetchData?.user_summary.inactive_users || 0).toLocaleString()}`} size="small" />
+                                                                        <Chip label={`Total Postpaid Customer: ${(postpaid).toLocaleString()}`} size="small" />
+                                                                        <Chip label={`Total Prepaid Customer: ${(prepaid).toLocaleString()}`} size="small" />
+                                                                        <Chip label={`Total Unmetered Customers: ${(889540).toLocaleString()}`} size="small" />
+                                                                        <Chip label={`Suspended Customers: ${(analyticsData?.analytics.suspended_custommers || 0).toLocaleString()}`} size="small" />
+                                                                </Stack>
+                                                        </CardContent>
+                                                </Card>
+
+                                                <Grid container spacing={2}>
+                                                        <Grid item xs={12}>
+                                                                <Card>
+                                                                        <CardHeader
+                                                                                avatar={<Analytics color="primary" />}
+                                                                                title="Daily Transactions"
+                                                                                subheader="Last 30 Days"
+                                                                                action={
+                                                                                        <Stack direction="row" spacing={1}>
+                                                                                                <Button
+                                                                                                        size="small"
+                                                                                                        variant={analyticsView === 'summary' ? 'contained' : 'outlined'}
+                                                                                                        onClick={() => setAnalyticsView('summary')}
+                                                                                                >
+                                                                                                        Chart	View
+                                                                                                </Button>
+                                                                                                {/* <Button
                                                                                                                 size="small"
                                                                                                                 variant={analyticsView === 'detailed' ? 'contained' : 'outlined'}
                                                                                                                 onClick={() => setAnalyticsView('detailed')}
                                                                                                         >
                                                                                                                 Table View
                                                                                                         </Button> */}
-                                                                                                     
-                                                                                                </Stack>
-                                                                                        }
+
+                                                                                        </Stack>
+                                                                                }
+                                                                        />
+                                                                        <CardContent>
+                                                                                {/* {analyticsView === 'summary' ? ( */}
+                                                                                <LineChart
+                                                                                        xAxis={[
+                                                                                                {
+                                                                                                        scaleType: 'point',
+                                                                                                        data: dailyTransactionsMock.labels,
+                                                                                                },
+                                                                                        ]}
+                                                                                        series={[
+                                                                                                {
+                                                                                                        data: dailyTransactionsMock.data,
+                                                                                                        label: 'Daily Transactions',
+                                                                                                },
+                                                                                        ]}
+                                                                                        height={260}
+                                                                                        margin={{ top: 20, bottom: 30 }}
                                                                                 />
-                                                                                <CardContent>
-                                                                                    {/* {analyticsView === 'summary' ? ( */}
-                                                                                            <LineChart
-                                                                                                xAxis={[
-                                                                                                {
-                                                                                                    scaleType: 'point',
-                                                                                                    data: dailyTransactionsMock.labels,
-                                                                                                },
-                                                                                                ]}
-                                                                                                series={[
-                                                                                                {
-                                                                                                    data: dailyTransactionsMock.data,
-                                                                                                    label: 'Daily Transactions',
-                                                                                                },
-                                                                                                ]}
-                                                                                                height={260}
-                                                                                                margin={{ top: 20, bottom: 30 }}
-                                                                                            />
-                                                                                            {/* ) : (
+                                                                                {/* ) : (
                                                                                         <Stack spacing={2}>
                                                                                            {dailyTransactionsMock.labels.map((date, i) => (
                                                                             <Box
@@ -718,18 +719,18 @@ const vendorValue =
                                                                             ))}
                                                                                         </Stack>
                                                                                     )} */}
-                                                                                </CardContent>
-                                                                        </Card>
-                                                                </Grid>
-                                                                
-                                                               
+                                                                        </CardContent>
+                                                                </Card>
                                                         </Grid>
-                                                        
-                                                </Stack>
-                                     
+
+
+                                                </Grid>
+
+                                        </Stack>
+
                                 </Grid>
                         </Grid>
-                   
+
                 </Box>
         );
 };

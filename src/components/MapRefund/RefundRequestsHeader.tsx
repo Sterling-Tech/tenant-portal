@@ -15,6 +15,7 @@ import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import { toast } from "react-toastify";
+import { repullMetersFromCsv } from "../../services/mapRefundService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface RefundRequestsHeaderProps {
@@ -23,11 +24,11 @@ export interface RefundRequestsHeaderProps {
   onPeriodChange?: (period: string) => void;
   onTriggerPipeline?: () => void;
   onSendNotifications?: () => void;
-  onUploadCsv?: () => void;
+  onUploadCsv?: (file: File) => void | Promise<void>;
   onAddRefundRequest?: () => void;
 }
 
-const DEFAULT_PERIODS = ["June 2026", "May 2026", "April 2026", "March 2026"];
+const DEFAULT_PERIODS = ["August 2026", "July 2026", "June 2026", "May 2026", "April 2026", "March 2026"];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function RefundRequestsHeader({
@@ -61,24 +62,18 @@ export default function RefundRequestsHeader({
     whiteSpace: "nowrap",
     "&:hover": { borderColor: "#C5CDD8", bgcolor: "#F9FAFB" },
   };
+
 const handleFileChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
+  e: React.ChangeEvent<HTMLInputElement>
 ) => {
-    const file = e.target.files?.[0];
+  const file = e.target.files?.[0];
 
-    if (!file) return;
+  if (!file) return;
 
-    const formData = new FormData();
+  await onUploadCsv?.(file);
 
-    formData.append("file", file);
-
-    try {
-        // await uploadRefundCsv(formData);
-
-        toast.success("CSV uploaded");
-    } catch (err) {
-        toast.error("Upload failed");
-    }
+  // allow selecting same file again
+  e.target.value = "";
 };
 
   return (
@@ -162,7 +157,7 @@ const handleFileChange = async (
           onChange={handleFileChange}
         />
         {/* Add refund request — primary */}
-        <Button
+        {/* <Button
           variant="contained"
           onClick={onAddRefundRequest}
           startIcon={<AddIcon sx={{ fontSize: 18 }} />}
@@ -177,7 +172,7 @@ const handleFileChange = async (
           }}
         >
           Add Refund Request
-        </Button>
+        </Button> */}
       </Box>
     </Box>
   );
