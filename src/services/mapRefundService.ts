@@ -1,4 +1,4 @@
-import { refundGet } from "./apiService";
+import { refundGet, refundGetBlob, refundPost, refundPostFormData } from "./apiService";
 
 export interface RefundRequest {
   id: number;
@@ -64,7 +64,40 @@ interface StatsParams {
   year?: number;
 }
 
+export interface ExportMeterRequestParams {
+    status?: string;
+    arrears_code?: string;
+    year?: number;
+    month?: number;
+    sms_sent?: boolean;
+    email_delivered?: boolean;
+}
 
+export interface RetryFailedParams {
+  ids?: number[];
+  month?: number;
+  year?: number;
+}
+
+export interface RetryFailedResponse {
+  queued: number;
+  ids: number[];
+}
+export interface TriggerNotificationParams {
+  month: number;
+  year: number;
+}
+
+export interface TriggerNotificationResponse {
+  status: string;
+  task_id: string;
+}
+export interface RepullMetersResponse {
+  total_input: number;
+  updated: number;
+  missing: number;
+  fetched_from_db: number;
+}
 export const getRefundRequests = (
   params?: RefundRequestParams
 ) => {
@@ -115,5 +148,73 @@ export const getStats = ({ month, year }: StatsParams = {}) => {
 
   return refundGet<RefundStatsResponse>(
     `/meter-requests/stats/${params.toString() ? `?${params.toString()}` : ""}`
+  );
+};
+
+
+
+export const exportMeterRequests = (
+  params: ExportMeterRequestParams
+) => {
+  const query = new URLSearchParams();
+
+  if (params.status)
+    query.append("status", params.status);
+
+  if (params.arrears_code)
+    query.append("arrears_code", params.arrears_code);
+
+  if (params.year)
+    query.append("year", String(params.year));
+
+  if (params.month)
+    query.append("month", String(params.month));
+
+  if (params.sms_sent !== undefined)
+    query.append("sms_sent", String(params.sms_sent));
+
+  if (params.email_delivered !== undefined)
+    query.append(
+      "email_delivered",
+      String(params.email_delivered)
+    );
+
+  return refundGetBlob(
+    `/meter-requests/export/?${query.toString()}`
+  );
+};
+
+export const retryFailedRequests = (
+  params: RetryFailedParams
+) => {
+  return refundPost<RetryFailedResponse>(
+    "/meter-requests/retry-failed/",
+    params
+  );
+};
+
+export const retryPendingRequests = (
+  params: RetryFailedParams
+) => {
+  return refundPost<RetryFailedResponse>(
+    "/meter-requests/retry-pending/",
+    params
+  );
+};
+export const triggerNotifications = (
+  params: TriggerNotificationParams
+) => {
+  return refundPost<TriggerNotificationResponse>(
+    "/notifications/trigger/",
+    params
+  );
+};
+
+export const repullMetersFromCsv = (
+  file: FormData
+) => {
+  return refundPostFormData<RepullMetersResponse>(
+    "/meters/repull/",
+    file
   );
 };

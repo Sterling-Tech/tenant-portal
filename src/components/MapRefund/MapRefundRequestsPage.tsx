@@ -5,12 +5,13 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import RefundRequestsHeader from "./RefundRequestsHeader";
 import PipelineStatusBar from "./PipelineStatusBar";
 import RefundStatsCards, { RefundStats } from "./RefundStatsCards";
-import RefundFilters, { RefundFiltersState } from "./RefundFilters";
+import RefundFilters, { MonthFilter, RefundFiltersState, YearFilter } from "./RefundFilters";
 import RefundRequestsTable, { RefundRequestRow, RefundStatus } from "./RefundRequestsTable";
-import { getRefundRequests, RefundRequest } from "../../services/mapRefundService";
+import { getRefundRequests, RefundRequest, triggerNotifications } from "../../services/mapRefundService";
 import { toast } from "react-toastify";
 import RefundDetailsDialog from "./RefundDetailsDialog";
 import AddRefundRequestDialog from "./AddRefundRequestDialog";
+import { repullMetersFromCsv } from "../../services/mapRefundService";
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const theme = createTheme({
@@ -29,11 +30,24 @@ const theme = createTheme({
 });
 
 // ─── Mock data — replace with API data ────────────────────────────────────────
-
-
-
+export interface CreateRefundRequest {
+  meter_number: string;
+  account_number: string;
+  customer_name: string;
+  amount: number;
+  arrears_code: string;
+  month: number;
+  year: number;
+}
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (
+    data: CreateRefundRequest
+  ) => void | Promise<void>;
+}
 export default function MapRefundRequestsPage() {
-  const [period, setPeriod] = useState("June 2026");
+  // const [period, setPeriod] = useState("June 2026");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<RefundFiltersState>({
     search: "",
@@ -49,12 +63,94 @@ export default function MapRefundRequestsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [selectedRefund, setSelectedRefund] = useState<RefundRequestRow | null>(null);
-  const [openViewDialog, setOpenViewDialog] = useState(false);
-  const [openAddDialog, setOpenAddDialog] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
 
+  const MONTH_NAMES = [
+  "",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+  const getMonthYear = (period: string) => {
+    const [monthName, year] = period.split(" ");
+
+    const month = MONTH_NAMES.indexOf(monthName) + 1;
+
+    return {
+      month: Number(month),
+      year: Number(year),
+    };
+  };
+
+  const period = useMemo(() => {
+    const month =
+      filters.month === "All"
+        ? new Date().getMonth() + 1
+        : Number(filters.month);
+
+    const year =
+      filters.year === "All"
+        ? new Date().getFullYear()
+        : Number(filters.year);
+
+    return `${MONTH_NAMES[month]} ${year}`;
+  }, [filters.month, filters.year]);
+
+  const handleSendNotifications = async () => {
+    try {
+      const { month, year } = getMonthYear(period);
+
+      const response = await triggerNotifications({
+        month,
+        year,
+      });
+      toast.success(
+        `Notifications queued successfully.
+         Task ID: ${response.task_id}`
+      );
+    } catch (err: any) {
+      toast.error(
+        err.message || "Failed to trigger notifications"
+      );
+    }
+  };
+
+  const handleUploadCsv = async (file: File) => {
+    try {
+      const formData = new FormData();
+
+      // Backend expects csv_file
+      formData.append("csv_file", file);
+
+      const response = await repullMetersFromCsv(formData);
+
+      toast.success(
+        `Processed ${response.updated} of ${response.total_input} meter(s)`
+      );
+
+      if (response.missing > 0) {
+        toast.info(
+          `${response.missing} meter(s) were not found`
+        );
+      }
+
+      await loadRefundRequests();
+    } catch (err: any) {
+      toast.error(
+        err.message ?? "CSV upload failed"
+      );
+    }
+  };
   const PAGE_SIZE = 10;
 
   const totalPages = Math.ceil(
@@ -80,6 +176,37 @@ export default function MapRefundRequestsPage() {
       arrears_code: "MAPREA", email_delivered: "All", sms_sent: "All",
     });
   }
+
+  const requestFilters = useMemo(() => ({
+    status:
+      filters.status === "All"
+        ? undefined
+        : filters.status.toLowerCase(),
+
+    month:
+      filters.month === "All"
+        ? undefined
+        : Number(filters.month),
+
+    year:
+      filters.year === "All"
+        ? undefined
+        : Number(filters.year),
+
+    arrears_code:
+      filters.arrears_code || undefined,
+
+    email_delivered:
+      filters.email_delivered === "All"
+        ? undefined
+        : filters.email_delivered === "true",
+
+    sms_sent:
+      filters.sms_sent === "All"
+        ? undefined
+        : filters.sms_sent === "true",
+  }), [filters]);
+
   const loadRefundRequests = async () => {
     console.log("Loading refund requests...");
     try {
@@ -88,29 +215,8 @@ export default function MapRefundRequestsPage() {
       const response = await getRefundRequests({
         page,
         search: filters.search || undefined,
-        status:
-          filters.status === "All"
-            ? undefined
-            : filters.status.toLowerCase(),
-        month:
-          filters.month === "All"
-            ? undefined
-            : Number(filters.month),
-        year:
-          filters.year === "All"
-            ? undefined
-            : Number(filters.year),
-        arrears_code:
-          filters.arrears_code || undefined,
-        email_delivered:
-          filters.email_delivered === "All"
-            ? undefined
-            : filters.email_delivered === "true",
-        sms_sent:
-          filters.sms_sent === "All"
-            ? undefined
-            : filters.sms_sent === "true",
         ordering: "-created_at",
+        ...requestFilters,
       });
       setRefundRequests(response.results);
       setTotalCount(response.count);
@@ -167,26 +273,52 @@ export default function MapRefundRequestsPage() {
     };
   }, [refundRequests, totalCount]);
 
-  const createRefund = ()=>{
-    console.log('funded')
-  }
+  const createRefund = async (data: any) => {
+    console.log(data);
+
+    try {
+      // await createRefundRequest(data);
+
+      toast.success("Refund request created");
+
+      setAddOpen(false);
+
+      loadRefundRequests();
+    } catch (err: any) {
+      toast.error(err.message ?? "Unable to create refund request");
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: { xs: 2, md: 4 } }}>
+      <Box sx={{ minHeight: "100vh",}}>
 
         {/* 1 — Header */}
         <RefundRequestsHeader
           period={period}
-          onPeriodChange={setPeriod}
+          // onPeriodChange={setPeriod}
+          onPeriodChange={(newPeriod) => {
+            const [monthName, year] = newPeriod.split(" ");
+
+            const month =
+              MONTH_NAMES.findIndex(
+                m => m === monthName
+              );
+
+            setFilters(prev => ({
+              ...prev,
+              month: String(month) as MonthFilter,
+              year: year as YearFilter,
+            }));
+          }}
           onTriggerPipeline={() => console.log("Trigger pipeline")}
-          onSendNotifications={() => console.log("Send notifications")}
-          onUploadCsv={() => console.log("Upload CSV")}
-          // onAddRefundRequest={() => setOpenAddDialog(true)}
+          onSendNotifications={handleSendNotifications}
+          onUploadCsv={handleUploadCsv}
           onAddRefundRequest={() => setAddOpen(true)}
         />
 
         {/* 2 — Pipeline status bar */}
-        <PipelineStatusBar
+        {/* <PipelineStatusBar
           pipelineName="MAP Refund Pipeline"
           arrearsCode="MAPREF"
           region="South-West Nigeria"
@@ -194,13 +326,12 @@ export default function MapRefundRequestsPage() {
           lastRunTime="11:42 PM"
           successRate={91.3}
           status="idle"
-        />
+        /> */}
 
         {/* 3 — Stats cards */}
-        {/* <RefundStatsCards stats={MOCK_STATS} period={period} /> */}
         <RefundStatsCards
           stats={stats}
-          // period={period}
+        // period={period}
         />
 
         {/* 4 — Filters + Table */}
@@ -240,20 +371,16 @@ export default function MapRefundRequestsPage() {
             totalResults={totalCount}
             pageSize={PAGE_SIZE}
             onPageChange={setPage}
-            // onView={(row) => {
-            //   setSelectedRefund(row);
-            //   setOpenViewDialog(true);
-            // }}
             onView={(row) => {
               setSelectedRefund(row);
               setDetailsOpen(true);
             }}
             onNotify={(row) => console.log("Notify", row)}
             onViewAll={() => console.log("View all requests")}
+            filters={requestFilters}
           />
 
           <RefundDetailsDialog
-            // open={openViewDialog}
             open={detailsOpen}
             refund={selectedRefund}
             onClose={() => {

@@ -45,6 +45,7 @@ import { useVendorHierarchy } from '../../contexts/VendorContext';
 import { useEnsureUserApiKey } from '../../hooks/useEnsureUserApiKey';
 import Onboarding from '../../pages/Onboarding/Onboarding';
 import { usePermission } from '../../hooks/usePermission';
+import { RootState } from '../../store/store';
 
 const drawerWidth = 240;
 
@@ -70,7 +71,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const dispatch = useAppDispatch();
-    const { user } = useAppSelector((state) => state.auth);
+    const { user } = useAppSelector((state: RootState) => state.auth);
     const { tenantId, setTenantId } = useVendorHierarchy();
     useEnsureUserApiKey(user?.id ?? null);
 
