@@ -118,3 +118,33 @@ export async function refundPostFormData<T>(
 
   return response.json();
 }
+
+export async function refundPostBasic<T>(
+    endpoint: string,
+    body: unknown,
+    username: string,
+    password: string
+): Promise<T> {
+
+    const credentials = btoa(
+        `${username}:${password}`
+    );
+
+    const response = await fetch(
+        `${REFUND_API_BASE_URL}${endpoint}`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Basic ${credentials}`,
+            },
+            body: JSON.stringify(body),
+        }
+    );
+
+    if (!response.ok) {
+        throw await response.json();
+    }
+
+    return response.json();
+}

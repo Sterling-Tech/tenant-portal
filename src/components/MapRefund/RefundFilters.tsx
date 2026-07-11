@@ -193,7 +193,8 @@ export default function RefundFilters({
         }}
       />
 
-      <FilterGroup title="By Status" defaultOpen>
+      {/* <FilterGroup title="By Status" defaultOpen> */}
+      <FilterGroup title="By Status">
         <FilterRadioGroup
           value={filters.status}
           options={STATUSES}
@@ -201,7 +202,7 @@ export default function RefundFilters({
         />
       </FilterGroup>
 
-      <FilterGroup title="By Month" defaultOpen>
+      <FilterGroup title="By Month">
         <FilterRadioGroup
           value={filters.month}
           options={MONTHS}

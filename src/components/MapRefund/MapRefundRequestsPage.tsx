@@ -7,11 +7,15 @@ import PipelineStatusBar from "./PipelineStatusBar";
 import RefundStatsCards, { RefundStats } from "./RefundStatsCards";
 import RefundFilters, { MonthFilter, RefundFiltersState, YearFilter } from "./RefundFilters";
 import RefundRequestsTable, { RefundRequestRow, RefundStatus } from "./RefundRequestsTable";
-import { getRefundRequests, RefundRequest, triggerNotifications } from "../../services/mapRefundService";
+import { getRefundRequests, pipelineTrigger, RefundRequest, triggerNotifications } from "../../services/mapRefundService";
 import { toast } from "react-toastify";
 import RefundDetailsDialog from "./RefundDetailsDialog";
 import AddRefundRequestDialog from "./AddRefundRequestDialog";
 import { repullMetersFromCsv } from "../../services/mapRefundService";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/store";
+import PipelineAuthDialog from "./PipelineAuthDialog";
+
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const theme = createTheme({
@@ -65,22 +69,25 @@ export default function MapRefundRequestsPage() {
   const [selectedRefund, setSelectedRefund] = useState<RefundRequestRow | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const { user } = useSelector((state: RootState) => state.auth);
+  const [pipelineDialogOpen, setPipelineDialogOpen] = useState(false);
+  const [pipelineLoading, setPipelineLoading] = useState(false);
 
   const MONTH_NAMES = [
-  "",
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
+    "",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
   const getMonthYear = (period: string) => {
     const [monthName, year] = period.split(" ");
 
@@ -122,6 +129,39 @@ export default function MapRefundRequestsPage() {
       toast.error(
         err.message || "Failed to trigger notifications"
       );
+    }
+  };
+  const handlePipelineTrigger = async (
+    username: string,
+    password: string
+  ) => {
+    try {
+      setPipelineLoading(true);
+
+      const { month, year } =
+        getMonthYear(period);
+
+      const response =
+        await pipelineTrigger(
+          { month, year },
+          username,
+          password
+        );
+
+      toast.success(
+        `Pipeline queued.\nTask ID: ${response.task_id}`
+      );
+
+      setPipelineDialogOpen(false);
+    } catch (err: any) {
+      toast.error(
+        err.detail ||
+        err.error ||
+        err.message ||
+        "Failed to trigger pipeline"
+      );
+    } finally {
+      setPipelineLoading(false);
     }
   };
 
@@ -291,7 +331,7 @@ export default function MapRefundRequestsPage() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ minHeight: "100vh",}}>
+      <Box sx={{ minHeight: "100vh", }}>
 
         {/* 1 — Header */}
         <RefundRequestsHeader
@@ -311,7 +351,8 @@ export default function MapRefundRequestsPage() {
               year: year as YearFilter,
             }));
           }}
-          onTriggerPipeline={() => console.log("Trigger pipeline")}
+          // onTriggerPipeline={handlePiplineTrigger}
+          onTriggerPipeline={() => setPipelineDialogOpen(true)}
           onSendNotifications={handleSendNotifications}
           onUploadCsv={handleUploadCsv}
           onAddRefundRequest={() => setAddOpen(true)}
@@ -392,6 +433,15 @@ export default function MapRefundRequestsPage() {
             open={addOpen}
             onClose={() => setAddOpen(false)}
             onSubmit={createRefund}
+          />
+          <PipelineAuthDialog
+            open={pipelineDialogOpen}
+            loading={pipelineLoading}
+            defaultUsername={user?.username ?? user?.email ?? ""}
+            onClose={() =>
+              setPipelineDialogOpen(false)
+            }
+            onSubmit={handlePipelineTrigger}
           />
         </Box>
       </Box>

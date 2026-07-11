@@ -13,6 +13,7 @@ import {
   MenuItem,
   CircularProgress,
   Drawer,
+  Divider,
 } from "@mui/material";
 import { Refresh, MoreVert } from "@mui/icons-material";
 import {
@@ -20,6 +21,7 @@ import {
   fetchVendorchildren,
   Vendor,
   fetchAllVendors,
+  fetchAllVendorsOnly,
 } from "../../services/vendorService";
 
 /* ================= COLUMN ================= */
@@ -128,28 +130,48 @@ const VendorHierarchy = () => {
   const [anchorEl, setAnchorEl] = useState<any>(null);
   const [menuRow, setMenuRow] = useState<any>(null);
 
+  const [vendorPage, setVendorPage] = useState(1);
+  const [vendorHasNext, setVendorHasNext] = useState(false);
+
   /* LOAD ROOT */
 
-  const loadVendors = async () => {
+  // const loadVendors = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await fetchVendors({ main_vendor: true });
+  //     setVendors(res?.results || []);
+  //   } catch (err) {
+  //     console.error(err);
+  //     setVendors([]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+  const loadVendors = async (page = 1, append = false) => {
     try {
       setLoading(true);
-      // const res = await fetchVendors({
-      //   main_vendor: true,
-      // });
-      const res = await fetchAllVendors();
 
-      setVendors(res || []);
+      const res = await fetchVendors({
+        page,
+        main_vendor: true,
+      });
+
+      setVendors((prev) =>
+        append ? [...prev, ...res.results] : res.results
+      );
+
+      setVendorHasNext(!!res.next);
+      setVendorPage(page);
     } catch (err) {
       console.error(err);
-      setVendors([]);
     } finally {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    loadVendors();
-  }, []);
 
+  useEffect(() => {
+    loadVendors(1);
+  }, []);
   /* LOAD CHILDREN (ONLY when explicitly called) */
 
   const loadChildren = async (id: any) => {
@@ -202,6 +224,33 @@ const VendorHierarchy = () => {
 
   /* UI */
 
+  const VendorDropdown = (props: any) => (
+    <Paper {...props}>
+      {props.children}
+
+      {vendorHasNext && (
+        <>
+          <Divider />
+          <Button
+            fullWidth
+            disabled={loading}
+            onMouseDown={(e) => e.preventDefault()} // prevents dropdown from closing
+            onClick={() => loadVendors(vendorPage + 1, true)}
+            sx={{
+              borderRadius: 0,
+              py: 1.2,
+            }}
+          >
+            {loading ? (
+              <CircularProgress size={18} />
+            ) : (
+              "Load More"
+            )}
+          </Button>
+        </>
+      )}
+    </Paper>
+  );
   return (
     <Box bgcolor="#f5f7fb">
       {/* HEADER */}
@@ -246,14 +295,19 @@ const VendorHierarchy = () => {
             options={vendors}
             value={selectedVendor}
             sx={{ width: 260 }}
-            onChange={(_, v) => {
-              if (!v) return;
-              setSelectedVendor(v);
-              loadChildren(v.id); // ✅ ONLY here
+            getOptionLabel={(option) => option.business_name}
+            onChange={(_, value) => {
+              if (!value) return;
+
+              setSelectedVendor(value);
+              loadChildren(value.id);
             }}
-            getOptionLabel={(o) => o.business_name}
+            PaperComponent={VendorDropdown}
             renderInput={(params) => (
-              <TextField {...params} placeholder="Select vendor" />
+              <TextField
+                {...params}
+                placeholder="Select vendor"
+              />
             )}
           />
         </Stack>

@@ -35,6 +35,7 @@ import {
   Language as DomainIcon,
   Business as BusinessIcon,
   Public as PublicIcon,
+  History,
 } from "@mui/icons-material";
 
 import { useAppSelector } from "../../store/store";
@@ -45,6 +46,7 @@ import ChangePassword from "./ChangePassword";
 import UserUpdate from "./UserUpdate";
 import ConfigureVendor from "../../components/OnboardingUser/ConfigureVendor";
 import { RelatedVendorResponse } from "../../services/onbordingService";
+import AuditLogs from "./AuditLogs";
 
 //const API_BASE_URL = "http://188.166.161.13:8001/api/v1";
 
@@ -247,6 +249,7 @@ const Settings: React.FC = () => {
               label="Assign Permission"
             />
             {/* )} */}
+            <Tab icon={<History />} iconPosition="start" label="Audit Logs" />
           </Tabs>
         </Box>
 
@@ -921,6 +924,9 @@ const Settings: React.FC = () => {
         )}
         {activeTab === 4 && (
           <AssignPermission />
+        )}
+        {activeTab === 5 && (
+          <AuditLogs />
         )}
       </Card>
     </Box>
