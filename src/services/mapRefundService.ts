@@ -1,4 +1,4 @@
-import { refundGet, refundGetBlob, refundPost, refundPostFormData } from "./apiService";
+import { refundGet, refundGetBlob, refundPost, refundPostBasic, refundPostFormData } from "./apiService";
 
 export interface RefundRequest {
   id: number;
@@ -59,7 +59,7 @@ export interface RefundStatsResponse {
   failure_rate: number;
 }
 
-interface StatsParams {
+export interface StatsParams {
   month?: number;
   year?: number;
 }
@@ -216,5 +216,17 @@ export const repullMetersFromCsv = (
   return refundPostFormData<RepullMetersResponse>(
     "/meters/repull/",
     file
+  );
+};
+export const pipelineTrigger = (
+  params: TriggerNotificationParams,
+  username: string,
+  password: string
+) => {
+  return refundPostBasic<TriggerNotificationResponse>(
+    "/pipeline/trigger/",
+    params,
+    username,
+    password
   );
 };

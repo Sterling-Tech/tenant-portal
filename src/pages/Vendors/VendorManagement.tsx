@@ -36,8 +36,7 @@ import {
   Delete,
 } from "@mui/icons-material";
 import { fetchVendors, createVendor, type VendorForm, Vendor, searchVendors, toggleVendorStatus } from "../../services/vendorService";
-import TenantFormModal, { TenantFormValues } from '../../components/TenantAdmin/TenantFormModal';
-import { Tenant } from "../../services/tenantService";
+
 const PAGE_SIZE = 10;
 
 const formatCurrency = (val: any) => {
@@ -51,19 +50,13 @@ const formatCurrency = (val: any) => {
 
 
 export default function VendorHub() {
-  const [tenantModalState, setTenantModalState] = useState<{ open: boolean; mode: 'create' | 'edit'; tenant?: Tenant | null }>({
-    open: false,
-    mode: 'create',
-  });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuVendor, setMenuVendor] = useState<any>(null);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [openModal, setOpenModal] = useState(false);
-  const [openModalt, setOpenModalt] = useState(false);
-  const [vendorForm, setVendorForm] = useState<Partial<VendorForm>>({});
+
 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [count, setCount] = useState(0);
@@ -85,60 +78,7 @@ export default function VendorHub() {
     type: "success",
     message: "",
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // const totalPages = Math.ceil(count / PAGE_SIZE);
-  const validateVendorForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!vendorForm.business_name?.trim()) {
-      newErrors.business_name = "Business Name field is required";
-    }
-
-    if (!vendorForm.email?.trim()) {
-      newErrors.email = "Email Address field is required";
-    }
-
-    if (!vendorForm.phone_number?.trim()) {
-      newErrors.phone_number = "Phone Number field is required";
-    }
-
-    if (!vendorForm.hierachy?.trim()) {
-      newErrors.hierachy = "Hierarchy field is required";
-    }
-
-    if (!vendorForm.address?.trim()) {
-      newErrors.address = "Address field is required";
-    }
-
-    if (!vendorForm.city?.trim()) {
-      newErrors.city = "City field is required";
-    }
-
-    if (!vendorForm.state?.trim()) {
-      newErrors.state = "State field is required";
-    }
-
-    if (!vendorForm.country?.trim()) {
-      newErrors.country = "Country field is required";
-    }
-
-    if (!vendorForm.postal_code?.trim()) {
-      newErrors.postal_code = "Postal Code field is required";
-    }
-
-    // email format validation
-    if (
-      vendorForm.email &&
-      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(vendorForm.email)
-    ) {
-      newErrors.email = "Invalid email address";
-    }
-
-    setErrors(newErrors);
-
-    return Object.keys(newErrors).length === 0;
-  };
 
   const formatDateTime = (date: string) => {
     if (!date) return "-";
@@ -160,109 +100,71 @@ export default function VendorHub() {
     return text.length > max ? text.slice(0, max) + "..." : text;
   };
   // ✅ Debounce search
-  // Debounced search: wait until user stops typing for 500ms
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(search); // update debounced value
-      setPage(1); // reset to first page
-    }, 500); // 500ms delay
+ useEffect(() => {
+  const handler = setTimeout(() => {
+    setDebouncedSearch(search);
+    setPage(1);
+  }, 500);
 
-    // cleanup: cancel previous timeout if user types again
-    return () => clearTimeout(handler);
-  }, [search]);
-
-  const load = async (pageNumber = 1) => {
-    try {
-      setLoading(true);
-
-      if (debouncedSearch.trim()) {
-        const res = await searchVendors(debouncedSearch);
-
-        let data: Vendor[] = [];
-        if (Array.isArray(res)) data = res;
-        else if (res && "results" in res) data = res.results;
-
-        setVendors(data);
-        setCount(data.length);
-
-        if (data.length) {
-          setSelected(data[0]);
-        } else {
-          setSelected(null);
-        }
-        return;
-      }
+  return () => clearTimeout(handler);
+}, [search]);
 
 
-      // NORMAL PAGINATION MODE
-      const res = await fetchVendors({
-        page: pageNumber,
-        account_status:
-          statusFilter === "all"
-            ? undefined
-            : statusFilter,
+const load = async (pageNumber = 1) => {
+  try {
+    setLoading(true);
 
-        is_verified:
-          verifiedFilter === "all"
-            ? undefined
-            : verifiedFilter === "verified",
-      });
-
-      setVendors(res?.results || []);
-      setCount(res?.count || 0);
-
-      setNext(res?.next || null);
-      setPrevious(res?.previous || null);
-
-      setSelected(
-        res?.results?.length ? res.results[0] : null
+    // SEARCH MODE
+    if (debouncedSearch.trim()) {
+      const res = await searchVendors(
+        debouncedSearch,
+        pageNumber
       );
-    } catch (err) {
-      console.error("LOAD ERROR:", err);
 
-      setVendors([]);
-      setCount(0);
-    } finally {
-      setLoading(false);
+      setVendors(res.results);
+      setCount(res.count);
+      setNext(res.next);
+      setPrevious(res.previous);
+      setSelected(res.results.length ? res.results[0] : null);
+
+      return;
     }
-  };
-  const handleTenantModalSubmit = async (values: TenantFormValues) => {
 
+    // NORMAL MODE
+    const res = await fetchVendors({
+      page: pageNumber,
+      main_vendor: true,
+      account_status:
+        statusFilter === "all"
+          ? undefined
+          : (statusFilter as
+              | "active"
+              | "inactive"
+              | "suspended"),
+    });
+
+    setVendors(res.results);
+    setCount(res.count);
+    setNext(res.next);
+    setPrevious(res.previous);
+    setSelected(res.results.length ? res.results[0] : null);
+  } catch (err) {
+    console.error(err);
+
+    setVendors([]);
+    setCount(0);
+    setNext(null);
+    setPrevious(null);
+    setSelected(null);
+  } finally {
+    setLoading(false);
   }
+};
+
   useEffect(() => {
     load(page);
-  }, [page, debouncedSearch, statusFilter, verifiedFilter]);
+  }, [page, debouncedSearch, statusFilter]);
 
-  // ✅ HEADER CHECKBOX
-  const allSelected =
-    vendors.length > 0 &&
-    vendors.every((v) => selectedIds.includes(Number(v.id)));
-
-  const isIndeterminate =
-    selectedIds.length > 0 && !allSelected;
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedIds(vendors.map((v) => Number(v.id)));
-    } else {
-      setSelectedIds([]);
-    }
-  };
-
-  const toggleRow = (id: number) => {
-    setSelectedIds((prev) =>
-      prev.includes(id)
-        ? prev.filter((i) => i !== id)
-        : [...prev, id]
-    );
-  };
-  const hierarchyOptions = [
-    { value: "vendor", label: "Vendor" },
-    { value: "sub_vendor", label: "Sub Vendor" },
-    { value: "agent", label: "Agent" },
-    { value: "cashier", label: "Cashier" },
-    { value: "POS", label: "POS" },
-  ];
 
   const handleToggleStatus = async (vendor: Vendor) => {
     try {
@@ -276,52 +178,6 @@ export default function VendorHub() {
     }
   };
 
-  const handleCreateVendor = async () => {
-    const isValid = validateVendorForm();
-
-    if (!isValid) return;
-
-    try {
-      setLoading(true);
-
-      await createVendor(vendorForm as VendorForm);
-
-      setAlert({
-        open: true,
-        type: "success",
-        message: "Vendor created successfully",
-      });
-
-      setOpenModal(false);
-
-      setVendorForm({
-        business_name: "",
-        email: "",
-        phone_number: "",
-        address: "",
-        city: "",
-        state: "",
-        country: "",
-        postal_code: "",
-        hierachy: "",
-        related_vendor: undefined,
-      });
-
-      setErrors({});
-
-      load();
-    } catch (err: any) {
-      setAlert({
-        open: true,
-        type: "error",
-        message:
-          err?.response?.data?.message ||
-          "Failed to create vendor",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
 
   return (
@@ -338,58 +194,22 @@ export default function VendorHub() {
             Vendor Hub
           </Typography>
           <Typography color="text.secondary">
-            Onboard vendors, manage their details and monitor all activity
+            All vendors, details and all activity
           </Typography>
         </Box>
 
         <Stack direction="row" spacing={2}>
           <Button
-            size="small"
-            variant="outlined"
-            startIcon={<Refresh />}
-            //onClick={() => load(page)}
-            onClick={() => {
-              setSearch("");
-              setDebouncedSearch("");
-              setPage(1);
-              load(1);
-            }}
-            sx={{ height: 36, textTransform: "none", borderRadius: 2 }}
-            disabled={loading}
-          >
-            {/* Refresh */}
-            {loading ? "Refreshing..." : "Refresh"}
-          </Button>
+  onClick={() => {
+    setSearch("");
+    setDebouncedSearch("");
+    setStatusFilter("all");
+    setPage(1);
+  }}
+>
+  Refresh
+</Button>
 
-          {/* <Button
-            size="small"
-            variant="contained"
-            sx={{
-              height: 36,
-              textTransform: "none",
-              borderRadius: 2,
-              bgcolor: "#1e3a8a",
-              "&:hover": { bgcolor: "#1e40af" },
-            }}
-            onClick={() => setOpenModal(true)}
-          >
-            + Onboard Vendor
-          </Button> */}
-
-          {/* <Button
-            size="small"
-            variant="contained"
-            sx={{
-              height: 36,
-              textTransform: "none",
-              borderRadius: 2,
-              bgcolor: "#1e3a8a",
-              "&:hover": { bgcolor: "#1e40af" },
-            }}
-            onClick={() => setOpenModalt(true)}
-          >
-            + Onboard Vendor mvp test
-          </Button> */}
         </Stack>
       </Stack>
 
@@ -414,7 +234,7 @@ export default function VendorHub() {
               }}
             />
 
-            <FormControl size="small" sx={{ minWidth: 160 }}>
+            {/* <FormControl size="small" sx={{ minWidth: 160 }}>
               <Select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -442,6 +262,20 @@ export default function VendorHub() {
                   </Stack>
                 </MenuItem>
               </Select>
+            </FormControl> */}
+            <FormControl size="small" sx={{ minWidth: 160 }}>
+              <Select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <MenuItem value="all">All Status</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value="suspended">Suspended</MenuItem>
+              </Select>
             </FormControl>
           </Stack>
 
@@ -449,15 +283,6 @@ export default function VendorHub() {
           <Table>
             <TableHead>
               <TableRow>
-                {/* <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={allSelected}
-                    indeterminate={isIndeterminate}
-                    onChange={(e) =>
-                      handleSelectAll(e.target.checked)
-                    }
-                  />
-                </TableCell> */}
                 <TableCell>Business</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Status</TableCell>
@@ -480,13 +305,6 @@ export default function VendorHub() {
                     onClick={() => setSelected(v)}
                     sx={{ cursor: "pointer" }}
                   >
-                    {/* <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedIds.includes(Number(v.id))}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={() => toggleRow(Number(v.id))}
-                    />
-                  </TableCell> */}
 
                     <TableCell>
                       <Stack direction="row" spacing={2}>
@@ -542,67 +360,28 @@ export default function VendorHub() {
             </TableBody>
           </Table>
 
-          {/* PAGINATION (ONLY ARROWS) */}
-          {/* <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            px={2}
-            py={2}
-          >
-
-            <Typography fontSize={13} color="text.secondary">
-              Page {page} of {totalPages || 1} • {count} total
-            </Typography>
-
-
-            <Stack direction="row" spacing={1}>
-              <Button
-                //variant="outlined"
-                size="small"
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                Prev
-              </Button>
-
-              <Button
-                //variant="outlined"
-                size="small"
-                disabled={page === totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </Button>
-            </Stack>
-          </Stack>
-          */}
           <div className="flex items-center justify-between px-4 py-4 border-t">
             <div className="text-sm text-gray-500">
-              Showing page {page}
-              {" • "}
-              {count} total vendors
+              Showing page {page} • {count} total vendors
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex gap-2">
               <button
                 disabled={!previous}
-                onClick={() => setPage((prev) => prev - 1)}
-                className={`px-4 py-2 rounded-lg border text-sm transition
-        ${previous
-                    ? "bg-white hover:bg-gray-100 text-black"
+                onClick={() => previous && setPage((p) => p - 1)}
+                className={`px-4 py-2 rounded-lg border ${previous
+                    ? "bg-white hover:bg-gray-100"
                     : "bg-gray-100 text-gray-400 cursor-not-allowed"
                   }`}
               >
-                Prev
+                Previous
               </button>
 
               <button
                 disabled={!next}
-                onClick={() => setPage((prev) => prev + 1)}
-                className={`px-4 py-2 rounded-lg border text-sm transition
-        ${next
-                    ? "bg-blue-900 hover:bg-blue-800 text-white"
+                onClick={() => next && setPage((p) => p + 1)}
+                className={`px-4 py-2 rounded-lg border ${next
+                    ? "bg-blue-900 text-white hover:bg-blue-800"
                     : "bg-gray-100 text-gray-400 cursor-not-allowed"
                   }`}
               >
@@ -762,337 +541,14 @@ export default function VendorHub() {
                   </Box>
                 </Stack>
 
-                {/* ACTIONS */}
-                {/* <Stack direction="row" spacing={1} mt={3}>
-          <Button fullWidth variant="outlined">
-            Full Profile
-          </Button>
-          <Button fullWidth color="warning" variant="contained">
-            Edit
-          </Button>
-          <Button fullWidth color="error" variant="contained">
-            Delete
-          </Button>
-        </Stack> */}
+
               </Box>
             </>
           )}
         </Card>
       </Stack>
 
-      {openModal && (
-        <Box
-          sx={{
-            position: "fixed",
-            inset: 0,
-            backdropFilter: "blur(10px)",
-            bgcolor: "rgba(0,0,0,0.25)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1300,
-          }}
-          onClick={clickOutside}
-        >
-          <Card
-            sx={{
-              width: 650,
-              borderRadius: 4,
-              overflow: "hidden",
-            }}
-          >
-            {/* HEADER */}
-            <Box
-              sx={{
-                bgcolor: "#1e3a8a",
-                color: "#fff",
-                px: 3,
-                py: 2.5,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Box>
-                <Typography fontWeight={700} fontSize={18}>
-                  Onboard New Vendor
-                </Typography>
-              </Box>
 
-              <IconButton
-                onClick={() => setOpenModal(false)}
-                sx={{ color: "#fff" }}
-              >
-                ✕
-              </IconButton>
-            </Box>
-
-            {/* FORM */}
-            <Box px={3} py={3}>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Business Name"
-                    placeholder="e.g. Acme Nigeria Ltd"
-                    size="small"
-                    value={vendorForm.business_name || ""}
-
-                    onChange={(e) => {
-                      setVendorForm({ ...vendorForm, business_name: e.target.value })
-
-                      setErrors((prev) => ({
-                        ...prev,
-                        business_name: "",
-                      }));
-                    }}
-                    error={!!errors.business_name}
-                    helperText={errors.business_name}
-                  />
-                </Grid>
-
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Email Address"
-                    placeholder="admin@business.com"
-                    size="small"
-                    value={vendorForm.email || ""}
-
-                    onChange={(e) => {
-                      setVendorForm({ ...vendorForm, email: e.target.value })
-
-                      setErrors((prev) => ({
-                        ...prev,
-                        email: "",
-                      }));
-                    }}
-                    error={!!errors.email}
-                    helperText={errors.email}
-                  />
-                </Grid>
-
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Phone Number"
-                    placeholder="+234 800 000 0000"
-                    size="small"
-
-                    value={vendorForm.phone_number || ""}
-                    onChange={(e) => {
-                      setVendorForm({ ...vendorForm, phone_number: e.target.value })
-                      setErrors((prev) => ({
-                        ...prev,
-                        phone_number: "",
-                      }));
-                    }}
-                    error={!!errors.phone_number}
-                    helperText={errors.phone_number}
-                  />
-                </Grid>
-
-                <Grid item xs={6}>
-                  <FormControl
-                    fullWidth
-                    size="small"
-                    error={!!errors.hierachy}
-                  >
-                    <Select
-                      displayEmpty
-                      value={vendorForm.hierachy || ""}
-
-                      onChange={(e) => {
-                        setVendorForm({
-                          ...vendorForm,
-                          hierachy: e.target.value,
-                        })
-                        setErrors((prev) => ({
-                          ...prev,
-                          hierachy: "",
-                        }));
-                      }}
-                    >
-                      <MenuItem value="">Select Hierarchy</MenuItem>
-                      {hierarchyOptions.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.hierachy && (
-                      <Typography
-                        fontSize={12}
-                        color="error"
-                        mt={0.5}
-                      >
-                        {errors.hierachy}
-                      </Typography>
-                    )}
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Business Address"
-                    placeholder="Street, City, State"
-                    size="small"
-                    value={vendorForm.address || ""}
-
-                    onChange={(e) => {
-                      setVendorForm({ ...vendorForm, address: e.target.value })
-                      setErrors((prev) => ({
-                        ...prev,
-                        address: "",
-                      }));
-                    }}
-                    error={!!errors.address}
-                    helperText={errors.address}
-                  />
-                </Grid>
-
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="City"
-                    size="small"
-
-                    value={vendorForm.city || ""}
-                    onChange={(e) => {
-                      setVendorForm({ ...vendorForm, city: e.target.value })
-                      setErrors((prev) => ({
-                        ...prev,
-                        city: "",
-                      }));
-                    }}
-                    error={!!errors.city}
-                    helperText={errors.city}
-                  />
-                </Grid>
-
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="State"
-                    size="small"
-
-                    value={vendorForm.state || ""}
-                    onChange={(e) => {
-                      setVendorForm({ ...vendorForm, state: e.target.value })
-                      setErrors((prev) => ({
-                        ...prev,
-                        state: "",
-                      }));
-                    }}
-                    error={!!errors.state}
-                    helperText={errors.state}
-                  />
-                </Grid>
-
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Country"
-                    size="small"
-
-                    value={vendorForm.country || ""}
-                    onChange={(e) => {
-                      setVendorForm({ ...vendorForm, country: e.target.value })
-                      setErrors((prev) => ({
-                        ...prev,
-                        country: "",
-                      }));
-                    }}
-                    error={!!errors.country}
-                    helperText={errors.country}
-                  />
-                </Grid>
-
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Postal Code"
-                    size="small"
-
-                    value={vendorForm.postal_code || ""}
-                    onChange={(e) => {
-                      setVendorForm({
-                        ...vendorForm,
-                        postal_code: e.target.value,
-                      })
-                      setErrors((prev) => ({
-                        ...prev,
-                        postal_code: "",
-                      }));
-                    }}
-                    error={!!errors.postal_code}
-                    helperText={errors.postal_code}
-                  />
-                </Grid>
-
-                {vendorForm.hierachy &&
-                  vendorForm.hierachy !== "vendor" && (
-                    <Grid item xs={12}>
-                      <Autocomplete
-                        options={vendors || []}
-                        getOptionLabel={(o) => o.business_name}
-                        value={
-                          vendors.find((v) => v.id === vendorForm.related_vendor) || null
-                        }
-                        onChange={(_, value) =>
-                          setVendorForm({
-                            ...vendorForm,
-                            related_vendor: value?.id,
-                          })
-                        }
-                        renderInput={(params) => (
-                          <TextField {...params} label="Related Vendor (Optional)" />
-                        )}
-                      />
-                    </Grid>
-                  )}
-              </Grid>
-            </Box>
-
-            {/* FOOTER */}
-            <Box
-              px={3}
-              py={2}
-              display="flex"
-              justifyContent="flex-end"
-              gap={2}
-              borderTop="1px solid #eee"
-            >
-              <Button
-                variant="outlined"
-                onClick={() => setOpenModal(false)}
-                sx={{ textTransform: "none", borderRadius: 2 }}
-              >
-                Cancel
-              </Button>
-
-              <Button
-                variant="contained"
-                onClick={handleCreateVendor}
-                disabled={loading}
-                sx={{
-                  bgcolor: "#1e3a8a",
-                  textTransform: "none",
-                  borderRadius: 2,
-                  px: 3,
-                }}
-              >
-                {loading ? (
-                  <CircularProgress size={20} sx={{ color: "#fff" }} />
-                ) : (
-                  "Onboard Vendor"
-                )}
-              </Button>
-            </Box>
-          </Card>
-        </Box>
-      )}
       {/* MENU */}
       <Menu
         anchorEl={anchorEl}
@@ -1130,33 +586,6 @@ export default function VendorHub() {
           {alert.message}
         </Alert>
       </Snackbar>
-
-
-
-
-      <TenantFormModal
-        open={openModalt}
-        mode={tenantModalState.mode}
-        // loading={mutationLoading}
-        initialValues={
-          tenantModalState.mode === 'edit' && tenantModalState.tenant
-            ? {
-              name: tenantModalState.tenant.business_name,
-              slug: tenantModalState.tenant.email,
-              domain: tenantModalState.tenant.address,
-              subdomain: tenantModalState.tenant.phone_number ?? '',
-              isTrial: true,
-              trialEndsAt: tenantModalState.tenant.state ?? '',
-              isActive: true,
-            }
-            : undefined
-        }
-        submitDisabled={tenantModalState.mode === 'create'}
-        // submitDisabledMessage={
-        // tenantModalState.mode === 'create'}
-        onClose={() => setOpenModalt(false)}
-        onSubmit={handleTenantModalSubmit}
-      />
 
     </Box>
   );

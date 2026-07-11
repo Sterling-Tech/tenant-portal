@@ -517,7 +517,7 @@ const VendorTransactions: React.FC = () => {
         'Status',
         'Reversal',
         'Credit',
-        'Date',           // second Date column — closing date / settlement date
+        'Debit',           // second Date column — closing date / settlement date
         'closing_balance',
       ];
 
@@ -532,7 +532,9 @@ const VendorTransactions: React.FC = () => {
         tx.direction === 'credit'
           ? tx.value                                             // Credit (amount if credit)
           : '',                                                   // blank if debit
-        formatDateTime(tx.created_at),                            // Date (closing/settlement)
+        tx.direction === 'debit'
+          ? tx.value                                             // Debit (amount if debit)
+          : '',                          // Date (closing/settlement)
         tx.closing_balance !== undefined ? tx.closing_balance : '', // closing_balance
       ]);
 
@@ -562,7 +564,7 @@ const VendorTransactions: React.FC = () => {
         { wch: 12 }, // Status
         { wch: 10 }, // Reversal
         { wch: 18 }, // Credit
-        { wch: 22 }, // Date (closing)
+        { wch: 22 }, // Debit (closing)
         { wch: 20 }, // closing_balance
       ];
 
@@ -1362,7 +1364,7 @@ const VendorTransactions: React.FC = () => {
                   Columns that will be exported in the report:
                 </Typography>
                 <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
-                  {['Date', 'Vendor', 'Reference', 'account_number', 'Status', 'Reversal', 'Credit', 'Date', 'closing_balance'].map((col, i) => (
+                  {['Date', 'Vendor', 'Reference', 'account_number', 'Status', 'Reversal', 'Credit', 'Debit', 'closing_balance'].map((col, i) => (
                     <Chip key={`${col}-${i}`} label={col} size="small" variant="outlined"
                       sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 600, borderColor: '#93c5fd', color: '#1e3a8a' }} />
                   ))}

@@ -1,37 +1,125 @@
 import { get, post, patch, del, put } from './api';
 
 
-export interface Vendor {
-  id: string
-  business_name: string
-  email: string
-  phone_number: string
-  address: string
-  city: string
-  state: string
-  country: string
-  postal_code: string
-  account_status: "active" | "inactive"
-  hierachy: string
-  related_vendor: number | null
-  token: string
-  wallet?: {
-    wallet_type?: {
-      name: string
-      description?: string
-    }
-    balance: string
-  }
-  created_at: string
+// export interface Vendor {
+//   id: string
+//   business_name: string
+//   email: string
+//   phone_number: string
+//   address: string
+//   city: string
+//   state: string
+//   country: string
+//   postal_code: string
+//   account_status: "active" | "inactive"
+//   hierachy: string
+//   related_vendor: number | null
+//   token: string
+//   wallet?: {
+//     wallet_type?: {
+//       name: string
+//       description?: string
+//     }
+//     balance: string
+//   }
+//   created_at: string
+// }
+export interface VendorQuery {
+  page?: number;
+  vendor_id?: number;
+  main_vendor?: boolean;
+  account_status?: "all" | "active" | "inactive" | "suspended";
+  search?: string;
 }
 
+
+export interface Vendor {
+  id: string;
+  business_name: string;
+  email: string;
+  phone_number: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  postal_code: string;
+
+  account_status: "active" | "inactive" | "suspended";
+
+  hierachy: string;
+
+  related_vendor: number | null;
+
+  funding_cap: number | null;
+  transaction_max: number | null;
+  commission_rate: number | null;
+  monthly_target: number | null;
+
+  token: string;
+
+  wallet?: {
+    wallet_type?: {
+      name: string;
+      description: string;
+    };
+    balance: string;
+  };
+
+  domain?: string;
+  sub_domain?: string;
+  slug?: string;
+
+  description?: string;
+  industry?: string;
+  category?: string;
+
+  registration_number?: string;
+  cac_registration_number?: string;
+
+  website?: string;
+
+  contact_name?: string;
+
+  email1?: string;
+  email2?: string;
+
+  bank_name?: string;
+  account_name?: string;
+  account_number?: string;
+
+  owner_name?: string;
+  dob?: string;
+  nationality?: string;
+
+  id_type?: string;
+  id_number?: string;
+
+  owner_address?: string;
+
+  entity_name?: string;
+  company_website?: string;
+  company_address?: string;
+
+  signatory_name?: string;
+  signatory_phone_number?: string;
+  signatory_email?: string;
+
+  created_at: string;
+}
+
+
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
 export interface PaginatedVendorResponse {
   count: number;
   next: string | null;
   previous: string | null;
   results: Vendor[];
 }
-
 export interface Debt {
     id: string,
     customer: {
@@ -396,7 +484,6 @@ export interface FundingRequest {
     transaction_ref: string;
     vendor: VendorT;
     amount: string;
-    //request_status: FundingRequestStatus;
     status: FundingRequestStatus;
     request_time: string;
 }
@@ -424,7 +511,7 @@ export interface FundingOperationPayload {
     action: FundingAction;
 }
 
-const buildQuery = (params?: Record<string, unknown>) => {
+export const buildQuery = (params?: Record<string, unknown>) => {
     if (!params || Object.keys(params).length === 0) return '';
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -463,22 +550,74 @@ export const CustomerClass = () =>
     get<Class[]>(`/customer/class/`);
 
 //paginated vendors with optional filters
-export const fetchVendors = (params?: {
-  page?: number;
-  vendor_id?: number;
-  main_vendor?: boolean;
-  tenant?: string;
-  account_status?: string;
-  is_verified?: boolean;
-  search?: string;
-}) =>
-  get<PaginatedVendorResponse>(
-    `/vendor/retrieve/${buildQuery(params)}`
+// export const fetchVendors = (params?: {
+//   page?: number;
+//   vendor_id?: number;
+//   main_vendor?: boolean;
+//   tenant?: string;
+//   account_status?: string;
+//   is_verified?: boolean;
+//   search?: string;
+// }) =>
+//   get<PaginatedVendorResponse>(
+//     `/vendor/retrieve/${buildQuery(params)}`
+//   );
+
+//   export const fetchVendors = (params?: VendorQuery) => {
+//   const search = new URLSearchParams();
+
+//   if (params?.page)
+//     search.append("page", String(params.page));
+
+//   if (params?.vendor_id)
+//     search.append("vendor_id", String(params.vendor_id));
+
+//   if (params?.main_vendor !== undefined)
+//     search.append("main_vendor", String(params.main_vendor));
+
+//   if (params?.account_status)
+//     search.append("account_status", params.account_status);
+
+//   return get<PaginatedResponse<Vendor>>(
+//     `/vendor/retrieve/?${search.toString()}`
+//   );
+// };
+export const fetchVendors = (params?: VendorQuery) => {
+  const search = new URLSearchParams();
+
+  if (params?.page) {
+    search.append("page", String(params.page));
+  }
+
+  if (params?.vendor_id) {
+    search.append("vendor_id", String(params.vendor_id));
+  }
+
+  if (params?.main_vendor !== undefined) {
+    search.append("main_vendor", String(params.main_vendor));
+  }
+
+  if (params?.account_status && params.account_status !== "all") {
+    search.append("account_status", params.account_status);
+  }
+
+  if (params?.search) {
+    search.append("search", params.search);
+  }
+
+  return get<PaginatedResponse<Vendor>>(
+    `/vendor/retrieve/?${search.toString()}`
   );
-  //fetch all vendors without pagination
-export const fetchAllVendors = () =>
+};
+  // fetch all vendors without pagination
+
+  export const fetchAllVendors = () =>
     get<Vendor[]>(`/vendor/retrieve/all/`);
 
+export const fetchAllVendorsOnly = () =>
+    get<PaginatedResponse<Vendor>>(
+        "/vendor/retrieve/?main_vendor=true"
+    );
 export const fetchVendor = (id: string) =>
     get<Vendor>(`/vendor/retrieve/?vendor_id=${id}/`);
 
@@ -597,9 +736,9 @@ export const fundVendorWallet = (payload: {
 }) =>
   put(`/vendor/wallet/load/`, payload);
 
-export const toggleVendorStatus = (vendorId: string) =>
+export const toggleVendorStatus = (vendorId: number | string) =>
   put(`/vendor/activate-deactivate/`, {
-    vendor: vendorId,
+    vendor: String(vendorId),
   });
 export const updateVendor = (id: string, payload: Partial<VendorForm>) =>
     patch<Vendor>(`/vendors/vendors/${id}/`, payload);
