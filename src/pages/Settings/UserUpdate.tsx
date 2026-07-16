@@ -28,22 +28,24 @@ export default function UserUpdate() {
         first_name: "",
         last_name: "",
         gender: "",
-        name:"",
+        name: "",
         phone_number: "",
         two_factor_enabled: false,
     });
 
     useEffect(() => {
-        if (user) {
-            setAccountForm({
-                name: `${accountForm.first_name} ${accountForm.last_name}`,
-                first_name: user.first_name || "",
-                last_name: user.last_name || "",
-                gender: user.gender || "",
-                phone_number: user.phone_number || "",
-                two_factor_enabled: user.is_2fa_enabled,
-            });
-        }
+        if (!user) return;
+
+        const names = (user.name || "").trim().split(" ");
+
+        setAccountForm({
+            first_name: names[0] || "",
+            last_name: names.slice(1).join(" "),
+            name: user.name || "",
+            gender: user.gender || "",
+            phone_number: user.phone_number || "",
+            two_factor_enabled: user.is_2fa_enabled,
+        });
     }, [user]);
 
     const validateAccountForm = () => {
@@ -78,25 +80,18 @@ export default function UserUpdate() {
             setLoading(true);
             await updateUser({
                 name: `${accountForm.first_name} ${accountForm.last_name}`,
-                gender:accountForm.gender,
-                phone_number:accountForm.phone_number,
-                is_2fa_enabled:accountForm.two_factor_enabled,
+                gender: accountForm.gender,
+                phone_number: accountForm.phone_number,
+                is_2fa_enabled: accountForm.two_factor_enabled,
             })
             toast.success("User profile updated successfully")
-            // setAccountForm({
-            //     first_name: "",
-            //     last_name: "",
-            //     gender: "",
-            //     phone_number: "",
-            //     two_factor_enabled: false,
-            // })
             setErrors({});
         } catch (error) {
             console.error(error);
             toast.error("Failed to update user");
+        } finally {
+            setLoading(false);
         }
-
-
     };
 
     return (

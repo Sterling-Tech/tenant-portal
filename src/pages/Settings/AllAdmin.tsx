@@ -11,15 +11,20 @@ import {
     TableRow,
     TableCell,
     TableBody,
-    CircularProgress
+    CircularProgress,
+    Menu,
+    MenuItem
 } from "@mui/material";
 import { getAllAdmin } from '../../services/settingService';
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import UserHistoryModal from "./UserHistoryModal";
 export default function AllAdmin() {
     const [loading, setLoading] = useState(false);
     const [admin, setAdmin] = useState<any[]>([]);
     const [selected, setSelected] = useState<any>(null);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const [menuVendor, setMenuVendor] = useState<any>(null);
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<any>(null);
 
     const handleFetchAdmin = async () => {
         setLoading(true);
@@ -36,6 +41,17 @@ export default function AllAdmin() {
     useEffect(() => {
         handleFetchAdmin();
     }, []);
+
+    const handleMenuOpen = (
+        e: React.MouseEvent<HTMLElement>
+    ) => {
+        setAnchorEl(e.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
     return (
         <div>
             {/* List of Admins */}
@@ -47,7 +63,7 @@ export default function AllAdmin() {
                         <TableCell>Email</TableCell>
                         <TableCell>Phone Number</TableCell>
                         <TableCell>Gender</TableCell>
-                        <TableCell />
+                        <TableCell>Action</TableCell>
                     </TableRow>
                 </TableHead>
 
@@ -89,10 +105,53 @@ export default function AllAdmin() {
                                 <TableCell>{v.email}</TableCell>
                                 <TableCell>{v.phone_number}</TableCell>
                                 <TableCell>{v.gender}</TableCell>
+
+                                <TableCell align="center">
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedUser(v);
+                                            setAnchorEl(e.currentTarget);
+                                        }}
+                                    >
+                                        <MoreVertIcon />
+                                    </IconButton>
+                                </TableCell>
+
                             </TableRow>
+
                         )))}
                 </TableBody>
+
+
             </Table>
-        </div>
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={() => {
+                    setAnchorEl(null);
+                    setSelectedUser(null);
+                }}
+            >
+                <MenuItem
+                    onClick={() => {
+                        setHistoryOpen(true);
+                        setAnchorEl(null);
+                    }}
+                >
+                    View History
+                </MenuItem>
+            </Menu>
+
+            <UserHistoryModal
+                open={historyOpen}
+                user={selectedUser}
+                onClose={() => {
+                    setHistoryOpen(false);
+                    setSelectedUser(null);
+                }}
+            />
+        </div >
     )
 }

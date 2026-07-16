@@ -48,12 +48,16 @@ import { fetchCustomers, fetchCustomer, fetchCustomerTransactions, createCustome
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import { meterActions } from "./MeterActions";
 import MeterActionModal from "./MeterActionModal";
+import CustomerHistoryModal from "../Settings/CustomerHistoryModal";
 
 
 const CustomerManagement = () => {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selected, setSelected] = useState<Customer | null>(null);
+
+  const [historyOpen, setHistoryOpen] = useState(false);
+
   const [search, setSearch] = useState("");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuRow, setMenuRow] = useState<Customer | null>(null);
@@ -127,6 +131,7 @@ const CustomerManagement = () => {
       minute: "2-digit",
     });
   };
+
   const load = async (params?: any) => {
     setLoading(true);
     try {
@@ -758,6 +763,17 @@ const CustomerManagement = () => {
         >
           Transactions
         </MenuItem>
+        <Divider />
+        <MenuItem
+          onClick={() => {
+            setSelected(menuRow);
+            setHistoryOpen(true);
+            setAnchorEl(null);
+          }}
+        >
+          History
+        </MenuItem>
+        <Divider/>
         <Button
           variant="outlined"
           endIcon={<MoreHorizIcon />}
@@ -1768,6 +1784,14 @@ const CustomerManagement = () => {
           */
 
           setModalOpen(false);
+        }}
+      />
+      <CustomerHistoryModal
+        open={historyOpen}
+        user={selected}
+        onClose={() => {
+          setHistoryOpen(false);
+          setSelected(null);
         }}
       />
     </Box>

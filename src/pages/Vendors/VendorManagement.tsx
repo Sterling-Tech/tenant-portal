@@ -36,6 +36,7 @@ import {
   Delete,
 } from "@mui/icons-material";
 import { fetchVendors, createVendor, type VendorForm, Vendor, searchVendors, toggleVendorStatus } from "../../services/vendorService";
+import VendorHistoryModal from "../Settings/VendorHistoryModal";
 
 const PAGE_SIZE = 10;
 
@@ -66,6 +67,9 @@ export default function VendorHub() {
   const [verifiedFilter, setVerifiedFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   type AlertType = "success" | "error" | "info" | "warning";
 
@@ -100,66 +104,66 @@ export default function VendorHub() {
     return text.length > max ? text.slice(0, max) + "..." : text;
   };
   // ✅ Debounce search
- useEffect(() => {
-  const handler = setTimeout(() => {
-    setDebouncedSearch(search);
-    setPage(1);
-  }, 500);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
 
-  return () => clearTimeout(handler);
-}, [search]);
+    return () => clearTimeout(handler);
+  }, [search]);
 
 
-const load = async (pageNumber = 1) => {
-  try {
-    setLoading(true);
+  const load = async (pageNumber = 1) => {
+    try {
+      setLoading(true);
 
-    // SEARCH MODE
-    if (debouncedSearch.trim()) {
-      const res = await searchVendors(
-        debouncedSearch,
-        pageNumber
-      );
+      // SEARCH MODE
+      if (debouncedSearch.trim()) {
+        const res = await searchVendors(
+          debouncedSearch,
+          pageNumber
+        );
+
+        setVendors(res.results);
+        setCount(res.count);
+        setNext(res.next);
+        setPrevious(res.previous);
+        setSelected(res.results.length ? res.results[0] : null);
+
+        return;
+      }
+
+      // NORMAL MODE
+      const res = await fetchVendors({
+        page: pageNumber,
+        main_vendor: true,
+        account_status:
+          statusFilter === "all"
+            ? undefined
+            : (statusFilter as
+              | "active"
+              | "inactive"
+              | "suspended"),
+      });
 
       setVendors(res.results);
       setCount(res.count);
       setNext(res.next);
       setPrevious(res.previous);
       setSelected(res.results.length ? res.results[0] : null);
+    } catch (err) {
+      console.error(err);
 
-      return;
+      setVendors([]);
+      setCount(0);
+      setNext(null);
+      setPrevious(null);
+      setSelected(null);
+    } finally {
+      setLoading(false);
     }
-
-    // NORMAL MODE
-    const res = await fetchVendors({
-      page: pageNumber,
-      main_vendor: true,
-      account_status:
-        statusFilter === "all"
-          ? undefined
-          : (statusFilter as
-              | "active"
-              | "inactive"
-              | "suspended"),
-    });
-
-    setVendors(res.results);
-    setCount(res.count);
-    setNext(res.next);
-    setPrevious(res.previous);
-    setSelected(res.results.length ? res.results[0] : null);
-  } catch (err) {
-    console.error(err);
-
-    setVendors([]);
-    setCount(0);
-    setNext(null);
-    setPrevious(null);
-    setSelected(null);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     load(page);
@@ -200,15 +204,15 @@ const load = async (pageNumber = 1) => {
 
         <Stack direction="row" spacing={2}>
           <Button
-  onClick={() => {
-    setSearch("");
-    setDebouncedSearch("");
-    setStatusFilter("all");
-    setPage(1);
-  }}
->
-  Refresh
-</Button>
+            onClick={() => {
+              setSearch("");
+              setDebouncedSearch("");
+              setStatusFilter("all");
+              setPage(1);
+            }}
+          >
+            Refresh
+          </Button>
 
         </Stack>
       </Stack>
@@ -370,8 +374,8 @@ const load = async (pageNumber = 1) => {
                 disabled={!previous}
                 onClick={() => previous && setPage((p) => p - 1)}
                 className={`px-4 py-2 rounded-lg border ${previous
-                    ? "bg-white hover:bg-gray-100"
-                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  ? "bg-white hover:bg-gray-100"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
                   }`}
               >
                 Previous
@@ -381,8 +385,8 @@ const load = async (pageNumber = 1) => {
                 disabled={!next}
                 onClick={() => next && setPage((p) => p + 1)}
                 className={`px-4 py-2 rounded-lg border ${next
-                    ? "bg-blue-900 text-white hover:bg-blue-800"
-                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  ? "bg-blue-900 text-white hover:bg-blue-800"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
                   }`}
               >
                 Next
@@ -570,6 +574,18 @@ const load = async (pageNumber = 1) => {
             Activate
           </MenuItem>
         )}
+        <MenuItem
+          onClick={() => {
+            setHistoryOpen(true);
+            setAnchorEl(null);
+            setSelectedUser(menuVendor);
+          }}
+        >
+          <ListItemIcon>
+            <Edit fontSize="small" />
+          </ListItemIcon>
+          History
+        </MenuItem>
       </Menu>
       <Snackbar
         open={alert.open}
@@ -586,6 +602,15 @@ const load = async (pageNumber = 1) => {
           {alert.message}
         </Alert>
       </Snackbar>
+      
+      <VendorHistoryModal
+        open={historyOpen}
+        user={selectedUser}
+        onClose={() => {
+          setHistoryOpen(false);
+          setSelectedUser(null);
+        }}
+      />
 
     </Box>
   );

@@ -532,13 +532,14 @@ export const fetchTransactions = (params?: {
   get<PaginatedLedgerResponse>(`/vendor/ledger/${buildQuery(params)}`)
 
 export const fetchCustomers = (params?: {
+  page?: number;
   account_status?: string;
   metering_type_id?: string;
   class_id?: string;
-  category_id ?: string;
+  category_id?: string;
   customer_id?: string;
-    }) =>
-    get<PaginatedCustomerResponse>(`/customer/${buildQuery(params)}`);
+}) =>
+  get<PaginatedCustomerResponse>(`/customer/${buildQuery(params)}`);
 
 export const Customercategory = () =>
     get<Category[]>(`/customer/category/`);
@@ -629,13 +630,14 @@ export const searchCustomers = (keyword: string) =>
     `/customer/search/?keyword=${keyword}`
   );
 export const fetchCustomer = (params?: {
+  page?: number;
   account_status?: string;
   metering_type_id?: string;
   class_id?: string;
-  category_id ?: string;
+  category_id?: string;
   customer_id?: string;
-    }) =>
-    get<Customer>(`/customer/${buildQuery(params)}`);
+}) =>
+  get<Customer>(`/customer/${buildQuery(params)}`);
 
 export const fetchCustomerTransactions = (
   customerId: string | number,
