@@ -46,12 +46,12 @@ import ChangePassword from "./ChangePassword";
 import UserUpdate from "./UserUpdate";
 import ConfigureVendor from "../../components/OnboardingUser/ConfigureVendor";
 import { RelatedVendorResponse } from "../../services/onbordingService";
-import AuditLogs from "./AuditLogs";
+import AuditPage from "./AuditPage";
 
 //const API_BASE_URL = "http://188.166.161.13:8001/api/v1";
 
 const Settings: React.FC = () => {
-  const { user } = useAppSelector((state) => state.auth);
+  const { user } = useAppSelector((state: any) => state.auth);
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -249,7 +249,11 @@ const Settings: React.FC = () => {
               label="Assign Permission"
             />
             {/* )} */}
-            <Tab icon={<History />} iconPosition="start" label="Audit Logs" />
+            <Tab 
+              icon={<History />} 
+              iconPosition="start" 
+              label="Audit Logs" 
+            />
           </Tabs>
         </Box>
 
@@ -926,7 +930,7 @@ const Settings: React.FC = () => {
           <AssignPermission />
         )}
         {activeTab === 5 && (
-          <AuditLogs />
+          <AuditPage />
         )}
       </Card>
     </Box>

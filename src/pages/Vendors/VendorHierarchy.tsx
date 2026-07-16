@@ -134,19 +134,6 @@ const VendorHierarchy = () => {
   const [vendorHasNext, setVendorHasNext] = useState(false);
 
   /* LOAD ROOT */
-
-  // const loadVendors = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const res = await fetchVendors({ main_vendor: true });
-  //     setVendors(res?.results || []);
-  //   } catch (err) {
-  //     console.error(err);
-  //     setVendors([]);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const loadVendors = async (page = 1, append = false) => {
     try {
       setLoading(true);
