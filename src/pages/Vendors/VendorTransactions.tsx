@@ -464,11 +464,15 @@ const VendorTransactions: React.FC = () => {
   };
 
   // ── Fetch ALL ledger pages for the report (loops through pagination) ────────────────
+
   const fetchAllLedgerForReport = async (params: typeof reportForm): Promise<LedgerEntry[]> => {
+    if (!vendorsId) {
+      throw new Error('No vendor selected. Please select a vendor before generating a report.');
+    }
     const allResults: LedgerEntry[] = [];
     let page = 1; let hasNext = true;
     while (hasNext) {
-      const url = `${API_BASE_URL}/ledger/?start_date=${params.start_date}&end_date=${params.end_date}&vendor_id=${user?.id}&page=${page}&page_size=200`;
+      const url = `${API_BASE_URL}/ledger/?start_date=${params.start_date}&end_date=${params.end_date}&vendor_id=${vendorsId}&page=${page}&page_size=200`;
       const res = await fetch(url, { method: 'GET', headers: buildHeaders() });
       if (!res.ok) throw new Error(`Ledger API failed (page ${page})`);
       const data = await res.json();
@@ -496,22 +500,73 @@ const VendorTransactions: React.FC = () => {
   const handleGenerateReport = async () => {
     setGenerating(true); setReportError(null);
     try {
-      // 1. Fetch all ledger pages
       let allEntries = await fetchAllLedgerForReport(reportForm);
+      console.log('Raw entries:', allEntries.length);
 
-      // 2. Client-side filters
       if (reportForm.category !== 'all') {
         allEntries = allEntries.filter(e => e.category === reportForm.category);
+        console.log('After category filter:', allEntries.length);
       }
       if (reportForm.search.trim()) {
         const term = reportForm.search.trim().toLowerCase();
         allEntries = allEntries.filter(e => e.transaction_ref.toLowerCase().includes(term));
+        console.log('After search filter:', allEntries.length);
       }
-
       if (allEntries.length === 0) {
-        setReportError('No ledger entries match the selected filters. Try adjusting your criteria.');
+        // Don't block — generate an empty report with a clear "no data" note instead
+        const activeColumns = REPORT_COLUMNS.filter(c => reportColumns[c.key]);
+        if (activeColumns.length === 0) {
+          setReportError('Select at least one column to include in the report.');
+          return;
+        }
+
+        const meta = [
+          ['TRANSACTION LEDGER REPORT'],
+          [],
+          ['Period', `${reportForm.start_date}  →  ${reportForm.end_date}`],
+          ['Generated', new Date().toLocaleString()],
+          ['Category', CATEGORY_OPTIONS.find(c => c.value === reportForm.category)?.label || 'All'],
+          ['Search Filter', reportForm.search.trim() || 'None'],
+          ['Total Records', 0],
+          [],
+          ['No ledger entries found for the selected vendor and criteria.'],
+        ];
+
+        const colHeaders = activeColumns.map(c => c.header);
+        const wsData = [...meta, colHeaders];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = activeColumns.map(c => ({ wch: 20 }));
+        ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(activeColumns.length - 1, 0) } }];
+
+        const wsSummary = XLSX.utils.aoa_to_sheet([
+          ['TRANSACTION LEDGER REPORT — SUMMARY'],
+          [],
+          ['Date Range', `${reportForm.start_date} to ${reportForm.end_date}`],
+          ['Category', CATEGORY_OPTIONS.find(c => c.value === reportForm.category)?.label || 'All'],
+          ['Generated At', new Date().toLocaleString()],
+          [],
+          ['Metric', 'Value'],
+          ['Total Records', 0],
+          ['Total Credit', 0],
+          ['Total Debit', 0],
+          ['Net', 0],
+        ]);
+        wsSummary['!cols'] = [{ wch: 26 }, { wch: 36 }];
+        wsSummary['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Ledger');
+        XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+        XLSX.writeFile(wb, `ledger-report-${reportForm.start_date}-to-${reportForm.end_date}.xlsx`);
+
+        setSuccess('✓ Report generated — no transactions found for this vendor in the selected period');
+        setReportOpen(false);
         return;
       }
+      // if (allEntries.length === 0) {
+      //   setReportError('No ledger entries match the selected filters. Try adjusting your criteria.');
+      //   return;
+      // }
 
       // 3. Merge in account numbers if that column is included (always useful for "vend")
 
@@ -652,19 +707,12 @@ const VendorTransactions: React.FC = () => {
           {/* <Button size="small" variant="outlined" sx={{ height: 36, textTransform: "none", borderRadius: 2 }} startIcon={<FileDownload />}>
             Export CSV
           </Button> */}
-          {/* <Button size="small" onClick={() => setOpenFund(true)} sx={{ height: 36, textTransform: "none", borderRadius: 2 }} variant="contained">
+          <Button size="small" onClick={() => { setReportOpen(true); setReportError(null); }} sx={{ height: 36, textTransform: "none", borderRadius: 2 }} variant="contained">
             + Generate Report
-          </Button> */}
+          </Button>
           {/* <Button variant="outlined" startIcon={<Download />} onClick={exportRows}>Export</Button> */}
 
-          {/* <Button
-            variant="contained"
-            startIcon={<Assessment />}
-            onClick={() => { setReportOpen(true); setReportError(null); }}
-            sx={{ bgcolor: '#1e3a8a', '&:hover': { bgcolor: '#1e40af' }, textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
-          >
-            Generate Report
-          </Button> */}
+
         </Stack>
       </Stack>
       {/* SUMMARY */}
@@ -1265,153 +1313,153 @@ const VendorTransactions: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════════════════
                 GENERATE REPORT DIALOG
             ══════════════════════════════════════════════════════════════════════ */}
-       <Dialog open={reportOpen} onClose={() => { if (!generating) setReportOpen(false); }} maxWidth="sm" fullWidth
-                PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
+      <Dialog open={reportOpen} onClose={() => { if (!generating) setReportOpen(false); }} maxWidth="sm" fullWidth
+        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
 
-                {/* Header */}
-                <Box sx={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', px: 3, py: 2.5, color: '#fff' }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Stack direction="row" spacing={1.5} alignItems="center">
-                            <Assessment sx={{ fontSize: 26 }} />
-                            <Box>
-                                <Typography variant="h6" fontWeight={700} color="#fff">Generate Report</Typography>
-                                <Typography variant="caption" sx={{ color: '#93c5fd' }}>
-                                    Sourced from the transaction ledger
-                                </Typography>
-                            </Box>
-                        </Stack>
-                        <IconButton onClick={() => { if (!generating) setReportOpen(false); }} size="small" sx={{ color: '#93c5fd', '&:hover': { color: '#fff' } }}>
-                            <Close fontSize="small" />
-                        </IconButton>
-                    </Stack>
-                </Box>
+        {/* Header */}
+        <Box sx={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', px: 3, py: 2.5, color: '#fff' }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Assessment sx={{ fontSize: 26 }} />
+              <Box>
+                <Typography variant="h6" fontWeight={700} color="#fff">Generate Report</Typography>
+                <Typography variant="caption" sx={{ color: '#93c5fd' }}>
+                  Sourced from the transaction ledger
+                </Typography>
+              </Box>
+            </Stack>
+            <IconButton onClick={() => { if (!generating) setReportOpen(false); }} size="small" sx={{ color: '#93c5fd', '&:hover': { color: '#fff' } }}>
+              <Close fontSize="small" />
+            </IconButton>
+          </Stack>
+        </Box>
 
-                <DialogContent sx={{ pt: 3, pb: 1 }}>
-                    {reportError && (
-                        <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2 }} onClose={() => setReportError(null)}>
-                            {reportError}
-                        </Alert>
-                    )}
+        <DialogContent sx={{ pt: 3, pb: 1 }}>
+          {reportError && (
+            <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2 }} onClose={() => setReportError(null)}>
+              {reportError}
+            </Alert>
+          )}
 
-                    <Grid container spacing={2.5}>
-                        {/* Date range */}
-                        <Grid item xs={12} md={6}>
-                            <TextField fullWidth type="date" label="Start Date" value={reportForm.start_date}
-                                onChange={e => setReportForm(p => ({ ...p, start_date: e.target.value }))}
-                                InputLabelProps={{ shrink: true }}
-                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }} />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField fullWidth type="date" label="End Date" value={reportForm.end_date}
-                                onChange={e => setReportForm(p => ({ ...p, end_date: e.target.value }))}
-                                InputLabelProps={{ shrink: true }}
-                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }} />
-                        </Grid>
+          <Grid container spacing={2.5}>
+            {/* Date range */}
+            <Grid item xs={12} md={6}>
+              <TextField fullWidth type="date" label="Start Date" value={reportForm.start_date}
+                onChange={e => setReportForm(p => ({ ...p, start_date: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }} />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField fullWidth type="date" label="End Date" value={reportForm.end_date}
+                onChange={e => setReportForm(p => ({ ...p, end_date: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }} />
+            </Grid>
 
-                        {/* Category (was Purpose) */}
-                        <Grid item xs={12} md={6}>
-                            <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }}>
-                                <InputLabel>Category</InputLabel>
-                                <Select value={reportForm.category} label="Category" onChange={e => setReportForm(p => ({ ...p, category: e.target.value }))}>
-                                    {CATEGORY_OPTIONS.map(o => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-                                </Select>
-                            </FormControl>
-                        </Grid>
+            {/* Category (was Purpose) */}
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }}>
+                <InputLabel>Category</InputLabel>
+                <Select value={reportForm.category} label="Category" onChange={e => setReportForm(p => ({ ...p, category: e.target.value }))}>
+                  {CATEGORY_OPTIONS.map(o => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Grid>
 
-                        {/* Search by reference / account */}
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="Search Reference"
-                                placeholder="Filter by transaction ref…"
-                                value={reportForm.search}
-                                onChange={e => setReportForm(p => ({ ...p, search: e.target.value }))}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>
-                                    ),
-                                }}
-                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }}
-                            />
-                        </Grid>
+            {/* Search by reference / account */}
+            {/* <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Search Reference"
+                placeholder="Filter by transaction ref…"
+                value={reportForm.search}
+                onChange={e => setReportForm(p => ({ ...p, search: e.target.value }))}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>
+                  ),
+                }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8faff' } }}
+              />
+            </Grid> */}
 
-                        {/* ── Toggleable report columns ── */}
-                        <Grid item xs={12}>
-                            <Box sx={{ p: 2, bgcolor: '#f0f7ff', borderRadius: 2, border: '1px solid #bfdbfe' }}>
-                                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                                    <Typography variant="body2" color="primary.main" fontWeight={700}>
-                                        Report columns — tap to include or remove
-                                    </Typography>
-                                    <Tooltip title="Reset to all columns" arrow>
-                                        <IconButton size="small" onClick={resetReportColumns}>
-                                            <RestartAlt fontSize="small" sx={{ color: '#1e3a8a' }} />
-                                        </IconButton>
-                                    </Tooltip>
-                                </Stack>
-                                <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-                                    {REPORT_COLUMNS.map(col => {
-                                        const active = reportColumns[col.key];
-                                        return (
-                                            <Chip
-                                                key={col.key}
-                                                label={col.label}
-                                                onClick={() => toggleReportColumn(col.key)}
-                                                icon={active ? <CheckCircle sx={{ fontSize: 16 }} /> : <RadioButtonUnchecked sx={{ fontSize: 16 }} />}
-                                                sx={{
-                                                    cursor: 'pointer', fontWeight: 600,
-                                                    bgcolor: active ? '#1e3a8a' : '#fff',
-                                                    color: active ? '#fff' : '#64748b',
-                                                    border: '1px solid', borderColor: active ? '#1e3a8a' : '#cbd5e1',
-                                                    '& .MuiChip-icon': { color: active ? '#fff' : '#94a3b8' },
-                                                    '&:hover': { bgcolor: active ? '#1e40af' : '#f1f5f9' },
-                                                    transition: 'all 0.15s ease',
-                                                }}
-                                            />
-                                        );
-                                    })}
-                                </Stack>
-                                <Typography variant="caption" color="text.secondary" display="block" mt={1.5}>
-                                    Unchecked columns are left out of the exported file entirely — click a column to add it back.
-                                </Typography>
-                            </Box>
-                        </Grid>
-                    </Grid>
-                </DialogContent>
+            {/* ── Toggleable report columns ── */}
+            <Grid item xs={12}>
+              <Box sx={{ p: 2, bgcolor: '#f0f7ff', borderRadius: 2, border: '1px solid #bfdbfe' }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+                  <Typography variant="body2" color="primary.main" fontWeight={700}>
+                    Report columns — tap to include or remove
+                  </Typography>
+                  <Tooltip title="Reset to all columns" arrow>
+                    <IconButton size="small" onClick={resetReportColumns}>
+                      <RestartAlt fontSize="small" sx={{ color: '#1e3a8a' }} />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+                <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                  {REPORT_COLUMNS.map(col => {
+                    const active = reportColumns[col.key];
+                    return (
+                      <Chip
+                        key={col.key}
+                        label={col.label}
+                        onClick={() => toggleReportColumn(col.key)}
+                        icon={active ? <CheckCircle sx={{ fontSize: 16 }} /> : <RadioButtonUnchecked sx={{ fontSize: 16 }} />}
+                        sx={{
+                          cursor: 'pointer', fontWeight: 600,
+                          bgcolor: active ? '#1e3a8a' : '#fff',
+                          color: active ? '#fff' : '#64748b',
+                          border: '1px solid', borderColor: active ? '#1e3a8a' : '#cbd5e1',
+                          '& .MuiChip-icon': { color: active ? '#fff' : '#94a3b8' },
+                          '&:hover': { bgcolor: active ? '#1e40af' : '#f1f5f9' },
+                          transition: 'all 0.15s ease',
+                        }}
+                      />
+                    );
+                  })}
+                </Stack>
+                <Typography variant="caption" color="text.secondary" display="block" mt={1.5}>
+                  Unchecked columns are left out of the exported file entirely — click a column to add it back.
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </DialogContent>
 
-                {/* Footer */}
-                <Box sx={{ px: 3, py: 2.5, bgcolor: '#f8faff', borderTop: '1px solid #e8edf5' }}>
-                    <Stack direction="row" spacing={1.5} justifyContent="space-between" alignItems="center">
-                        <Button variant="text" onClick={resetReportForm} disabled={generating}
-                            sx={{ textTransform: 'none', color: '#64748b', borderRadius: 2 }}>
-                            Reset All
-                        </Button>
-                        <Stack direction="row" spacing={1.5}>
-                            <Button variant="outlined" onClick={() => setReportOpen(false)} disabled={generating}
-                                sx={{ textTransform: 'none', borderRadius: 2, borderColor: '#cbd5e1', color: '#475569' }}>
-                                Cancel
-                            </Button>
-                            <Button
-                                variant="contained"
-                                onClick={handleGenerateReport}
-                                disabled={generating || !reportForm.start_date || !reportForm.end_date}
-                                sx={{ textTransform: 'none', borderRadius: 2, bgcolor: '#1e3a8a', '&:hover': { bgcolor: '#1e40af' }, fontWeight: 700, minWidth: 170 }}
-                            >
-                                {generating ? (
-                                    <Stack direction="row" spacing={1} alignItems="center">
-                                        <CircularProgress size={16} color="inherit" />
-                                        <span>Generating…</span>
-                                    </Stack>
-                                ) : (
-                                    <Stack direction="row" spacing={1} alignItems="center">
-                                        <Assessment fontSize="small" />
-                                        <span>Generate Report</span>
-                                    </Stack>
-                                )}
-                            </Button>
-                        </Stack>
-                    </Stack>
-                </Box>
-            </Dialog>
+        {/* Footer */}
+        <Box sx={{ px: 3, py: 2.5, bgcolor: '#f8faff', borderTop: '1px solid #e8edf5' }}>
+          <Stack direction="row" spacing={1.5} justifyContent="space-between" alignItems="center">
+            <Button variant="text" onClick={resetReportForm} disabled={generating}
+              sx={{ textTransform: 'none', color: '#64748b', borderRadius: 2 }}>
+              Reset All
+            </Button>
+            <Stack direction="row" spacing={1.5}>
+              <Button variant="outlined" onClick={() => setReportOpen(false)} disabled={generating}
+                sx={{ textTransform: 'none', borderRadius: 2, borderColor: '#cbd5e1', color: '#475569' }}>
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleGenerateReport}
+                disabled={generating || !reportForm.start_date || !reportForm.end_date}
+                sx={{ textTransform: 'none', borderRadius: 2, bgcolor: '#1e3a8a', '&:hover': { bgcolor: '#1e40af' }, fontWeight: 700, minWidth: 170 }}
+              >
+                {generating ? (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <CircularProgress size={16} color="inherit" />
+                    <span>Generating…</span>
+                  </Stack>
+                ) : (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Assessment fontSize="small" />
+                    <span>Generate Report</span>
+                  </Stack>
+                )}
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      </Dialog>
     </Box>
   );
 };

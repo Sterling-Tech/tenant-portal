@@ -59,12 +59,6 @@ const Settings: React.FC = () => {
   const [selectedVendor, setSelectedVendor] =
     useState<RelatedVendorResponse | null>(null);
 
-  // <Button
-  //   onClick={() => setSelectedVendor("vendor")}
-  // >
-  //   Configure
-  // </Button>
-
   // ================= NOTIFICATIONS =================
   const [notificationSettings, setNotificationSettings] = useState({
     email_notifications: true,
@@ -121,32 +115,11 @@ const Settings: React.FC = () => {
     setSuccess("API Secret Rotated Successfully");
   };
 
-  const handleSaveConfiguration = async () => {
-    try {
-      setLoading(true);
-
-      console.log(configurationForm);
-
-      setTimeout(() => {
-        setLoading(false);
-        setSuccess("Configuration Saved Successfully");
-      }, 1200);
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
-    }
-  };
-
-  // ================= SUPER ADMIN =================
-  const isSuperAdmin =
-    user?.role === "super_admin" ||
-    user?.is_superuser === true;
-
   return (
     <Box
-      p={3}
+      // p={3}
       sx={{
-        background: "#F8FAFC",
+        // background: "#F8FAFC",
         minHeight: "100vh",
       }}
     >

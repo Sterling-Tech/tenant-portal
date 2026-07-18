@@ -174,7 +174,7 @@ export default function OnboardingPage() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: { xs: 2, md: 4 } }}>
+      <Box sx={{ minHeight: "100vh"}}>
 
         {/* Breadcrumb */}
         <Breadcrumbs separator={<NavigateNextIcon fontSize="small" sx={{ color: "#9AA4B2" }} />} sx={{ mb: 1.5 }}>
