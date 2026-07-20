@@ -452,6 +452,17 @@ export default function VendorHub() {
                     value={`${selected.city || ""}, ${selected.state || ""}, ${selected.country || ""}`}
                   />
                   <Row label="Postal Code" value={selected.postal_code} />
+                  {/* <Row label="Address" value={selected.profile?.address} />
+
+                  <Row
+                    label="Location"
+                    value={`${selected.profile?.city || ""}, ${selected.profile?.state || ""}`}
+                  />
+
+                  <Row
+                    label="Postal Code"
+                    value={selected.profile?.postal_code}
+                  /> */}
 
                   <Row label="Hierarchy" value={selected.hierachy} />
 
@@ -602,7 +613,7 @@ export default function VendorHub() {
           {alert.message}
         </Alert>
       </Snackbar>
-      
+
       <VendorHistoryModal
         open={historyOpen}
         user={selectedUser}

@@ -42,7 +42,7 @@ export interface CreateVendorPayload {
     signatory_email: string;
     funding_cap: string;
     transaction_max: string;
-    commission_rate: number | null;
+    commission_rate: string | null;
     monthly_target: string;
 }
 export interface RelatedVendorProp {
@@ -66,7 +66,7 @@ export interface Wallet {
 export interface ConfigureVendorPayload {
     funding_cap: string;
     transaction_max: string;
-    commission_rate: number | null;
+    commission_rate: string | null;
     monthly_target: string;
 }
 export interface ConfigureVendorResponse {
@@ -86,7 +86,7 @@ export interface ConfigureVendorResponse {
 
     funding_cap: string;
     transaction_max: string;
-    commission_rate: number;
+    commission_rate: string | null;
     monthly_target: string;
 
     token: string;

@@ -49,6 +49,7 @@ import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import { meterActions } from "./MeterActions";
 import MeterActionModal from "./MeterActionModal";
 import CustomerHistoryModal from "../Settings/CustomerHistoryModal";
+import { borderBottom } from "@mui/system";
 
 
 const CustomerManagement = () => {
@@ -584,7 +585,7 @@ const CustomerManagement = () => {
                     key={c.id}
                     hover
                     sx={{ cursor: "pointer" }}
-                    onClick={() => handleRowClick(c)}
+                  // onClick={() => handleRowClick(c)}
                   >
 
                     <TableCell sx={{ color: "#94A3B8", fontWeight: 600, fontSize: 12 }}>
@@ -601,8 +602,21 @@ const CustomerManagement = () => {
                       </Stack>
                     </TableCell>
 
-                    <TableCell>{c.account_number}</TableCell>
-                    <TableCell>{c.meter_number}</TableCell>
+                    <TableCell
+                      onClick={() => handleRowClick(c)}
+                      sx={{
+                        cursor: "pointer",
+                        borderBottom: "2px solid transparent",
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                          borderBottom: "2px solid #1976d2", // MUI primary blue
+                          color: "#1976d2",
+                        },
+                      }}
+                    >
+                      {c.account_number}
+                    </TableCell>
+                    <TableCell onClick={() => handleRowClick(c)}>{c.meter_number}</TableCell>
 
                     <TableCell>
                       <Chip
@@ -773,7 +787,7 @@ const CustomerManagement = () => {
         >
           History
         </MenuItem>
-        <Divider/>
+        <Divider />
         <Button
           variant="outlined"
           endIcon={<MoreHorizIcon />}

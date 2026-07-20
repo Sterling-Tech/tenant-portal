@@ -22,8 +22,6 @@ import {
 } from "./WizardTypes";
 import {
     createVendor,
-    getAllVendors,
-    RelatedVendorResponse,
 } from "../../services/onbordingService";
 // ─── Form shape ───────────────────────────────────────────────────────────────
 export interface VendorForm {
@@ -91,19 +89,6 @@ export default function OnboardingVendor({ open, onClose }: Props) {
         setForm(EMPTY_FORM);
         onClose();
     }
-
-    // useEffect(() => {
-    //     const fetchRelatedVendors = async () => {
-    //         try {
-    //             const response = await relatedVendort();
-    //             setRelatedVends(response);
-    //         } catch (error) {
-    //             console.error("Failed to fetch related vendors", error);
-    //         }
-    //     };
-
-    //     fetchRelatedVendors();
-    // }, []);
 
     async function handleSubmit() {
         try {

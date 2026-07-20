@@ -55,7 +55,7 @@ export interface KYCFormData {
 export interface ControlsFormData {
   dailyFundingCap: string;
   maxPerTransaction: string;
-  commissionRate: number;
+  commissionRate: string | null;
   monthlyVolumeTarget: string;
   permittedTxTypes: Record<string, boolean>;
 }
@@ -117,7 +117,7 @@ export const EMPTY_KYC: KYCFormData = {
 
 export const EMPTY_CONTROLS: ControlsFormData = {
   dailyFundingCap: "", maxPerTransaction: "",
-  commissionRate: 0, monthlyVolumeTarget: "",
+  commissionRate: "", monthlyVolumeTarget: "",
   permittedTxTypes: { ...DEFAULT_TX_TYPES },
 };
 

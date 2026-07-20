@@ -72,9 +72,7 @@ export default function ConfigureVendor({
                 {
                     funding_cap: configurationForm.funding_cap,
                     transaction_max: configurationForm.transaction_max,
-                    commission_rate: Number(
-                        configurationForm.commission_rate
-                    ),
+                    commission_rate:configurationForm.commission_rate,
                     monthly_target: configurationForm.monthly_target,
                 },
                 vendorId

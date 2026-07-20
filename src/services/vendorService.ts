@@ -1,29 +1,6 @@
 import { get, post, patch, del, put } from './api';
 
 
-// export interface Vendor {
-//   id: string
-//   business_name: string
-//   email: string
-//   phone_number: string
-//   address: string
-//   city: string
-//   state: string
-//   country: string
-//   postal_code: string
-//   account_status: "active" | "inactive"
-//   hierachy: string
-//   related_vendor: number | null
-//   token: string
-//   wallet?: {
-//     wallet_type?: {
-//       name: string
-//       description?: string
-//     }
-//     balance: string
-//   }
-//   created_at: string
-// }
 export interface VendorQuery {
   page?: number;
   vendor_id?: number;
@@ -114,6 +91,71 @@ export interface PaginatedResponse<T> {
   previous: string | null;
   results: T[];
 }
+export interface VendorRelatedVendor {
+  id: number;
+  email: string;
+  business_name: string;
+  account_status: "active" | "inactive" | "suspended";
+  hierachy: string;
+}
+
+export interface VendorBankAccount {
+  id: number;
+  bank_name: string;
+  account_name: string;
+  account_number: string;
+  is_primary: boolean;
+  verification_status: "pending" | "verified" | "rejected";
+}
+
+export interface VendorOwner {
+  id: number;
+  name: string;
+  dob: string;
+  nationality: string;
+  id_type: string;
+  id_number: string;
+  address: string;
+  verification_status: "pending" | "verified" | "rejected";
+}
+
+export interface VendorContact {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  is_primary: boolean;
+}
+// new
+// export interface Vendor {
+//   id: number;
+//   business_name: string;
+//   email: string;
+//   phone_number: string;
+
+//   account_status: "active" | "inactive" | "suspended";
+//   hierachy: string;
+
+//   related_vendor?: VendorRelatedVendor | null;
+
+//   funding_cap?: string | null;
+//   transaction_max?: string | null;
+//   commission_rate?: string | null;
+//   monthly_target?: string | null;
+
+//   token: string;
+
+//   wallet?: Record<string, any>;
+//   profile?: Record<string, any>;
+//   agreement?: Record<string, any>;
+
+//   bank_accounts?: VendorBankAccount[];
+//   owners?: VendorOwner[];
+//   contacts?: VendorContact[];
+
+//   created_at: string;
+// }
+
 export interface PaginatedVendorResponse {
   count: number;
   next: string | null;
@@ -610,6 +652,39 @@ export const fetchVendors = (params?: VendorQuery) => {
     `/vendor/retrieve/?${search.toString()}`
   );
 };
+// new
+// export const fetchVendors = (params?: VendorQuery) => {
+//   const search = new URLSearchParams();
+
+//   if (params?.page != null) {
+//     search.append("page", String(params.page));
+//   }
+
+//   if (params?.vendor_id != null) {
+//     search.append("vendor_id", String(params.vendor_id));
+//   }
+
+//   if (params?.main_vendor !== undefined) {
+//     search.append("main_vendor", String(params.main_vendor));
+//   }
+
+//   if (
+//     params?.account_status &&
+//     params.account_status !== "all"
+//   ) {
+//     search.append("account_status", params.account_status);
+//   }
+
+//   if (params?.search?.trim()) {
+//     search.append("search", params.search.trim());
+//   }
+
+//   const query = search.toString();
+
+//   return get<PaginatedResponse<Vendor>>(
+//     `/vendor/retrieve/${query ? `?${query}` : ""}`
+//   );
+// };
   // fetch all vendors without pagination
 
   export const fetchAllVendors = () =>
