@@ -1,6 +1,6 @@
 // services/authService.ts
 
-const AUTH_URL = "http://188.166.161.13:8061";
+const AUTH_URL = "http://188.166.161.13:8065";
 
 export interface LoginPayload {
     email: string;
