@@ -142,32 +142,30 @@ const WalletManagement: React.FC = () => {
         return tenants.filter(
             (t) =>
                 t.business_name.toLowerCase().includes(term)
-            // ||
-                // t.domain.toLowerCase().includes(term)
         );
     }, [tenants, tenantSearchTerm]);
 
     // Filtered tree
-    const filteredTree = useMemo(() => {
-        if (!tree || !Array.isArray(tree)) return [];
-        if (!orgSearchTerm.trim()) return tree;
-        const term = orgSearchTerm.toLowerCase();
-        const filterNodes = (nodes: VendorOrg[]): VendorOrg[] => {
-            if (!nodes || !Array.isArray(nodes)) return [];
-            return nodes.reduce((acc: VendorOrg[], node) => {
-                const matches = node.name.toLowerCase().includes(term);
-                const filteredChildren = node.children ? filterNodes(node.children) : [];
-                if (matches || filteredChildren.length > 0) {
-                    acc.push({
-                        ...node,
-                        children: filteredChildren.length > 0 ? filteredChildren : node.children,
-                    });
-                }
-                return acc;
-            }, []);
-        };
-        return filterNodes(tree);
-    }, [tree, orgSearchTerm]);
+    // const filteredTree = useMemo(() => {
+    //     if (!tree || !Array.isArray(tree)) return [];
+    //     if (!orgSearchTerm.trim()) return tree;
+    //     const term = orgSearchTerm.toLowerCase();
+    //     const filterNodes = (nodes: VendorOrg[]): VendorOrg[] => {
+    //         if (!nodes || !Array.isArray(nodes)) return [];
+    //         return nodes.reduce((acc: VendorOrg[], node) => {
+    //             const matches = node.name.toLowerCase().includes(term);
+    //             const filteredChildren = node.children ? filterNodes(node.children) : [];
+    //             if (matches || filteredChildren.length > 0) {
+    //                 acc.push({
+    //                     ...node,
+    //                     children: filteredChildren.length > 0 ? filteredChildren : node.children,
+    //                 });
+    //             }
+    //             return acc;
+    //         }, []);
+    //     };
+    //     return filterNodes(tree);
+    // }, [tree, orgSearchTerm]);
 
     // Org options for transfer
     const orgOptions = useMemo(() => {
@@ -376,45 +374,7 @@ const WalletManagement: React.FC = () => {
                             </CardContent>
                         </Card>
 
-                        {/* Organisation Tree */}
-                        {/* <Card>
-                            <CardContent>
-                                <Stack spacing={2}>
-                                    <Typography variant="h6">Select Organisation</Typography>
-                                    <TextField
-                                        placeholder="Search organisations..."
-                                        size="small"
-                                        value={orgSearchTerm}
-                                        onChange={(e) => setOrgSearchTerm(e.target.value)}
-                                        InputProps={{
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Search fontSize="small" />
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    />
-                                    {!tenantId ? (
-                                        <Alert severity="info" sx={{ py: 1 }}>
-                                            Select a tenant first
-                                        </Alert>
-                                    ) : loading && (!tree || !tree.length) ? (
-                                        <Box display="flex" justifyContent="center" py={2}>
-                                            <CircularProgress size={24} />
-                                        </Box>
-                                    ) : filteredTree.length ? (
-                                        <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-                                            {renderTree(filteredTree)}
-                                        </Box>
-                                    ) : (
-                                        <Alert severity="info" sx={{ py: 1 }}>
-                                            No organisations found
-                                        </Alert>
-                                    )}
-                                </Stack>
-                            </CardContent>
-                        </Card> */}
-
+                        
                         {/* Selected Org Summary */}
                         {selectedOrg && (
                             <Card>

@@ -210,7 +210,13 @@ const Login: React.FC = () => {
 
                 const permissions = group.permissions.map(
                     p => p.permission.code
-                );
+                )
+                // const groups = await viewGroup(user.group.id);
+                // const group = groups[0];
+
+                // const permissions = group.permissions.map(
+                //     p => p.permission.code
+                // )?? [];
 
                 dispatch(
                     setPermissions(permissions)

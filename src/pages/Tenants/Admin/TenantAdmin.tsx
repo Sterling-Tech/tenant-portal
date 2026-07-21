@@ -9,10 +9,6 @@ import {
         CardHeader,
         Chip,
         CircularProgress,
-        Dialog,
-        DialogTitle,
-        DialogContent,
-        DialogActions,
         Grid,
         Stack,
         MenuItem,
@@ -56,25 +52,12 @@ type VendorSummary = {
 };
 const TenantAdmin: React.FC = () => {
         const {
-                tenants,
                 summary,
-                //selectedTenant,
-                selectedTenantId,
-                stats,
-                users,
-                domains,
                 configuration,
                 loading,
-                detailLoading,
-                mutationLoading,
-                error,
-                setError,
                 refreshTenants,
-                addDomain,
         } = useTenants();
 
-        const { tree, selectedOrg, selectedOrgId, selectOrg } = useVendorHierarchy();
-        const { profile, loading: profileLoading, error: profileError } = useTenantAdminProfile(selectedTenantId);
 
         const user = useAppSelector((state: RootState) => state.auth.user);
 
@@ -102,6 +85,7 @@ const TenantAdmin: React.FC = () => {
         const [analyticsData, setAnalyticsData] = useState<AnalyticsCount | null>(null);
         const [breakdownData, setBreakdownData] = useState<AnalyticsBreakdown | null>(null);
         const [analyticfetchData, setAnalyticfetchData] = useState<AnalyticsDashboad | null>(null);
+        const [vendorsLoading, setVendorsLoading] = useState(true);
 
         const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
@@ -111,31 +95,6 @@ const TenantAdmin: React.FC = () => {
                 billing_cycle: '',
                 max_storage_mb: '',
         });
-
-
-        // const dailyTransactionsMock = useMemo(() => {
-        //   const days = 30;
-        //   const data: number[] = [];
-        //   const labels: string[] = [];
-
-
-        //   for (let i = days - 1; i >= 0; i--) {
-        //     const d = new Date();
-        //     d.setDate(d.getDate() - i);
-
-        //     labels.push(
-        //       d.toLocaleDateString('en-GB', {
-        //         day: '2-digit',
-        //         month: 'short',
-        //       })
-        //     );
-
-        //     // fake realistic variation
-        //     data.push(Math.floor(Math.random() * 50000) + 10000);
-        //   }
-
-        //   return { labels, data };
-        // }, []);
 
         const dailyTransactionsMock = useMemo(() => {
                 const transactions = breakdownData?.daily_transaction || [];
@@ -211,30 +170,26 @@ const TenantAdmin: React.FC = () => {
 
         const load = async (pageNumber = 1) => {
                 try {
-                        // 🔍 SEARCH MODE: only if user has typed something
+                        setVendorsLoading(true);
 
-                        // 📦 NORMAL MODE (no search)
                         const res = await fetchVendors({
                                 page: pageNumber,
                         });
 
                         setVendors(res?.results || []);
                         setCount(res?.count || 0);
-                        console.error("LOAD res:", res);
                 } catch (err) {
-                        console.error("LOAD ERROR:", err);
+                        console.error(err);
                         setVendors([]);
                         setCount(0);
+                } finally {
+                        setVendorsLoading(false);
                 }
         };
 
         useEffect(() => {
                 load();
         }, []);
-
-
-
-
 
         useEffect(() => {
                 loadAnalytics(startDate, endDate);
@@ -262,38 +217,34 @@ const TenantAdmin: React.FC = () => {
                 return () => clearTimeout(handler);
         }, [searchTerm, refreshTenants]);
 
-        const last7Days = useMemo(() => {
-                if (!breakdownData?.daily_transaction) return [];
 
-                return [...breakdownData.daily_transaction]
-                        .sort((a, b) => new Date(b.day).getTime() - new Date(a.day).getTime())
-                        .slice(0, 7)
-                        .map((item, index, arr) => {
-                                const prev = arr[index + 1];
+        // const last7Days = useMemo(() => {
+        //         if (!breakdownData?.daily_transaction) return [];
 
-                                const change = prev
-                                        ? ((item.total - prev.total) / prev.total) * 100
-                                        : 0;
+        //         return [...breakdownData.daily_transaction]
+        //                 .sort((a, b) => new Date(b.day).getTime() - new Date(a.day).getTime())
+        //                 .slice(0, 7)
+        //                 .map((item, index, arr) => {
+        //                         const prev = arr[index + 1];
 
-                                return {
-                                        date: new Date(item.day).toLocaleDateString('en-GB', {
-                                                day: '2-digit',
-                                                month: 'short',
-                                        }).toUpperCase(),
+        //                         const change = prev
+        //                                 ? ((item.total - prev.total) / prev.total) * 100
+        //                                 : 0;
 
-                                        amount: `₦${item.total.toLocaleString()}`,
-                                        change: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`,
-                                        up: change >= 0,
-                                };
-                        });
-        }, [breakdownData]);
+        //                         return {
+        //                                 date: new Date(item.day).toLocaleDateString('en-GB', {
+        //                                         day: '2-digit',
+        //                                         month: 'short',
+        //                                 }).toUpperCase(),
 
-        const revenueData = last7Days.length
-                ? last7Days
-                : [
-                        { date: '18 MAR', amount: '₦13.1M', change: '+5.4%', up: true },
-                        { date: '17 MAR', amount: '₦12.4M', change: '+1.8%', up: true },
-                ];
+        //                                 amount: `₦${item.total.toLocaleString()}`,
+        //                                 change: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`,
+        //                                 up: change >= 0,
+        //                         };
+        //                 });
+        // }, [breakdownData]);
+
+
         useEffect(() => {
                 if (configuration) {
                         setConfigDraft({
@@ -332,25 +283,42 @@ const TenantAdmin: React.FC = () => {
                 setBulkActionDialogOpen(false);
                 setBulkAction(null);
         };
-
+        const pageLoading =
+                loading ||
+                analyticsLoading ||
+                vendorsLoading ||
+                searchLoading;
         return (
-                <Box
-                // p={3}
-                >
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                                <Typography variant="h4">Customer Administration</Typography>
-                                <Stack direction="row" spacing={1}>
-                                        <Button
-                                                variant="outlined"
-                                                startIcon={<Refresh />}
-                                                onClick={() => refreshTenants()}
-                                                disabled={loading}
+                <>
+                        {pageLoading ? (
+                                <Box
+                                        sx={{
+                                                minHeight: "80vh",
+                                                display: "flex",
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                        }}
+                                >
+                                        <CircularProgress />
+                                </Box>
+                        ) : (
+                                <>
+                                        <Box
                                         >
-                                                Refresh
-                                        </Button>
+                                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                                                        <Typography variant="h4">Tenant Dashboard</Typography>
+                                                        <Stack direction="row" spacing={1}>
+                                                                <Button
+                                                                        variant="outlined"
+                                                                        startIcon={<Refresh />}
+                                                                        onClick={() => refreshTenants()}
+                                                                        disabled={loading}
+                                                                >
+                                                                        Refresh
+                                                                </Button>
 
-                                        {/* Date Here */}
-                                        {/* <Stack direction="row" spacing={1} alignItems="center">
+                                                                {/* Date Here */}
+                                                                {/* <Stack direction="row" spacing={1} alignItems="center">
                                         <TextField
                                             type="date"
                                             size="small"
@@ -376,301 +344,276 @@ const TenantAdmin: React.FC = () => {
                                     </Stack> */}
 
 
-                                </Stack>
-                        </Box>
-
-                        {/* {!canCreateTenant && (
-                                <Alert severity="info" sx={{ mb: 2 }}>
-                                        {tenantCreateDisabledMessage}
-                                </Alert>
-                        )} */}
-
-                        {/* {(error || profileError) && (
-                                <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-                                        {error || profileError}
-                                </Alert>
-                        )} */}
-
-                        {createSuccess && (
-                                <Alert severity="success" sx={{ mb: 2 }} onClose={() => setCreateSuccess(null)}>
-                                        {createSuccess}
-                                </Alert>
-                        )}
-
-                        {summary && (
-                                <Grid container spacing={2} mb={3}>
-                                        <Grid item xs={12} md={3}>
-                                                <Card>
-                                                        <CardContent>
-                                                                <Typography color="text.secondary" variant="body2">
-                                                                        Total Transactions Today
-                                                                </Typography>
-                                                                <Typography variant="h5">{analyticfetchData?.transactions_today}</Typography>
-                                                        </CardContent>
-                                                </Card>
-                                        </Grid>
-                                        <Grid item xs={12} md={3}>
-                                                <Card>
-                                                        <CardContent>
-                                                                <Typography color="text.secondary" variant="body2">
-                                                                        Avg Daily Revenue
-                                                                </Typography>
-                                                                <Typography variant="h5">
-                                                                        ₦{Number(analyticsData?.analytics.average_revenue || 0).toLocaleString()}
-                                                                        {/* ₦{(400776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
-                                                                </Typography>
-                                                        </CardContent>
-                                                </Card>
-                                        </Grid>
-                                        <Grid item xs={12} md={3}>
-                                                <Card>
-                                                        <CardContent>
-                                                                <Typography color="text.secondary" variant="body2">
-                                                                        Collection Efficiency
-                                                                </Typography>
-                                                                <Typography variant="h5">{analyticsData?.analytics.collection_efficiency || 0}%</Typography>
-                                                        </CardContent>
-                                                </Card>
-                                        </Grid>
-                                        <Grid item xs={12} md={3}>
-                                                <Card>
-                                                        <CardContent>
-                                                                <Typography color="text.secondary" variant="body2">
-                                                                        Outstanding Debt
-                                                                </Typography>
-                                                                <Typography variant="h5">
-                                                                        ₦{Number(analyticsData?.analytics?.total_debt || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                                                </Typography>
-                                                        </CardContent>
-                                                </Card>
-                                        </Grid>
-                                        <Grid item xs={12} md={4}>
-                                                <Card>
-                                                        <CardContent sx={{
-                                                                height: 91,
-                                                        }}>
-                                                                <CardHeader
-                                                                        title={
-                                                                                <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                                                        <Typography variant="body2" color="text.secondary">
-                                                                                                {customerFilter === 'all'
-                                                                                                        ? 'Total Customers'
-                                                                                                        : customerFilter === 'active'
-                                                                                                                ? 'Active Customers'
-                                                                                                                : 'Inactive Customers'}
-                                                                                        </Typography>
-
-                                                                                        <TextField
-                                                                                                select
-                                                                                                size="small"
-                                                                                                value={customerFilter}
-                                                                                                onChange={(e) => setCustomerFilter(e.target.value as any)}
-                                                                                                variant="standard"
-                                                                                                InputProps={{ disableUnderline: true }}
-                                                                                                sx={{
-                                                                                                        width: 90,
-                                                                                                        '& .MuiInputBase-root': {
-                                                                                                                padding: 0,
-                                                                                                                margin: 0,
-                                                                                                        },
-                                                                                                        '& .MuiSelect-select': {
-                                                                                                                padding: '4px 8px',
-                                                                                                        },
-                                                                                                }}
-                                                                                        >
-                                                                                                <MenuItem value="all">All</MenuItem>
-                                                                                                <MenuItem value="active">Active</MenuItem>
-                                                                                        </TextField>
-                                                                                </Box>
-                                                                        }
-                                                                        sx={{
-                                                                                height: 0,
-                                                                                paddingBottom: 0,
-                                                                                '& .MuiInputBase-root': {
-                                                                                        padding: 0,
-                                                                                        margin: 0,
-                                                                                },
-                                                                                '& .MuiSelect-select': {
-                                                                                        padding: '0px 0px',
-                                                                                },
-                                                                        }}
-                                                                />
-                                                                <CardContent>
-                                                                        <Typography variant="h5">
-                                                                                {Number(customerValue || 0).toLocaleString()}
-                                                                        </Typography>
-                                                                </CardContent>
-                                                        </CardContent>
-                                                </Card>
-                                        </Grid>
-                                        <Grid item xs={12} md={4}>
-                                                <Card>
-                                                        <CardContent sx={{ height: 91 }}>
-
-                                                                <CardHeader
-                                                                        title={
-                                                                                <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                                                        <Typography variant="body2" color="text.secondary">
-                                                                                                {vendorFilter === 'all'
-                                                                                                        ? 'Total Vendors'
-                                                                                                        : vendorFilter === 'active'
-                                                                                                                ? 'Active Vendors'
-                                                                                                                : 'Inactive Vendors'}
-                                                                                        </Typography>
-
-                                                                                        <TextField
-                                                                                                select
-                                                                                                size="small"
-                                                                                                value={vendorFilter}
-                                                                                                onChange={(e) => setVendorFilter(e.target.value as any)}
-                                                                                                variant="standard"
-                                                                                                InputProps={{ disableUnderline: true }}
-                                                                                                sx={{
-                                                                                                        width: 90,
-                                                                                                        '& .MuiInputBase-root': {
-                                                                                                                padding: 0,
-                                                                                                                margin: 0,
-                                                                                                        },
-                                                                                                        '& .MuiSelect-select': {
-                                                                                                                padding: '4px 8px',
-                                                                                                        },
-                                                                                                }}
-                                                                                        >
-                                                                                                <MenuItem value="all">All</MenuItem>
-                                                                                                <MenuItem value="active">Active</MenuItem>
-                                                                                                <MenuItem value="inactive">Inactive</MenuItem>
-                                                                                        </TextField>
-                                                                                </Box>
-                                                                        }
-                                                                        sx={{
-                                                                                height: 0,
-                                                                                paddingBottom: 0,
-                                                                                '& .MuiInputBase-root': {
-                                                                                        padding: 0,
-                                                                                        margin: 0,
-                                                                                },
-                                                                                '& .MuiSelect-select': {
-                                                                                        padding: '0px 0px',
-                                                                                },
-                                                                        }}
-                                                                />
-                                                                <CardContent>
-                                                                        <Typography variant="h5">
-                                                                                {Number(vendorValue || 0).toLocaleString()}
-                                                                        </Typography>
-                                                                </CardContent>
-                                                        </CardContent>
-                                                </Card>
-                                        </Grid>
-                                        <Grid item xs={12} md={4}>
-                                                <Card>
-                                                        <CardContent>
-                                                                <Typography color="text.secondary" variant="body2">
-                                                                        Vendors Aggregated Balance
-                                                                </Typography>
-                                                                <Typography variant="h5">
-                                                                        ₦{Number(analyticfetchData?.vendor_summary.aggregated_wallet_balance || 0).toLocaleString()}
-                                                                        {/* ₦{(90000776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
-                                                                </Typography>
-                                                        </CardContent>
-                                                </Card>
-                                        </Grid>
-                                </Grid>
-                        )}
-
-                        <Grid container spacing={3}>
-                                <Grid item xs={12} md={4}>
-                                        <Card>
-                                                <CardHeader
-                                                        avatar={<Assessment color="primary" />}
-                                                        title="Debt Exposure"
-                                                        subheader="BY CATEGORY"
-                                                />
-                                                <CardContent>
-                                                        <Stack spacing={2}>
-
-                                                                {(breakdownData?.debt_exposure || []).map((item, i) => {
-                                                                        const value = Number(item.total_collections || 0);
-                                                                        return (
-                                                                                <Box key={i}>
-                                                                                        <Box display="flex" justifyContent="space-between">
-                                                                                                <Typography variant="body2">{item.category_name}</Typography>
-                                                                                                <Typography fontWeight={500}>₦{value.toLocaleString()}</Typography>
-                                                                                        </Box>
-                                                                                        <Box
-                                                                                                sx={{
-                                                                                                        height: 6,
-                                                                                                        bgcolor: '#eee',
-                                                                                                        borderRadius: 5,
-                                                                                                        mt: 0.5,
-                                                                                                }}
-                                                                                        >
-                                                                                                <Box
-                                                                                                        sx={{
-                                                                                                                width: `${value > 0 ? Math.min(value / 1000, 100) : 0}%`,
-                                                                                                                height: '100%',
-                                                                                                                bgcolor: 'primary.main',
-                                                                                                                borderRadius: 5,
-                                                                                                        }}
-                                                                                                />
-                                                                                        </Box>
-                                                                                </Box>
-                                                                        );
-                                                                })}
-
-                                                                {/* <Typography mt={2} textAlign="center">Payment Plan Uptake</Typography>
-
-                                                                                        <PieChart
-                                                                                            series={[
-                                                                                                {
-                                                                                                    data: [
-                                                                                                        { id: 0, value: 35, label: 'Active' },
-                                                                                                        { id: 1, value: 45, label: 'No Plan' },
-                                                                                                        { id: 2, value: 20, label: 'Defaulted' },
-                                                                                                    ],
-                                                                                                },
-                                                                                            ]}
-                                                                                            height={200}
-                                                                                        /> */}
                                                         </Stack>
-                                                </CardContent>
-                                        </Card>
-                                </Grid>
+                                                </Box>
 
-                                <Grid item xs={12} md={8}>
 
-                                        <Stack spacing={3} data-tenant-details>
+                                                {createSuccess && (
+                                                        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setCreateSuccess(null)}>
+                                                                {createSuccess}
+                                                        </Alert>
+                                                )}
 
-                                                <Card>
-                                                        <CardHeader avatar={<Security color="primary" />} title="Overview" />
-                                                        <CardContent>
-                                                                <Stack direction="row" spacing={2} mb={2} flexWrap="wrap">
-                                                                        <Chip label={`Inactive Users: ${(analyticfetchData?.user_summary.inactive_users || 0).toLocaleString()}`} size="small" />
-                                                                        <Chip label={`Total Postpaid Customer: ${(postpaid).toLocaleString()}`} size="small" />
-                                                                        <Chip label={`Total Prepaid Customer: ${(prepaid).toLocaleString()}`} size="small" />
-                                                                        <Chip label={`Total Unmetered Customers: ${(889540).toLocaleString()}`} size="small" />
-                                                                        <Chip label={`Suspended Customers: ${(analyticsData?.analytics.suspended_custommers || 0).toLocaleString()}`} size="small" />
-                                                                </Stack>
-                                                        </CardContent>
-                                                </Card>
+                                                {summary && (
+                                                        <Grid container spacing={2} mb={3}>
+                                                                <Grid item xs={12} md={3}>
+                                                                        <Card>
+                                                                                <CardContent>
+                                                                                        <Typography color="text.secondary" variant="body2">
+                                                                                                Total Transactions Today
+                                                                                        </Typography>
+                                                                                        <Typography variant="h5">{analyticfetchData?.transactions_today}</Typography>
+                                                                                </CardContent>
+                                                                        </Card>
+                                                                </Grid>
+                                                                <Grid item xs={12} md={3}>
+                                                                        <Card>
+                                                                                <CardContent>
+                                                                                        <Typography color="text.secondary" variant="body2">
+                                                                                                Avg Daily Revenue
+                                                                                        </Typography>
+                                                                                        <Typography variant="h5">
+                                                                                                ₦{Number(analyticsData?.analytics.average_revenue || 0).toLocaleString()}
+                                                                                                {/* ₦{(400776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
+                                                                                        </Typography>
+                                                                                </CardContent>
+                                                                        </Card>
+                                                                </Grid>
+                                                                <Grid item xs={12} md={3}>
+                                                                        <Card>
+                                                                                <CardContent>
+                                                                                        <Typography color="text.secondary" variant="body2">
+                                                                                                Collection Efficiency
+                                                                                        </Typography>
+                                                                                        <Typography variant="h5">{analyticsData?.analytics.collection_efficiency || 0}%</Typography>
+                                                                                </CardContent>
+                                                                        </Card>
+                                                                </Grid>
+                                                                <Grid item xs={12} md={3}>
+                                                                        <Card>
+                                                                                <CardContent>
+                                                                                        <Typography color="text.secondary" variant="body2">
+                                                                                                Outstanding Debt
+                                                                                        </Typography>
+                                                                                        <Typography variant="h5">
+                                                                                                ₦{Number(analyticsData?.analytics?.total_debt || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                                                                        </Typography>
+                                                                                </CardContent>
+                                                                        </Card>
+                                                                </Grid>
+                                                                <Grid item xs={12} md={4}>
+                                                                        <Card>
+                                                                                <CardContent sx={{
+                                                                                        height: 91,
+                                                                                }}>
+                                                                                        <CardHeader
+                                                                                                title={
+                                                                                                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                                                                                <Typography variant="body2" color="text.secondary">
+                                                                                                                        {customerFilter === 'all'
+                                                                                                                                ? 'Total Customers'
+                                                                                                                                : customerFilter === 'active'
+                                                                                                                                        ? 'Active Customers'
+                                                                                                                                        : 'Inactive Customers'}
+                                                                                                                </Typography>
 
-                                                <Grid container spacing={2}>
-                                                        <Grid item xs={12}>
+                                                                                                                <TextField
+                                                                                                                        select
+                                                                                                                        size="small"
+                                                                                                                        value={customerFilter}
+                                                                                                                        onChange={(e) => setCustomerFilter(e.target.value as any)}
+                                                                                                                        variant="standard"
+                                                                                                                        InputProps={{ disableUnderline: true }}
+                                                                                                                        sx={{
+                                                                                                                                width: 90,
+                                                                                                                                '& .MuiInputBase-root': {
+                                                                                                                                        padding: 0,
+                                                                                                                                        margin: 0,
+                                                                                                                                },
+                                                                                                                                '& .MuiSelect-select': {
+                                                                                                                                        padding: '4px 8px',
+                                                                                                                                },
+                                                                                                                        }}
+                                                                                                                >
+                                                                                                                        <MenuItem value="all">All</MenuItem>
+                                                                                                                        <MenuItem value="active">Active</MenuItem>
+                                                                                                                </TextField>
+                                                                                                        </Box>
+                                                                                                }
+                                                                                                sx={{
+                                                                                                        height: 0,
+                                                                                                        paddingBottom: 0,
+                                                                                                        '& .MuiInputBase-root': {
+                                                                                                                padding: 0,
+                                                                                                                margin: 0,
+                                                                                                        },
+                                                                                                        '& .MuiSelect-select': {
+                                                                                                                padding: '0px 0px',
+                                                                                                        },
+                                                                                                }}
+                                                                                        />
+                                                                                        <CardContent>
+                                                                                                <Typography variant="h5">
+                                                                                                        {Number(customerValue || 0).toLocaleString()}
+                                                                                                </Typography>
+                                                                                        </CardContent>
+                                                                                </CardContent>
+                                                                        </Card>
+                                                                </Grid>
+                                                                <Grid item xs={12} md={4}>
+                                                                        <Card>
+                                                                                <CardContent sx={{ height: 91 }}>
+
+                                                                                        <CardHeader
+                                                                                                title={
+                                                                                                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                                                                                <Typography variant="body2" color="text.secondary">
+                                                                                                                        {vendorFilter === 'all'
+                                                                                                                                ? 'Total Vendors'
+                                                                                                                                : vendorFilter === 'active'
+                                                                                                                                        ? 'Active Vendors'
+                                                                                                                                        : 'Inactive Vendors'}
+                                                                                                                </Typography>
+
+                                                                                                                <TextField
+                                                                                                                        select
+                                                                                                                        size="small"
+                                                                                                                        value={vendorFilter}
+                                                                                                                        onChange={(e) => setVendorFilter(e.target.value as any)}
+                                                                                                                        variant="standard"
+                                                                                                                        InputProps={{ disableUnderline: true }}
+                                                                                                                        sx={{
+                                                                                                                                width: 90,
+                                                                                                                                '& .MuiInputBase-root': {
+                                                                                                                                        padding: 0,
+                                                                                                                                        margin: 0,
+                                                                                                                                },
+                                                                                                                                '& .MuiSelect-select': {
+                                                                                                                                        padding: '4px 8px',
+                                                                                                                                },
+                                                                                                                        }}
+                                                                                                                >
+                                                                                                                        <MenuItem value="all">All</MenuItem>
+                                                                                                                        <MenuItem value="active">Active</MenuItem>
+                                                                                                                        <MenuItem value="inactive">Inactive</MenuItem>
+                                                                                                                </TextField>
+                                                                                                        </Box>
+                                                                                                }
+                                                                                                sx={{
+                                                                                                        height: 0,
+                                                                                                        paddingBottom: 0,
+                                                                                                        '& .MuiInputBase-root': {
+                                                                                                                padding: 0,
+                                                                                                                margin: 0,
+                                                                                                        },
+                                                                                                        '& .MuiSelect-select': {
+                                                                                                                padding: '0px 0px',
+                                                                                                        },
+                                                                                                }}
+                                                                                        />
+                                                                                        <CardContent>
+                                                                                                <Typography variant="h5">
+                                                                                                        {Number(vendorValue || 0).toLocaleString()}
+                                                                                                </Typography>
+                                                                                        </CardContent>
+                                                                                </CardContent>
+                                                                        </Card>
+                                                                </Grid>
+                                                                <Grid item xs={12} md={4}>
+                                                                        <Card>
+                                                                                <CardContent>
+                                                                                        <Typography color="text.secondary" variant="body2">
+                                                                                                Vendors Aggregated Balance
+                                                                                        </Typography>
+                                                                                        <Typography variant="h5">
+                                                                                                ₦{Number(analyticfetchData?.vendor_summary.aggregated_wallet_balance || 0).toLocaleString()}
+                                                                                                {/* ₦{(90000776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
+                                                                                        </Typography>
+                                                                                </CardContent>
+                                                                        </Card>
+                                                                </Grid>
+                                                        </Grid>
+                                                )}
+                                                <Grid container spacing={3}>
+                                                        <Grid item xs={12} md={4}>
                                                                 <Card>
                                                                         <CardHeader
-                                                                                avatar={<Analytics color="primary" />}
-                                                                                title="Daily Transactions"
-                                                                                subheader="Last 30 Days"
-                                                                                action={
-                                                                                        <Stack direction="row" spacing={1}>
-                                                                                                <Button
-                                                                                                        size="small"
-                                                                                                        variant={analyticsView === 'summary' ? 'contained' : 'outlined'}
-                                                                                                        onClick={() => setAnalyticsView('summary')}
-                                                                                                >
-                                                                                                        Chart	View
-                                                                                                </Button>
-                                                                                                {/* <Button
+                                                                                avatar={<Assessment color="primary" />}
+                                                                                title="Debt Exposure"
+                                                                                subheader="BY CATEGORY"
+                                                                        />
+                                                                        <CardContent>
+                                                                                <Stack spacing={2}>
+
+                                                                                        {(breakdownData?.debt_exposure || []).map((item, i) => {
+                                                                                                const value = Number(item.total_collections || 0);
+                                                                                                return (
+                                                                                                        <Box key={i}>
+                                                                                                                <Box display="flex" justifyContent="space-between">
+                                                                                                                        <Typography variant="body2">{item.category_name}</Typography>
+                                                                                                                        <Typography fontWeight={500}>₦{value.toLocaleString()}</Typography>
+                                                                                                                </Box>
+                                                                                                                <Box
+                                                                                                                        sx={{
+                                                                                                                                height: 6,
+                                                                                                                                bgcolor: '#eee',
+                                                                                                                                borderRadius: 5,
+                                                                                                                                mt: 0.5,
+                                                                                                                        }}
+                                                                                                                >
+                                                                                                                        <Box
+                                                                                                                                sx={{
+                                                                                                                                        width: `${value > 0 ? Math.min(value / 1000, 100) : 0}%`,
+                                                                                                                                        height: '100%',
+                                                                                                                                        bgcolor: 'primary.main',
+                                                                                                                                        borderRadius: 5,
+                                                                                                                                }}
+                                                                                                                        />
+                                                                                                                </Box>
+                                                                                                        </Box>
+                                                                                                );
+                                                                                        })}
+
+
+                                                                                </Stack>
+                                                                        </CardContent>
+                                                                </Card>
+                                                        </Grid>
+
+                                                        <Grid item xs={12} md={8}>
+
+                                                                <Stack spacing={3} data-tenant-details>
+
+                                                                        <Card>
+                                                                                <CardHeader avatar={<Security color="primary" />} title="Overview" />
+                                                                                <CardContent>
+                                                                                        <Stack direction="row" spacing={2} mb={2} flexWrap="wrap">
+                                                                                                <Chip label={`Inactive Users: ${(analyticfetchData?.user_summary.inactive_users || 0).toLocaleString()}`} size="small" />
+                                                                                                <Chip label={`Total Postpaid Customer: ${(postpaid).toLocaleString()}`} size="small" />
+                                                                                                <Chip label={`Total Prepaid Customer: ${(prepaid).toLocaleString()}`} size="small" />
+                                                                                                {/* <Chip label={`Total Unmetered Customers: ${(889540).toLocaleString()}`} size="small" /> */}
+                                                                                                <Chip label={`Suspended Customers: ${(analyticsData?.analytics.suspended_custommers || 0).toLocaleString()}`} size="small" />
+                                                                                        </Stack>
+                                                                                </CardContent>
+                                                                        </Card>
+
+                                                                        <Grid container spacing={2}>
+                                                                                <Grid item xs={12}>
+                                                                                        <Card>
+                                                                                                <CardHeader
+                                                                                                        avatar={<Analytics color="primary" />}
+                                                                                                        title="Daily Transactions"
+                                                                                                        subheader="Last 30 Days"
+                                                                                                        action={
+                                                                                                                <Stack direction="row" spacing={1}>
+                                                                                                                        <Button
+                                                                                                                                size="small"
+                                                                                                                                variant={analyticsView === 'summary' ? 'contained' : 'outlined'}
+                                                                                                                                onClick={() => setAnalyticsView('summary')}
+                                                                                                                        >
+                                                                                                                                Chart	View
+                                                                                                                        </Button>
+                                                                                                                        {/* <Button
                                                                                                                 size="small"
                                                                                                                 variant={analyticsView === 'detailed' ? 'contained' : 'outlined'}
                                                                                                                 onClick={() => setAnalyticsView('detailed')}
@@ -678,60 +621,45 @@ const TenantAdmin: React.FC = () => {
                                                                                                                 Table View
                                                                                                         </Button> */}
 
-                                                                                        </Stack>
-                                                                                }
-                                                                        />
-                                                                        <CardContent>
-                                                                                {/* {analyticsView === 'summary' ? ( */}
-                                                                                <LineChart
-                                                                                        xAxis={[
-                                                                                                {
-                                                                                                        scaleType: 'point',
-                                                                                                        data: dailyTransactionsMock.labels,
-                                                                                                },
-                                                                                        ]}
-                                                                                        series={[
-                                                                                                {
-                                                                                                        data: dailyTransactionsMock.data,
-                                                                                                        label: 'Daily Transactions',
-                                                                                                },
-                                                                                        ]}
-                                                                                        height={260}
-                                                                                        margin={{ top: 20, bottom: 30 }}
-                                                                                />
-                                                                                {/* ) : (
-                                                                                        <Stack spacing={2}>
-                                                                                           {dailyTransactionsMock.labels.map((date, i) => (
-                                                                            <Box
-                                                                                key={i}
-                                                                                display="flex"
-                                                                                justifyContent="space-between"
-                                                                                alignItems="center"
-                                                                                borderBottom="1px solid #eee"
-                                                                                py={1}
-                                                                            >
-                                                                                <Typography>{date}</Typography>
+                                                                                                                </Stack>
+                                                                                                        }
+                                                                                                />
+                                                                                                <CardContent>
+                                                                                                        {/* {analyticsView === 'summary' ? ( */}
+                                                                                                        <LineChart
+                                                                                                                xAxis={[
+                                                                                                                        {
+                                                                                                                                scaleType: 'point',
+                                                                                                                                data: dailyTransactionsMock.labels,
+                                                                                                                        },
+                                                                                                                ]}
+                                                                                                                series={[
+                                                                                                                        {
+                                                                                                                                data: dailyTransactionsMock.data,
+                                                                                                                                label: 'Daily Transactions',
+                                                                                                                        },
+                                                                                                                ]}
+                                                                                                                height={260}
+                                                                                                                margin={{ top: 20, bottom: 30 }}
+                                                                                                        />
 
-                                                                                <Typography fontWeight={600}>
-                                                                                ₦{dailyTransactionsMock.data[i].toLocaleString()}
-                                                                                </Typography>
-                                                                            </Box>
-                                                                            ))}
-                                                                                        </Stack>
-                                                                                    )} */}
-                                                                        </CardContent>
-                                                                </Card>
+                                                                                                </CardContent>
+                                                                                        </Card>
+                                                                                </Grid>
+
+
+                                                                        </Grid>
+
+                                                                </Stack>
+
                                                         </Grid>
-
-
                                                 </Grid>
+                                        </Box>
 
-                                        </Stack>
+                                </>
+                        )}
+                </>
 
-                                </Grid>
-                        </Grid>
-
-                </Box>
         );
 };
 

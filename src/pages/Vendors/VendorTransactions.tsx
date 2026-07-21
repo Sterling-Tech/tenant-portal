@@ -29,6 +29,7 @@ import {
   InputLabel,
   Select,
   Tooltip,
+  Divider,
 } from "@mui/material";
 import {
   Refresh,
@@ -563,18 +564,7 @@ const VendorTransactions: React.FC = () => {
         setReportOpen(false);
         return;
       }
-      // if (allEntries.length === 0) {
-      //   setReportError('No ledger entries match the selected filters. Try adjusting your criteria.');
-      //   return;
-      // }
-
-      // 3. Merge in account numbers if that column is included (always useful for "vend")
-
-      // let accountMap: Record<string, string> = {};
-      // if (reportColumns.account_number) {
-      //     accountMap = await fetchAccountNumberMap(reportForm);
-      // }
-
+      
       // 4. Build columns dynamically based on what's toggled on
       const activeColumns = REPORT_COLUMNS.filter(c => reportColumns[c.key]);
       if (activeColumns.length === 0) {
@@ -948,17 +938,19 @@ const VendorTransactions: React.FC = () => {
                   </Box>
                 </Stack>
 
-                <Stack direction="row" spacing={1}>
-                  {/* <Button size="small" variant="outlined">
+                {/* <Stack direction="row" spacing={1}>
+                  <Button size="small" variant="outlined">
                     View Profile
-                  </Button> */}
+                  </Button>
                   <Button size="small" onClick={() => setOpenFund(true)} variant="contained">
                     + Fund Wallet
                   </Button>
-                </Stack>
+                </Stack> */}
+
               </Stack>
+              <Divider sx={{ my: 2 }} />
               {/* WALLET */}
-              <Card sx={{ p: 2, borderRadius: 3, width: 260 }}>
+              <Stack sx={{ p: 2, marginTop: 1, }}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <AccountBalanceWallet fontSize="small" />
                   <Typography fontSize={12}>VENDING WALLET</Typography>
@@ -972,11 +964,11 @@ const VendorTransactions: React.FC = () => {
                   Available balance
                 </Typography>
 
-                <Button size="small" variant="outlined" sx={{ mt: 1 }} onClick={() => setOpenFund(true)}>
+                {/* <Button size="small" variant="outlined" sx={{ mt: 1 }} onClick={() => setOpenFund(true)}>
                   Fund
-                </Button>
+                </Button> */}
 
-              </Card>
+              </Stack>
             </Card>
 
             {/* WALLET + TABS ROW */}

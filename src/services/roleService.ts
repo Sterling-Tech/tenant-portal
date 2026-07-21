@@ -57,6 +57,7 @@ export const retriveGroups = () => {
 }
 export const viewGroup = (groupId: number | string) => {
     return get<GroupDetails>(
+    // return get<GroupDetails[]>(
         `/user/group/?group_id=${groupId}`
     );
 };
