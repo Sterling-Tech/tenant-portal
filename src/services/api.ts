@@ -87,10 +87,20 @@ export async function makeApiCall<T>(
 ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
 
+    // FormData bodies (file uploads) must NOT get a manual Content-Type —
+    // the browser needs to set its own `multipart/form-data; boundary=...`
+    // header. If we leave 'application/json' in place, the server receives
+    // a body it can't parse and the file field shows up empty.
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    const authHeaders = getAuthHeaders();
+    if (isFormData) {
+        delete authHeaders['Content-Type'];
+    }
+
     const config: RequestInit = {
         ...options,
         headers: {
-            ...getAuthHeaders(),
+            ...authHeaders,
             ...options.headers,
         },
     };
@@ -230,9 +240,10 @@ export async function get<T>(endpoint: string): Promise<T> {
  * POST request
  */
 export async function post<T>(endpoint: string, data: any): Promise<T> {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
     return makeApiCall<T>(endpoint, {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: isFormData ? data : JSON.stringify(data),
     });
 }
 
@@ -240,9 +251,10 @@ export async function post<T>(endpoint: string, data: any): Promise<T> {
  * PUT request
  */
 export async function put<T>(endpoint: string, data: any): Promise<T> {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
     return makeApiCall<T>(endpoint, {
         method: 'PUT',
-        body: JSON.stringify(data),
+        body: isFormData ? data : JSON.stringify(data),
     });
 }
 
@@ -250,9 +262,10 @@ export async function put<T>(endpoint: string, data: any): Promise<T> {
  * PATCH request
  */
 export async function patch<T>(endpoint: string, data: any): Promise<T> {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
     return makeApiCall<T>(endpoint, {
         method: 'PATCH',
-        body: JSON.stringify(data),
+        body: isFormData ? data : JSON.stringify(data),
     });
 }
 
