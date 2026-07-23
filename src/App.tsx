@@ -26,6 +26,7 @@ import BulkEngineering from './pages/ReEngineering/BulkEngineering';
 import MapRefund from './pages/Customer/MapRefund';
 import GroupManagement from './pages/Roles/Roles';
 import FundingRequest from './pages/Vendors/FundingRequest'
+import Ringfencing from './pages/Ringfencing/Ringfencing';
 // Enhanced theme
 const theme = createTheme({
     palette: {
@@ -161,6 +162,16 @@ const App: React.FC = () => {
                                     <ProtectedRoute>
                                         <Layout>
                                             <Settings />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/ringfence"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <Ringfencing />
                                         </Layout>
                                     </ProtectedRoute>
                                 }

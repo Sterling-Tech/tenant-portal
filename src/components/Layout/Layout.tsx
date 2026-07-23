@@ -475,7 +475,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <Store />
                         </ListItemIcon>
                         <ListItemText
-                            primary="Prepaid Management"
+                            primary="Prepaid Mgmt"
                             primaryTypographyProps={{ fontWeight: isVendorSection ? 600 : 400 }}
                         />
                         {reengineerMenuOpen ? <ExpandLess /> : <ExpandMore />}
@@ -544,7 +544,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <Store />
                         </ListItemIcon>
                         <ListItemText
-                            primary="Debt Management"
+                            primary="Debt Mgmt"
                             primaryTypographyProps={{ fontWeight: isVendorSection ? 600 : 400 }}
                         />
                         {debtMgtOpen ? <ExpandLess /> : <ExpandMore />}
@@ -580,6 +580,31 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </List>
                 </Collapse>
 
+                {/* ring fencing */}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        selected={location.pathname === '/ringfence'}
+                        onClick={() => handleNavigation('/ringfence')}
+                        sx={{
+                            '&.Mui-selected': {
+                                backgroundColor: 'primary.main',
+                                color: 'white',
+                                '&:hover': {
+                                    backgroundColor: 'primary.dark',
+                                },
+                                '& .MuiListItemIcon-root': {
+                                    color: 'white',
+                                },
+                            },
+                        }}
+                    >
+                        <ListItemIcon>
+                            <Settings />
+                        </ListItemIcon>
+                        {/* <ListItemText primary="Settings" /> */}
+                        <ListItemText primary="Ringfence Mgmt" />
+                    </ListItemButton>
+                </ListItem>
                 {/* Settings */}
                 <ListItem disablePadding>
                     <ListItemButton
@@ -602,7 +627,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <Settings />
                         </ListItemIcon>
                         {/* <ListItemText primary="Settings" /> */}
-                        <ListItemText primary="Admin Management" />
+                        <ListItemText primary="Admin Mgmt" />
                     </ListItemButton>
                 </ListItem>
 
