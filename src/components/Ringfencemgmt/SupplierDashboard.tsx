@@ -190,7 +190,7 @@ export default function SupplierDashboard() {
                                         />
                                     </TableCell>
 
-                                    <TableCell align="right">
+                                    {/* <TableCell align="right">
                                         <IconButton
                                             onClick={(e) => {
                                                 setAnchorEl(e.currentTarget);
@@ -199,7 +199,7 @@ export default function SupplierDashboard() {
                                         >
                                             <MoreVert />
                                         </IconButton>
-                                    </TableCell>
+                                    </TableCell> */}
                                 </TableRow>
                             ))}
                         </TableBody>
