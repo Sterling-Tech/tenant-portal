@@ -197,11 +197,3 @@ export default function RingfenceDashboard() {
         </Box>
     );
 }
-
-// await createScheme({
-//                 supplier: values.supplier_id as number,
-//                 name: values.name,
-//                 code: values.code,
-//                 description: values.description,
-//             });
-// const handleCreateScheme = async (values: SchemeForm) => {

@@ -24,19 +24,10 @@ export interface SupplierOption {
     name: string;
 }
 
-// export interface SchemeForm {
-//   supplier_id: number | "";
-//   name: string;
-//   code: string;
-//   description: string;
-//   is_active: boolean;
-// }
-
 interface Props {
     open: boolean;
     loading?: boolean;
     suppliers: SupplierOption[];
-    //   initialValues?: SchemeForm;
     initialValues?: CreateSchemePayload;
     mode?: "create" | "edit";
     onClose: () => void;
@@ -93,7 +84,7 @@ export default function CreateSchemeModal({
             fullWidth
             maxWidth="md"
         >
-            <DialogTitle>
+            <DialogTitle className="bg-blue-800 text-white">
                 <Typography fontWeight={700}>
                     {mode === "create"
                         ? "Create Scheme"

@@ -8,37 +8,25 @@ import {
     MenuItem,
     FormControl,
     Select,
+    Autocomplete,
     InputAdornment,
     IconButton,
     Avatar,
     Chip,
     Divider,
+    Menu,
 } from "@mui/material";
 
 import SearchIcon from "@mui/icons-material/Search";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { retrieveSchemes, retrieveSuppliers, Ringfences, Supplier } from "../../services/ringfenceService";
+import { AssignCustomerPayload, assignCustomers, AssignVendorPayload, assignVendors, retrieveSchemes, retrieveSuppliers, Ringfences, Supplier, updateScheme, UpdateSchemePayload } from "../../services/ringfenceService";
+import EditSchemeModal from "./EditSchemeModal";
+import { toast } from "react-toastify";
+import AssignVendorModal from "./AssignVendorModal";
+import AssignCustomerModal from "./AssignCustomerModal";
+import { Customer, fetchCustomers, fetchVendors, Vendor } from "../../services/vendorService";
+import SchemeVendorList from "./SchemeVendorList";
 
-// const mockSchemes = [
-//     {
-//         id: 1,
-//         name: "Lagos Mainland",
-//         supplier: "Conlog",
-//         code: "LM001",
-//         vendorCount: 25,
-//         customerCount: 14020,
-//         status: "Active",
-//     },
-//     {
-//         id: 2,
-//         name: "Ikeja District",
-//         supplier: "Hexing",
-//         code: "IK002",
-//         vendorCount: 12,
-//         customerCount: 8200,
-//         status: "Inactive",
-//     },
-// ];
 
 export default function SchemeLists() {
     const [schemes, setSchemes] = useState<Ringfences[]>([]);
@@ -50,7 +38,21 @@ export default function SchemeLists() {
     const [count, setCount] = useState(0)
     const [loading, setLoading] = useState(false)
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [editOpen, setEditOpen] = useState(false);
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+    const [vendorOpen, setVendorOpen] = useState(false);
+    const [customerOpen, setCustomerOpen] = useState(false);
+
+    const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [vendorPage, setVendorPage] = useState(1);
+    const [vendorHasNext, setVendorHasNext] = useState(false);
+
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [customerPage, setCustomerPage] = useState(1);
+    const [customerHasNext, setCustomerHasNext] = useState(false);
+
+    const [schemeVendorListOpen, setSchemeVendorListOpen] = useState(false)
 
     const loadScheme = async () => {
         try {
@@ -80,9 +82,52 @@ export default function SchemeLists() {
         }
     };
 
+    const loadVendors = async (page = 1, append = false) => {
+        try {
+            setLoading(true);
+
+            const res = await fetchVendors({
+                page,
+                main_vendor: true,
+            });
+
+            setVendors((prev) =>
+                append ? [...prev, ...res.results] : res.results
+            );
+
+            setVendorHasNext(!!res.next);
+            setVendorPage(page);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadCustomers = async (page = 1, append = false) => {
+        setLoading(true);
+        try {
+            const res = await fetchCustomers({
+                page,
+            });
+
+            setCustomers((prev) =>
+                append ? [...prev, ...res.results] : res.results
+            );
+
+            setCustomerHasNext(!!res.next);
+            setCustomerPage(page);
+
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         loadScheme();
         loadSuppliers();
+        loadVendors();
+        loadCustomers();
     }, []);
 
     useEffect(() => {
@@ -115,6 +160,65 @@ export default function SchemeLists() {
         setFiltered(data);
     }, [search, supplier, status, schemes]);
 
+    const handleUpdateScheme = async (
+        id: number,
+        values: UpdateSchemePayload
+    ) => {
+        try {
+            setLoading(true);
+
+            const updated = await updateScheme(id, values);
+
+            await loadScheme();
+            setSelected(updated);
+
+            toast.success("Scheme updated successfully");
+
+            setEditOpen(false);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAssignVendors = async (
+        values: AssignVendorPayload
+    ) => {
+        try {
+            setLoading(true);
+
+            await assignVendors(values);
+
+            toast.success("Vendors assigned.");
+
+            setVendorOpen(false);
+
+            loadScheme();
+        } catch (err) {
+            toast.error("Unable to assign vendors");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAssignCustomers = async (
+        values: AssignCustomerPayload
+    ) => {
+        try {
+            setLoading(true);
+
+            await assignCustomers(values);
+
+            toast.success("Customers assigned.");
+
+            setCustomerOpen(false);
+
+            loadScheme();
+        } catch (err) {
+            toast.error("Unable to assign customers");
+        } finally {
+            setLoading(false);
+        }
+    };
     return (
         <Stack
             direction={{ xs: "column", lg: "row" }}
@@ -252,7 +356,13 @@ export default function SchemeLists() {
 
                             </Stack>
 
-                            <IconButton>
+                            <IconButton
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelected(scheme);
+                                    setAnchorEl(e.currentTarget);
+                                }}
+                            >
                                 <MoreVertIcon />
                             </IconButton>
 
@@ -283,8 +393,48 @@ export default function SchemeLists() {
 
                     </Box>
                 ))}
-            </Card>
 
+            </Card>
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={() => setAnchorEl(null)}
+            >
+                <MenuItem
+                    onClick={() => {
+                        setEditOpen(true);
+                        setAnchorEl(null);
+                    }}
+                >
+                    Edit Scheme
+                </MenuItem>
+
+                <MenuItem
+                    onClick={() => {
+                        setVendorOpen(true);
+                        setAnchorEl(null);
+                    }}
+                >
+                    Assign Vendors
+                </MenuItem>
+
+                <MenuItem
+                    onClick={() => {
+                        setCustomerOpen(true);
+                        setAnchorEl(null);
+                    }}
+                >
+                    Assign Customers
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        setSchemeVendorListOpen(true);
+                        setAnchorEl(null);
+                    }}
+                >
+                    View Assigned Vendors
+                </MenuItem>
+            </Menu>
             {/* RIGHT */}
 
             <Card
@@ -332,6 +482,45 @@ export default function SchemeLists() {
                 </Stack>
 
             </Card>
+            <EditSchemeModal
+                open={editOpen}
+                scheme={selected}
+                loading={loading}
+                onClose={() => setEditOpen(false)}
+                onSubmit={handleUpdateScheme}
+            />
+            <AssignVendorModal
+                open={vendorOpen}
+                schemeId={selected?.id ?? 0}
+                vendors={vendors}
+                vendorHasNext={vendorHasNext}
+                vendorPage={vendorPage}
+                loadMore={() =>
+                    loadVendors(vendorPage + 1, true)
+                }
+                loading={loading}
+                onClose={() => setVendorOpen(false)}
+                onSubmit={handleAssignVendors}
+            />
+
+            <AssignCustomerModal
+                open={customerOpen}
+                schemeId={selected?.id ?? 0}
+                customers={customers}
+                customerHasNext={customerHasNext}
+                customerPage={vendorPage}
+                loadMore={() =>
+                    loadCustomers(customerPage + 1, true)
+                }
+                loading={loading}
+                onClose={() => setCustomerOpen(false)}
+                onSubmit={handleAssignCustomers}
+            />
+            <SchemeVendorList
+                open={schemeVendorListOpen}
+                schemeId={selected?.id}
+                onClose={() => setSchemeVendorListOpen(false)}
+            />
         </Stack>
     );
 }
