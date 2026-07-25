@@ -352,7 +352,8 @@ export default function FundingRequest() {
                 open={openMenu}
                 onClose={handleMenuClose}
             >
-                {status === "pending_review" && can("review_funding_requests") && (
+                {/* {status === "pending_review" && can("review_funding_requests") && ( */}
+                {status === "pending_review" && (
                     <>
                         <MenuItem
                             onClick={() => {
@@ -375,7 +376,8 @@ export default function FundingRequest() {
                     </>
                 )}
 
-                {status === "pending_approval" && can("approve_funding_requests")&& (
+                {/* {status === "pending_approval" && can("approve_funding_requests")&& ( */}
+                {status === "pending_approval" && (
                     <>
                         <MenuItem
                             onClick={() => {

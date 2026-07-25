@@ -8,7 +8,7 @@ export default function ReferenceManagement() {
   const [tab, setTab] = useState(0);
 
   return (
-    <Box p={3}>
+    <Box>
       <Paper
         elevation={0}
         sx={{

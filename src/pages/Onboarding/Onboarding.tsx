@@ -245,12 +245,12 @@ const { can } = usePermission();
             sx={{ whiteSpace: "nowrap", borderColor: "#D0D5DD", color: "text.primary", bgcolor: "#fff", "&:hover": { borderColor: "#B0B8C8", bgcolor: "#F9FAFB" }, px: 5 }}>
             Export
           </Button> */}
-          {can("create_vendors")&&(
+          {/* {can("create_vendors")&&( */}
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)}
             sx={{ whiteSpace: "nowrap", px: 5, bgcolor: "#0F2D6B" }}>
             {config.buttonLabel}
           </Button>
-          )}
+          {/* )} */}
         </Box>
 
         {/* Table */}

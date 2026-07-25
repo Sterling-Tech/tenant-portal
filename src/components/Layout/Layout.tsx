@@ -221,30 +221,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Collapse in={vendorMenuOpen} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
                         {/* Vendors */}
-                        {can("view_vendors")&&(
-                        <ListItemButton
-                            selected={location.pathname === '/vendors'}
-                            onClick={() => handleNavigation('/vendors')}
-                            sx={{
-                                pl: 4,
-                                '&.Mui-selected': {
-                                    backgroundColor: 'primary.main',
-                                    color: 'white',
-                                    '&:hover': {
-                                        backgroundColor: 'primary.dark',
-                                    },
-                                    '& .MuiListItemIcon-root': {
+                        {/* {can("view_vendors") && ( */}
+                            <ListItemButton
+                                selected={location.pathname === '/vendors'}
+                                onClick={() => handleNavigation('/vendors')}
+                                sx={{
+                                    pl: 4,
+                                    '&.Mui-selected': {
+                                        backgroundColor: 'primary.main',
                                         color: 'white',
+                                        '&:hover': {
+                                            backgroundColor: 'primary.dark',
+                                        },
+                                        '& .MuiListItemIcon-root': {
+                                            color: 'white',
+                                        },
                                     },
-                                },
-                            }}
-                        >
-                            <ListItemIcon>
-                                <Store fontSize="small" />
-                            </ListItemIcon>
-                            <ListItemText primary="Vendors" />
-                        </ListItemButton>
-                        )}
+                                }}
+                            >
+                                <ListItemIcon>
+                                    <Store fontSize="small" />
+                                </ListItemIcon>
+                                <ListItemText primary="Vendors" />
+                            </ListItemButton>
+                        {/* )} */}
                         {/* Onboarding */}
                         <ListItem disablePadding>
                             <ListItemButton
@@ -342,7 +342,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </ListItemIcon>
                             <ListItemText primary="Funding Request" />
                         </ListItemButton>
-                        
+
                     </List>
                 </Collapse>
                 {/* Customer Management Section - Collapsible */}
@@ -367,30 +367,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <List component="div" disablePadding>
 
                         {/* Customer */}
-                        {can("view_customer")&&(
-                        <ListItemButton
-                            selected={location.pathname === '/customer'}
-                            onClick={() => handleNavigation('/customer')}
-                            sx={{
-                                pl: 4,
-                                '&.Mui-selected': {
-                                    backgroundColor: 'primary.main',
-                                    color: 'white',
-                                    '&:hover': {
-                                        backgroundColor: 'primary.dark',
-                                    },
-                                    '& .MuiListItemIcon-root': {
+                        {/* {can("view_customer") && ( */}
+                            <ListItemButton
+                                selected={location.pathname === '/customer'}
+                                onClick={() => handleNavigation('/customer')}
+                                sx={{
+                                    pl: 4,
+                                    '&.Mui-selected': {
+                                        backgroundColor: 'primary.main',
                                         color: 'white',
+                                        '&:hover': {
+                                            backgroundColor: 'primary.dark',
+                                        },
+                                        '& .MuiListItemIcon-root': {
+                                            color: 'white',
+                                        },
                                     },
-                                },
-                            }}
-                        >
-                            <ListItemIcon>
-                                <People fontSize="small" />
-                            </ListItemIcon>
-                            <ListItemText primary="Customer" />
-                        </ListItemButton>
-                        )}
+                                }}
+                            >
+                                <ListItemIcon>
+                                    <People fontSize="small" />
+                                </ListItemIcon>
+                                <ListItemText primary="Customer" />
+                            </ListItemButton>
+                        {/* )} */}
                         {/* maprefund */}
                         <ListItemButton
                             selected={location.pathname === '/customer/maprefund'}
@@ -440,77 +440,77 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </List>
                 </Collapse>
                 {/* Re-engineering */}
-                {can("issue_engineering_tokens")&&(
+                {/* {can("issue_engineering_tokens") && ( */}
                     <>
-                <ListItem disablePadding>
-                    <ListItemButton
-                        onClick={() => setReengineerMenuOpen(!reengineerMenuOpen)}
-                        sx={{
-                            bgcolor: reengineerMenuOpen ? 'action.selected' : 'inherit',
-                        }}
-                    >
-                        <ListItemIcon>
-                            <Store />
-                        </ListItemIcon>
-                        <ListItemText
-                            primary="Prepaid Mgmt"
-                            primaryTypographyProps={{ fontWeight: isVendorSection ? 600 : 400 }}
-                        />
-                        {reengineerMenuOpen ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-                </ListItem>
-                <Collapse in={reengineerMenuOpen} timeout="auto" unmountOnExit>
-                    <List component="div" disablePadding>
+                        <ListItem disablePadding>
+                            <ListItemButton
+                                onClick={() => setReengineerMenuOpen(!reengineerMenuOpen)}
+                                sx={{
+                                    bgcolor: reengineerMenuOpen ? 'action.selected' : 'inherit',
+                                }}
+                            >
+                                <ListItemIcon>
+                                    <Store />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary="Prepaid Mgmt"
+                                    primaryTypographyProps={{ fontWeight: isVendorSection ? 600 : 400 }}
+                                />
+                                {reengineerMenuOpen ? <ExpandLess /> : <ExpandMore />}
+                            </ListItemButton>
+                        </ListItem>
+                        <Collapse in={reengineerMenuOpen} timeout="auto" unmountOnExit>
+                            <List component="div" disablePadding>
 
-                        <ListItemButton
-                            selected={location.pathname === '/re-engineer'}
-                            onClick={() => handleNavigation('/re-engineer')}
-                            sx={{
-                                pl: 4,
-                                '&.Mui-selected': {
-                                    backgroundColor: 'primary.main',
-                                    color: 'white',
-                                    '&:hover': {
-                                        backgroundColor: 'primary.dark',
-                                    },
-                                    '& .MuiListItemIcon-root': {
-                                        color: 'white',
-                                    },
-                                },
-                            }}
-                        >
-                            <ListItemIcon>
-                                <People fontSize="small" />
-                            </ListItemIcon>
-                            <ListItemText primary="Engineering" />
-                        </ListItemButton>
+                                <ListItemButton
+                                    selected={location.pathname === '/re-engineer'}
+                                    onClick={() => handleNavigation('/re-engineer')}
+                                    sx={{
+                                        pl: 4,
+                                        '&.Mui-selected': {
+                                            backgroundColor: 'primary.main',
+                                            color: 'white',
+                                            '&:hover': {
+                                                backgroundColor: 'primary.dark',
+                                            },
+                                            '& .MuiListItemIcon-root': {
+                                                color: 'white',
+                                            },
+                                        },
+                                    }}
+                                >
+                                    <ListItemIcon>
+                                        <People fontSize="small" />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Engineering" />
+                                </ListItemButton>
 
-                        <ListItemButton
-                            selected={location.pathname === '/re-engineer/bulk'}
-                            onClick={() => handleNavigation('/re-engineer/bulk')}
-                            sx={{
-                                pl: 4,
-                                '&.Mui-selected': {
-                                    backgroundColor: 'primary.main',
-                                    color: 'white',
-                                    '&:hover': {
-                                        backgroundColor: 'primary.dark',
-                                    },
-                                    '& .MuiListItemIcon-root': {
-                                        color: 'white',
-                                    },
-                                },
-                            }}
-                        >
-                            <ListItemIcon>
-                                <History fontSize="small" />
-                            </ListItemIcon>
-                            <ListItemText primary="Bulk Engineering" />
-                        </ListItemButton>
-                    </List>
-                </Collapse>
-                </>
-                )}
+                                <ListItemButton
+                                    selected={location.pathname === '/re-engineer/bulk'}
+                                    onClick={() => handleNavigation('/re-engineer/bulk')}
+                                    sx={{
+                                        pl: 4,
+                                        '&.Mui-selected': {
+                                            backgroundColor: 'primary.main',
+                                            color: 'white',
+                                            '&:hover': {
+                                                backgroundColor: 'primary.dark',
+                                            },
+                                            '& .MuiListItemIcon-root': {
+                                                color: 'white',
+                                            },
+                                        },
+                                    }}
+                                >
+                                    <ListItemIcon>
+                                        <History fontSize="small" />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Bulk Engineering" />
+                                </ListItemButton>
+                            </List>
+                        </Collapse>
+                    </>
+                {/* )} */}
                 {/* Sub account*/}
                 <ListItem disablePadding>
                     <ListItemButton
@@ -560,32 +560,32 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </Collapse>
 
                 {/* ring fencing */}
-                {can("manage_schemes")&&(
-                <ListItem disablePadding>
-                    <ListItemButton
-                        selected={location.pathname === '/ringfence'}
-                        onClick={() => handleNavigation('/ringfence')}
-                        sx={{
-                            '&.Mui-selected': {
-                                backgroundColor: 'primary.main',
-                                color: 'white',
-                                '&:hover': {
-                                    backgroundColor: 'primary.dark',
-                                },
-                                '& .MuiListItemIcon-root': {
+                {/* {can("manage_schemes") && ( */}
+                    <ListItem disablePadding>
+                        <ListItemButton
+                            selected={location.pathname === '/ringfence'}
+                            onClick={() => handleNavigation('/ringfence')}
+                            sx={{
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
                                     color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
                                 },
-                            },
-                        }}
-                    >
-                        <ListItemIcon>
-                            <Settings />
-                        </ListItemIcon>
-                        {/* <ListItemText primary="Settings" /> */}
-                        <ListItemText primary="Ringfence Mgmt" />
-                    </ListItemButton>
-                </ListItem>
-                )}
+                            }}
+                        >
+                            <ListItemIcon>
+                                <Settings />
+                            </ListItemIcon>
+                            {/* <ListItemText primary="Settings" /> */}
+                            <ListItemText primary="Ringfence Mgmt" />
+                        </ListItemButton>
+                    </ListItem>
+                {/* )} */}
                 {/* Settings */}
                 <ListItem disablePadding>
                     <ListItemButton

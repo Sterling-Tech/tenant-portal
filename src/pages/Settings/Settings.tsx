@@ -206,21 +206,21 @@ const Settings: React.FC = () => {
             <Tab value="account" label="Account" icon={<AccountIcon />} />
 
             <Tab value="security" label="Security" icon={<SecurityIcon />} />
-            {can("create_admin") && (
+            {/* {can("create_admin") && ( */}
               <Tab
                 value="admin-management"
                 label="Admin Management"
                 icon={<ConfigIcon />}
               />
-            )}
+             {/* )} */}
 
-            {can("retrieve_admin") && (
+            {/* {can("retrieve_admin") && ( */}
               <Tab
                 value="admin-list"
                 label="Admin List"
                 icon={<ConfigIcon />}
               />
-            )}
+            {/* )} */}
 {/* {can("manage_permissions")&&( */}
             <Tab
               value="assign-permission"
@@ -233,13 +233,13 @@ const Settings: React.FC = () => {
               label="Audit Logs"
               icon={<History />}
             />
-            {can("manage_group") && (
+            {/* {can("manage_group") && ( */}
               <Tab
                 value="roles"
                 label="Roles & Permissions"
                 icon={<Group />}
               />
-            )}
+            {/* )} */}
           </Tabs>
         </Box>
 
