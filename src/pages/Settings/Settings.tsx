@@ -221,13 +221,13 @@ const Settings: React.FC = () => {
                 icon={<ConfigIcon />}
               />
             )}
-
+{/* {can("manage_permissions")&&( */}
             <Tab
               value="assign-permission"
               label="Assign Permission"
               icon={<ConfigIcon />}
             />
-
+{/* )} */}
             <Tab
               value="audit"
               label="Audit Logs"

@@ -3,7 +3,8 @@ import React, { useEffect, useState } from "react";
 import { Box, Card, Typography, Grid, Button, CircularProgress, List, ListItemButton, ListItemText, Checkbox, Divider, Chip, Stack, Alert, } from "@mui/material";
 
 import { getAllAdmin,getSystemPermissions, getPermissions, grantPermissions, CreateAdmin,Permission, PermissionItem, } from "../../services/settingService";
-
+import { toast } from "react-toastify";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 export default function AssignPermission() {
     const [admins, setAdmins] = useState<CreateAdmin[]>([]);
     const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -18,16 +19,6 @@ export default function AssignPermission() {
     const [loading, setLoading] = useState(false);
 
     const [saving, setSaving] = useState(false);
-
-    const [alert, setAlert] = useState<{
-        open: boolean;
-        type: "success" | "error";
-        message: string;
-    }>({
-        open: false,
-        type: "success",
-        message: "",
-    });
 
     const loadData = async () => {
         try {
@@ -45,6 +36,7 @@ export default function AssignPermission() {
             setPermissions(permissionsRes);
         } catch (error) {
             console.error(error);
+            toast.error(getErrorMessage(error))
         } finally {
             setLoading(false);
         }
@@ -65,53 +57,33 @@ export default function AssignPermission() {
     };
 
     const handleAssignPermissions = async () => {
-        if (!selectedAdmin) {
-            setAlert({
-                open: true,
-                type: "error",
-                message: "Please select an admin",
-            });
-            return;
-        }
+    if (!selectedAdmin) {
+        toast.error("Please select an admin");
+        return;
+    }
 
-        if (selectedPermissions.length === 0) {
-            setAlert({
-                open: true,
-                type: "error",
-                message:
-                    "Please select at least one permission",
-            });
-            return;
-        }
+    if (selectedPermissions.length === 0) {
+        toast.error("Please select at least one permission");
+        return;
+    }
 
-        try {
-            setSaving(true);
+    try {
+        setSaving(true);
 
-            await grantPermissions({
-                user: selectedAdmin.id,
-                permissions: selectedPermissions,
-            });
+        await grantPermissions({
+            user: selectedAdmin.id,
+            permissions: selectedPermissions,
+        });
 
-            setAlert({
-                open: true,
-                type: "success",
-                message:
-                    "Permissions assigned successfully",
-            });
+        toast.success("Permissions assigned successfully");
 
-            setSelectedPermissions([]);
-        } catch (error: any) {
-            setAlert({
-                open: true,
-                type: "error",
-                message:
-                    error?.response?.data?.message ||
-                    "Failed to assign permissions",
-            });
-        } finally {
-            setSaving(false);
-        }
-    };
+        setSelectedPermissions([]);
+    } catch (error: any) {
+        toast.error(getErrorMessage(error));
+    } finally {
+        setSaving(false);
+    }
+};
 
     if (loading) {
         return (
@@ -130,15 +102,6 @@ export default function AssignPermission() {
             >
                 Assign Permissions
             </Typography>
-
-            {alert.open && (
-                <Alert
-                    severity={alert.type}
-                    sx={{ mb: 3 }}
-                >
-                    {alert.message}
-                </Alert>
-            )}
 
             <Grid container spacing={3}>
                 {/* ADMINS */}
