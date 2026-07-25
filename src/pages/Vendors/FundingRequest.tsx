@@ -5,6 +5,7 @@ import { Tabs, Tab, IconButton, TableContainer, Chip, TableHead, Paper, Table, T
 import { toast } from 'react-toastify';
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ApproveFundingDialog from './ApproveFundingDialog';
+import { usePermission } from '../../hooks/usePermission';
 
 
 export default function FundingRequest() {
@@ -156,6 +157,9 @@ export default function FundingRequest() {
         rejected:
             "No rejected funding requests.",
     }[activeTab];
+
+    const { can } = usePermission();
+
     return (
         <div>
             <Tabs
@@ -348,7 +352,7 @@ export default function FundingRequest() {
                 open={openMenu}
                 onClose={handleMenuClose}
             >
-                {status === "pending_review" && (
+                {status === "pending_review" && can("review_funding_requests") && (
                     <>
                         <MenuItem
                             onClick={() => {
@@ -371,7 +375,7 @@ export default function FundingRequest() {
                     </>
                 )}
 
-                {status === "pending_approval" && (
+                {status === "pending_approval" && can("approve_funding_requests")&& (
                     <>
                         <MenuItem
                             onClick={() => {

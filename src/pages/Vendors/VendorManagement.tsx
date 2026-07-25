@@ -482,78 +482,78 @@ export default function VendorHub() {
                   />
 
                   {/* TOKEN WITH COPY */}
-                  <Box>
-                    <Typography color="text.secondary" fontSize={13}>
-                      API Token
-                    </Typography>
-
-                    <Box
-                      mt={0.5}
-                      px={1.5}
-                      py={1}
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                      sx={{
-                        border: "1px solid #eee",
-                        borderRadius: 2,
-                        bgcolor: "#fafafa",
-                      }}
-                    >
-                      <Typography
-                        fontSize={13}
-                        sx={{
-                          maxWidth: "75%",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {truncate(selected.token, 40)}
+                    {/* <Box>
+                      <Typography color="text.secondary" fontSize={13}>
+                        API Token
                       </Typography>
 
-                      <Button
-                        size="small"
-                        onClick={async () => {
-                          if (!selected?.token) return;
+                      <Box
+                        mt={0.5}
+                        px={1.5}
+                        py={1}
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        sx={{
+                          border: "1px solid #eee",
+                          borderRadius: 2,
+                          bgcolor: "#fafafa",
+                        }}
+                      >
+                        <Typography
+                          fontSize={13}
+                          sx={{
+                            maxWidth: "75%",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {truncate(selected.token, 40)}
+                        </Typography>
 
-                          try {
-                            await navigator.clipboard.writeText(selected.token);
+                        <Button
+                          size="small"
+                          onClick={async () => {
+                            if (!selected?.token) return;
 
-                            setAlert({
-                              open: true,
-                              type: "success",
-                              message: "Token copied to clipboard",
-                            });
-                          } catch (err) {
-                            // 🔥 fallback for older browsers / insecure context
                             try {
-                              const textArea = document.createElement("textarea");
-                              textArea.value = selected.token;
-                              document.body.appendChild(textArea);
-                              textArea.select();
-                              document.execCommand("copy");
-                              document.body.removeChild(textArea);
+                              await navigator.clipboard.writeText(selected.token);
 
                               setAlert({
                                 open: true,
                                 type: "success",
-                                message: "Token copied (fallback)",
+                                message: "Token copied to clipboard",
                               });
-                            } catch (e) {
-                              setAlert({
-                                open: true,
-                                type: "error",
-                                message: "Failed to copy token",
-                              });
+                            } catch (err) {
+                              // 🔥 fallback for older browsers / insecure context
+                              try {
+                                const textArea = document.createElement("textarea");
+                                textArea.value = selected.token;
+                                document.body.appendChild(textArea);
+                                textArea.select();
+                                document.execCommand("copy");
+                                document.body.removeChild(textArea);
+
+                                setAlert({
+                                  open: true,
+                                  type: "success",
+                                  message: "Token copied (fallback)",
+                                });
+                              } catch (e) {
+                                setAlert({
+                                  open: true,
+                                  type: "error",
+                                  message: "Failed to copy token",
+                                });
+                              }
                             }
-                          }
-                        }}
-                      >
-                        Copy
-                      </Button>
-                    </Box>
-                  </Box>
+                          }}
+                        >
+                          Copy
+                        </Button>
+                      </Box>
+                    </Box> */}
                 </Stack>
 
 

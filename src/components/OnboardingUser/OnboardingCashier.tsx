@@ -19,7 +19,7 @@ import {
   DEFAULT_TX_TYPES,
 } from "./WizardTypes";
 import { createVendor, getAllVendors, RelatedVendorResponse } from "../../services/onbordingService";
-
+import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement } from "./validation";
 export interface CashierForm {
   parentAgentId: string;
   basic: BasicFormData;
@@ -44,11 +44,13 @@ const AGENT_OPTIONS = ["Agent Lagos", "Agent Abuja", "Agent PH"];
 function StepParentCashier({
   selected,
   onSelect,
-  agents
+  agents,
+  error,
 }: {
   selected: string;
   onSelect: (v: string) => void;
-  agents: RelatedVendorResponse[]
+  agents: RelatedVendorResponse[];
+  error?: string;
 }) {
   const chain = selected || "[Agent]";
   return (
@@ -85,6 +87,15 @@ function StepParentCashier({
               </MenuItem>
             ))}
           </Select>
+          {error && (
+            <Typography
+              variant="caption"
+              color="error"
+              sx={{ mt: 0.5 }}
+            >
+              {error}
+            </Typography>
+          )}
         </FormControl>
       </Box>
 
@@ -107,6 +118,13 @@ export default function OnboardingCashier({ open, onClose }: Props) {
   const [form, setForm] = useState<CashierForm>(EMPTY_FORM);
   const [agents, setAgents] = useState<RelatedVendorResponse[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  const [parentAgentError, setParentAgentError] = useState("");
+  const [basicErrors, setBasicErrors] = useState<Partial<Record<keyof BasicFormData, string>>>({});
+  const [profileErrors, setProfileErrors] = useState<Partial<Record<keyof ProfileFormData, string>>>({});
+  const [kycErrors, setKycErrors] = useState<Partial<Record<keyof KYCFormData, string>>>({});
+  const [controlErrors, setControlErrors] = useState<Partial<Record<keyof ControlsFormData, string>>>({});
+  const [agreementErrors, setAgreementErrors] = useState<Partial<Record<keyof AgreementFormData, string>>>({});
 
   function resetAndClose() { setStep(0); setForm(EMPTY_FORM); onClose(); }
 
@@ -128,7 +146,7 @@ export default function OnboardingCashier({ open, onClose }: Props) {
 
     fetchAgents();
   }, []);
-  
+
   async function handleSubmit() {
     try {
       setLoading(true);
@@ -245,18 +263,69 @@ export default function OnboardingCashier({ open, onClose }: Props) {
     setForm((prev) => ({ ...prev, agreement: { ...prev.agreement, agreedToTerms: !prev.agreement.agreedToTerms } }));
   }
 
+  const handleNext = () => {
+    if (step === 0) {
+      if (!form.parentAgentId) {
+        setParentAgentError(
+          "Please select a parent agent before continuing."
+        );
+        return;
+      }
+
+      setParentAgentError("");
+    }
+
+    if (step === 1) {
+                const errors = validateBasic(form.basic);
+                setBasicErrors(errors);
+                if (Object.keys(errors).length > 0)
+                    return;
+            }
+            if (step === 2) {
+                const errors = validateProfile(form.profile);
+                setProfileErrors(errors);
+                if (Object.keys(errors).length > 0)
+                    return;
+            }
+    
+            if (step === 3) {
+                const errors = validateKYC(form.kyc);
+                setKycErrors(errors);
+                if (Object.keys(errors).length > 0)
+                    return;
+            }
+    
+            if (step === 4) {
+                const errors = validateControls(form.controls);
+                setControlErrors(errors);
+                if (Object.keys(errors).length > 0)
+                    return;
+            }
+    
+            if (step === 5) {
+                const errors = validateAgreement(form.agreement);
+                setAgreementErrors(errors);
+                if (Object.keys(errors).length > 0)
+                    return;
+    
+                handleSubmit();
+                return;
+            }
+
+    setStep((s) => s + 1);
+  };
   return (
     <WizardShell open={open} onClose={resetAndClose} entityLabel="cashier" step={step}
-      onNext={() => step === 5 ? handleSubmit() : setStep((s) => s + 1)}
+      onNext={handleNext}
       onPrev={() => setStep((s) => Math.max(0, s - 1))}
       canSubmit={form.agreement.agreedToTerms}
     >
-      {step === 0 && <StepParentCashier selected={form.parentAgentId} onSelect={(v) => setForm((p) => ({ ...p, parentAgentId: v }))} agents={agents}/>}
-      {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Cashier" />}
-      {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} />}
-      {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} />}
-      {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} />}
-      {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} />}
+      {step === 0 && <StepParentCashier selected={form.parentAgentId} error={parentAgentError} onSelect={(v) => { setParentAgentError(""); setForm((p) => ({ ...p, parentAgentId: v })) }} agents={agents} />}
+      {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Cashier" errors={basicErrors}/>}
+      {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} errors={profileErrors}/>}
+      {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} errors={kycErrors}/>}
+      {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} errors={controlErrors}/>}
+      {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} errors={agreementErrors}/>}
     </WizardShell>
   );
 }

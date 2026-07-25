@@ -49,6 +49,7 @@ import ConfigureVendor from "../../components/OnboardingUser/ConfigureVendor";
 import { RelatedVendorResponse } from "../../services/onbordingService";
 import AuditPage from "./AuditPage";
 import Roles from "../Roles/Roles";
+import { usePermission } from "../../hooks/usePermission";
 
 //const API_BASE_URL = "http://188.166.161.13:8001/api/v1";
 
@@ -57,9 +58,10 @@ const Settings: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState(0);
+  // const [activeTab, setActiveTab] = useState(0);
   const [selectedVendor, setSelectedVendor] =
     useState<RelatedVendorResponse | null>(null);
+  const [activeTab, setActiveTab] = useState("account");
 
   // ================= NOTIFICATIONS =================
   const [notificationSettings, setNotificationSettings] = useState({
@@ -117,6 +119,8 @@ const Settings: React.FC = () => {
     setSuccess("API Secret Rotated Successfully");
   };
 
+  const { can } = usePermission();
+
   return (
     <Box
       // p={3}
@@ -165,11 +169,10 @@ const Settings: React.FC = () => {
         sx={{
           borderRadius: 5,
           overflow: "hidden",
-          boxShadow:
-            "0 10px 40px rgba(15,23,42,0.06)",
+          boxShadow: "0 10px 40px rgba(15,23,42,0.06)",
         }}
       >
-        {/* TABS */}
+        {/* Tabs */}
         <Box
           sx={{
             borderBottom: "1px solid #E2E8F0",
@@ -177,94 +180,82 @@ const Settings: React.FC = () => {
             bgcolor: "#fff",
           }}
         >
+          {/* <Tabs
+            value={activeTab}
+            onChange={(_, value) => setActiveTab(value)}
+            variant="fullWidth"
+            scrollButtons="auto"
+            
+          > */}
           <Tabs
             value={activeTab}
-            onChange={(_, value) =>
-              setActiveTab(value)
-            }
+            onChange={(_, value) => setActiveTab(value)}
             variant="scrollable"
             scrollButtons="auto"
+            sx={{
+              "& .MuiTabs-flexContainer": {
+                width: "100%",
+              },
+              "& .MuiTab-root": {
+                flex: 1,
+                minWidth: 160, // adjust as needed
+              },
+            }}
           >
-            <Tab
-              icon={<AccountIcon />}
-              iconPosition="start"
-              label="Account"
-            />
+
+            <Tab value="account" label="Account" icon={<AccountIcon />} />
+
+            <Tab value="security" label="Security" icon={<SecurityIcon />} />
+            {can("create_admin") && (
+              <Tab
+                value="admin-management"
+                label="Admin Management"
+                icon={<ConfigIcon />}
+              />
+            )}
+
+            {can("retrieve_admin") && (
+              <Tab
+                value="admin-list"
+                label="Admin List"
+                icon={<ConfigIcon />}
+              />
+            )}
 
             <Tab
-              icon={<SecurityIcon />}
-              iconPosition="start"
-              label="Security"
-            />
-
-            {/* <Tab
-              icon={<NotificationsIcon />}
-              iconPosition="start"
-              label="Notifications"
-            />*/}
-            {/* 
-            <Tab
-              icon={<ConfigIcon />}
-              iconPosition="start"
-              label="Configuration"
-            /> */}
-            <Tab
-              icon={<ConfigIcon />}
-              iconPosition="start"
-              label="Admin Management"
-            />
-            <Tab
-              icon={<ConfigIcon />}
-              iconPosition="start"
-              label="Admin List"
-            />
-            <Tab
-              icon={<ConfigIcon />}
-              iconPosition="start"
+              value="assign-permission"
               label="Assign Permission"
+              icon={<ConfigIcon />}
             />
-           
-            <Tab 
-              icon={<History />} 
-              iconPosition="start" 
-              label="Audit Logs" 
+
+            <Tab
+              value="audit"
+              label="Audit Logs"
+              icon={<History />}
             />
-            <Tab 
-              icon={<Group />} 
-              iconPosition="start" 
-              label="Roles & Permissions" 
-            />
+            {can("manage_group") && (
+              <Tab
+                value="roles"
+                label="Roles & Permissions"
+                icon={<Group />}
+              />
+            )}
           </Tabs>
         </Box>
 
-        {/* ================= ACCOUNT TAB ================= */}
-        {activeTab === 0 && (
-          <UserUpdate />
-        )}
+        {activeTab === "account" && <UserUpdate />}
 
-        {/* ================= SECURITY TAB ================= */}
-        {activeTab === 1 && (
-          <ChangePassword />
-        )}
+        {activeTab === "security" && <ChangePassword />}
 
-       
-        {/* ================= ADMIN MANAGEMENT TAB ================= */}
-        {activeTab === 2 && (
-          <CreateNewAdmin />
-        )}
-        {/* ================= ADMIN LIST TAB ================= */}
-        {activeTab === 3 && (
-          <AllAdmin />
-        )}
-        {activeTab === 4 && (
-          <AssignPermission />
-        )}
-        {activeTab === 5 && (
-          <AuditPage />
-        )}
-        {activeTab === 6 && (
-          <Roles />
-        )}
+        {activeTab === "admin-management" && <CreateNewAdmin />}
+
+        {activeTab === "admin-list" && <AllAdmin />}
+
+        {activeTab === "assign-permission" && <AssignPermission />}
+
+        {activeTab === "audit" && <AuditPage />}
+
+        {activeTab === "roles" && <Roles />}
       </Card>
     </Box>
   );

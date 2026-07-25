@@ -6,6 +6,7 @@ import { NATIONALITY_OPTIONS, ProfileFormData } from "./WizardTypes";
 interface StepProfileProps {
     data: ProfileFormData;
     onChange: (field: keyof ProfileFormData, value: string) => void;
+    errors?: Partial<Record<keyof ProfileFormData, string>>;
 }
 
 const inputSx = {
@@ -30,7 +31,7 @@ const BUSINESS_TYPES = [
     "Logistics", "Healthcare", "Education", "Other",
 ];
 
-export default function StepProfile({ data, onChange }: StepProfileProps) {
+export default function StepProfile({ data, errors = {}, onChange }: StepProfileProps) {
     return (
         <Box sx={{ px: 3, py: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
             <Box>
@@ -39,17 +40,27 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                     placeholder="Registered company name"
                     value={data.businessName}
                     onChange={(e) => onChange("businessName", e.target.value)}
+                    error={!!errors?.businessName}
+                    helperText={errors?.businessName}
                 />
             </Box>
 
             <Box>
                 <Label>Business type</Label>
-                <FormControl size="small" fullWidth>
+                <FormControl size="small" fullWidth error={!!errors?.businessType}>
                     <Select value={data.businessType}
                         onChange={(e) => onChange("businessType", e.target.value)}
                         sx={{ bgcolor: "#F5F7FA", "& fieldset": { borderColor: "#E0E4EA" } }}>
                         {BUSINESS_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                     </Select>
+                    {errors?.businessType && (
+                        <Typography
+                            variant="caption"
+                            color="error"
+                        >
+                            {errors.businessType}
+                        </Typography>
+                    )}
                 </FormControl>
             </Box>
 
@@ -59,6 +70,8 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                     placeholder="www.tenant.com"
                     value={data.website}
                     onChange={(e) => onChange("website", e.target.value)}
+                    error={!!errors?.website}
+                    helperText={errors?.website}
                 />
             </Box>
 
@@ -68,17 +81,27 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                     placeholder="Street address"
                     value={data.streetAddress}
                     onChange={(e) => onChange("streetAddress", e.target.value)}
+                    error={!!errors?.streetAddress}
+                    helperText={errors?.streetAddress}
                 />
             </Box>
 
             <Box>
                 <Label>Nationality</Label>
-                <FormControl size="small" fullWidth>
+                <FormControl size="small" fullWidth error={!!errors?.nationality}>
                     <Select value={data.nationality}
                         onChange={(e) => onChange("nationality", e.target.value)}
                         sx={{ bgcolor: "#F5F7FA", "& fieldset": { borderColor: "#E0E4EA" } }}>
                         {NATIONALITY_OPTIONS.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                     </Select>
+                    {errors?.nationality && (
+                        <Typography
+                            variant="caption"
+                            color="error"
+                        >
+                            {errors.nationality}
+                        </Typography>
+                    )}
                 </FormControl>
             </Box>
 
@@ -89,6 +112,8 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                         placeholder="e.g. Lagos"
                         value={data.city}
                         onChange={(e) => onChange("city", e.target.value)}
+                        error={!!errors?.city}
+                        helperText={errors?.city}
                     />
                 </Box>
                 <Box>
@@ -97,6 +122,8 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                         placeholder="e.g. Lagos State"
                         value={data.state}
                         onChange={(e) => onChange("state", e.target.value)}
+                        error={!!errors?.state}
+                        helperText={errors?.state}
                     />
                 </Box>
             </Box>
@@ -108,6 +135,8 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                         placeholder="100001"
                         value={data.postalCode}
                         onChange={(e) => onChange("postalCode", e.target.value)}
+                        error={!!errors?.postalCode}
+                        helperText={errors?.postalCode}
                     />
                 </Box>
                 <Box>
@@ -116,6 +145,8 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                         placeholder="+234..."
                         value={data.phone}
                         onChange={(e) => onChange("phone", e.target.value)}
+                        error={!!errors?.phone}
+                        helperText={errors?.phone}
                     />
                 </Box>
             </Box>
@@ -127,6 +158,8 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                     type="email"
                     value={data.contactEmail}
                     onChange={(e) => onChange("contactEmail", e.target.value)}
+                    error={!!errors?.contactEmail}
+                    helperText={errors?.contactEmail}
                 />
             </Box>
 
@@ -137,6 +170,8 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                     type="email"
                     value={data.secondaryEmail}
                     onChange={(e) => onChange("secondaryEmail", e.target.value)}
+                    error={!!errors?.secondaryEmail}
+                    helperText={errors?.secondaryEmail}
                 />
             </Box>
 
@@ -146,6 +181,8 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                     placeholder="e.g. First Bank Nigeria"
                     value={data.bankName}
                     onChange={(e) => onChange("bankName", e.target.value)}
+                    error={!!errors?.bankName}
+                    helperText={errors?.bankName}
                 />
             </Box>
 
@@ -156,6 +193,8 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                         placeholder="10-digit number"
                         value={data.accountNumber}
                         onChange={(e) => onChange("accountNumber", e.target.value)}
+                        error={!!errors?.accountNumber}
+                        helperText={errors?.accountNumber}
                     />
                 </Box>
                 <Box>
@@ -164,6 +203,8 @@ export default function StepProfile({ data, onChange }: StepProfileProps) {
                         placeholder="As on bank records"
                         value={data.accountName}
                         onChange={(e) => onChange("accountName", e.target.value)}
+                        error={!!errors?.accountName}
+                        helperText={errors?.accountName}
                     />
                 </Box>
             </Box>

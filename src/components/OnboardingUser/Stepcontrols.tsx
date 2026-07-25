@@ -6,6 +6,7 @@ interface StepControlsProps {
   data: ControlsFormData;
   onChange: (field: keyof ControlsFormData, value: string) => void;
   onToggleTxType: (txType: string) => void;
+  errors?: Partial<Record<keyof ControlsFormData, string>>;
 }
 
 const inputSx = {
@@ -17,11 +18,24 @@ const inputSx = {
   },
 };
 
-function Label({ children }: { children: React.ReactNode }) {
-  return <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.8 }}>{children}</Typography>;
+function Label({
+  children,
+  required,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) {
+  return (
+    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.8 }}>
+      {children}
+      {required && (
+        <span style={{ color: "#C0392B" }}> *</span>
+      )}
+    </Typography>
+  );
 }
 
-export default function StepControls({ data, onChange, onToggleTxType }: StepControlsProps) {
+export default function StepControls({ data, errors = {}, onChange, onToggleTxType }: StepControlsProps) {
   return (
     <Box sx={{ px: 3, py: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
       <Box>
@@ -30,6 +44,8 @@ export default function StepControls({ data, onChange, onToggleTxType }: StepCon
           placeholder="e.g. 500,000"
           value={data.dailyFundingCap}
           onChange={(e) => onChange("dailyFundingCap", e.target.value)}
+          error={!!errors.dailyFundingCap}
+          helperText={errors.dailyFundingCap}
         />
       </Box>
 
@@ -40,6 +56,8 @@ export default function StepControls({ data, onChange, onToggleTxType }: StepCon
             placeholder="100,000"
             value={data.maxPerTransaction}
             onChange={(e) => onChange("maxPerTransaction", e.target.value)}
+            error={!!errors.maxPerTransaction}
+            helperText={errors.maxPerTransaction}
           />
         </Box>
         <Box>
@@ -48,6 +66,8 @@ export default function StepControls({ data, onChange, onToggleTxType }: StepCon
             placeholder="2.5"
             value={data.commissionRate}
             onChange={(e) => onChange("commissionRate", e.target.value)}
+            error={!!errors.commissionRate}
+            helperText={errors.commissionRate}
           />
         </Box>
       </Box>
@@ -58,6 +78,8 @@ export default function StepControls({ data, onChange, onToggleTxType }: StepCon
           placeholder="e.g. 2,000,000"
           value={data.monthlyVolumeTarget}
           onChange={(e) => onChange("monthlyVolumeTarget", e.target.value)}
+          error={!!errors.monthlyVolumeTarget}
+          helperText={errors.monthlyVolumeTarget}
         />
       </Box>
 

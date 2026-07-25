@@ -32,6 +32,7 @@ import AddMemberModal from "../../components/Permissions/AddMember";
 import ViewGroupModal from "../../components/Permissions/ViewGroupModal";
 import AssignPermissionModal from "../../components/Permissions/AssignGroupPermission";
 import DeleteGroupDialog from "../../components/Permissions/DeleteGroupModal";
+import { usePermission } from "../../hooks/usePermission";
 export default function GroupManagement() {
     const [groups, setGroups] = useState<Group[]>([]);
     const [loading, setLoading] = useState(false);
@@ -252,6 +253,8 @@ export default function GroupManagement() {
     const refreshGroup = async (groupId: number) => {
         await viewGroup(groupId.toString());
     };
+
+    const { can } = usePermission();
     return (
         <>
             <Card>
@@ -323,27 +326,28 @@ export default function GroupManagement() {
                 >
                     Edit
                 </MenuItem>
-
-                <MenuItem
-                    onClick={() => {
-                        console.log("permissions");
-                        setOpenAssignPermission(true);
-                        handleMenuClose();
-                    }}
-                >
-                    Manage Permissions
-                </MenuItem>
-
-                <MenuItem
-                    onClick={() => {
-                        console.log("members");
-                        setOpenAssign(true)
-                        handleMenuClose();
-                    }}
-                >
-                    Assign Members
-                </MenuItem>
-
+                {can("manage_group_permission") && (
+                    <MenuItem
+                        onClick={() => {
+                            console.log("permissions");
+                            setOpenAssignPermission(true);
+                            handleMenuClose();
+                        }}
+                    >
+                        Manage Permissions
+                    </MenuItem>
+                )}
+                {can("manage_group_members") && (
+                    <MenuItem
+                        onClick={() => {
+                            console.log("members");
+                            setOpenAssign(true)
+                            handleMenuClose();
+                        }}
+                    >
+                        Assign Members
+                    </MenuItem>
+                )}
                 <MenuItem
                     sx={{ color: "red" }}
                     onClick={() => {

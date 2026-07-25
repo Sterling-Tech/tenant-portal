@@ -55,7 +55,8 @@ export interface KYCFormData {
 export interface ControlsFormData {
   dailyFundingCap: string;
   maxPerTransaction: string;
-  commissionRate: string | null;
+  // commissionRate: string | null;
+  commissionRate: string;
   monthlyVolumeTarget: string;
   permittedTxTypes: Record<string, boolean>;
 }

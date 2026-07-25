@@ -21,6 +21,7 @@ import OnboardingPOS from "../../components/OnboardingUser/OnboardingPOS";
 import { TAB_CONFIG, TAB_DATA, theme } from "../../components/OnboardingUser/constants";
 import { getAllVendors, RelatedVendorResponse } from "../../services/onbordingService";
 import ConfigureVendor from "../../components/OnboardingUser/ConfigureVendor";
+import { usePermission } from "../../hooks/usePermission";
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
 
@@ -171,7 +172,7 @@ export default function OnboardingPage() {
       (item) => item.account_status === "inactive"
     ).length,
   };
-
+const { can } = usePermission();
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ minHeight: "100vh"}}>
@@ -240,14 +241,16 @@ export default function OnboardingPage() {
             InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: "#9AA4B2", fontSize: 20 }} /></InputAdornment> }}
             sx={{ "& .MuiOutlinedInput-root": { bgcolor: "#fff", "& fieldset": { borderColor: "#E0E4EA" }, "&:hover fieldset": { borderColor: "#B0BFD8" } } }}
           />
-          <Button variant="outlined" startIcon={<FileDownloadOutlinedIcon />}
+          {/* <Button variant="outlined" startIcon={<FileDownloadOutlinedIcon />}
             sx={{ whiteSpace: "nowrap", borderColor: "#D0D5DD", color: "text.primary", bgcolor: "#fff", "&:hover": { borderColor: "#B0B8C8", bgcolor: "#F9FAFB" }, px: 5 }}>
             Export
-          </Button>
+          </Button> */}
+          {can("create_vendors")&&(
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)}
             sx={{ whiteSpace: "nowrap", px: 5, bgcolor: "#0F2D6B" }}>
             {config.buttonLabel}
           </Button>
+          )}
         </Box>
 
         {/* Table */}

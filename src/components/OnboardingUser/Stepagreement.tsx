@@ -6,6 +6,7 @@ interface StepAgreementProps {
     data: AgreementFormData;
     onChange: (field: keyof AgreementFormData, value: string) => void;
     onToggleAgreed: () => void;
+    errors?: Partial<Record<keyof AgreementFormData, string>>;
 }
 
 const inputSx = {
@@ -17,8 +18,26 @@ const inputSx = {
     },
 };
 
-function Label({ children }: { children: React.ReactNode }) {
-    return <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.8 }}>{children}</Typography>;
+function Label({
+    children,
+    required,
+}: {
+    children: React.ReactNode;
+    required?: boolean;
+}) {
+    return (
+        <Typography
+            variant="body2"
+            sx={{ fontWeight: 600, mb: 0.8 }}
+        >
+            {children}
+            {required && (
+                <span style={{ color: "#C0392B" }}>
+                    {" "}*
+                </span>
+            )}
+        </Typography>
+    );
 }
 
 const AGREEMENT_TYPES = [
@@ -28,17 +47,26 @@ const AGREEMENT_TYPES = [
     "Agent agreement",
 ];
 
-export default function StepAgreement({ data, onChange, onToggleAgreed }: StepAgreementProps) {
+export default function StepAgreement({ data, errors = {}, onChange, onToggleAgreed }: StepAgreementProps) {
     return (
         <Box sx={{ px: 3, py: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
             <Box>
                 <Label>Agreement type</Label>
-                <FormControl size="small" fullWidth>
+                <FormControl size="small" fullWidth error={!!errors.agreementType}>
                     <Select value={data.agreementType}
                         onChange={(e) => onChange("agreementType", e.target.value)}
                         sx={{ bgcolor: "#F5F7FA", "& fieldset": { borderColor: "#E0E4EA" } }}>
                         {AGREEMENT_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                     </Select>
+                    {errors.agreementType && (
+                        <Typography
+                            variant="caption"
+                            color="error"
+                            sx={{ mt: .5 }}
+                        >
+                            {errors.agreementType}
+                        </Typography>
+                    )}
                 </FormControl>
             </Box>
 
@@ -48,6 +76,8 @@ export default function StepAgreement({ data, onChange, onToggleAgreed }: StepAg
                     placeholder="company@gmail.com"
                     value={data.companyWebsite}
                     onChange={(e) => onChange("companyWebsite", e.target.value)}
+                    error={!!errors.companyWebsite}
+                    helperText={errors.companyWebsite}
                 />
             </Box>
 
@@ -58,6 +88,8 @@ export default function StepAgreement({ data, onChange, onToggleAgreed }: StepAg
                     value={data.effectiveDate}
                     onChange={(e) => onChange("effectiveDate", e.target.value)}
                     InputProps={{ sx: { color: data.effectiveDate ? "#0D1B2A" : "#9AA4B2" } }}
+                    error={!!errors.effectiveDate}
+                    helperText={errors.effectiveDate}
                 />
             </Box>
 
@@ -85,6 +117,14 @@ export default function StepAgreement({ data, onChange, onToggleAgreed }: StepAg
                 }
                 sx={{ alignItems: "flex-start", mr: 0 }}
             />
+            {errors.agreedToTerms && (
+                <Typography
+                    variant="caption"
+                    color="error"
+                >
+                    {errors.agreedToTerms}
+                </Typography>
+            )}
         </Box>
     );
 }

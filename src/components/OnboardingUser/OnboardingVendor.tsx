@@ -23,6 +23,7 @@ import {
 import {
     createVendor,
 } from "../../services/onbordingService";
+import { validateProfile,validateBasic, validateKYC, validateControls, validateAgreement } from "./validation";
 // ─── Form shape ───────────────────────────────────────────────────────────────
 export interface VendorForm {
     // Step 1 – parent is always "Tenant", no user input needed
@@ -83,6 +84,11 @@ export default function OnboardingVendor({ open, onClose }: Props) {
     const [form, setForm] = useState<VendorForm>(EMPTY_FORM);
     const [loading, setLoading] = useState(false);
     // const [relatedVends, setRelatedVends] = useState<RelatedVendorResponse[]>([]);
+    const [basicErrors, setBasicErrors] = useState<Partial<Record<keyof BasicFormData, string>>>({});
+    const [profileErrors, setProfileErrors] = useState<Partial<Record<keyof ProfileFormData, string>>>({});
+    const [kycErrors, setKycErrors] = useState<Partial<Record<keyof KYCFormData, string>>>({});
+    const [controlErrors, setControlErrors] = useState<Partial<Record<keyof ControlsFormData, string>>>({});
+    const [agreementErrors, setAgreementErrors] = useState<Partial<Record<keyof AgreementFormData, string>>>({});
 
     function resetAndClose() {
         setStep(0);
@@ -210,22 +216,64 @@ export default function OnboardingVendor({ open, onClose }: Props) {
         setForm((prev) => ({ ...prev, agreement: { ...prev.agreement, agreedToTerms: !prev.agreement.agreedToTerms } }));
     }
 
+    const handleNext = () => {
+
+        if (step === 1) {
+            const errors = validateBasic(form.basic);
+            setBasicErrors(errors);
+            if (Object.keys(errors).length > 0)
+                return;
+        }
+        if (step === 2) {
+            const errors = validateProfile(form.profile);
+            setProfileErrors(errors);
+            if (Object.keys(errors).length > 0)
+                return;
+        }
+
+        if (step === 3) {
+            const errors = validateKYC(form.kyc);
+            setKycErrors(errors);
+            if (Object.keys(errors).length > 0)
+                return;
+        }
+
+        if (step === 4) {
+            const errors = validateControls(form.controls);
+            setControlErrors(errors);
+            if (Object.keys(errors).length > 0)
+                return;
+        }
+
+        if (step === 5) {
+            const errors = validateAgreement(form.agreement);
+            setAgreementErrors(errors);
+            if (Object.keys(errors).length > 0)
+                return;
+
+            handleSubmit();
+            return;
+        }
+
+        setStep((s) => s + 1);
+    };
     return (
         <WizardShell
             open={open}
             onClose={resetAndClose}
             entityLabel="vendor"
             step={step}
-            onNext={() => step === 5 ? handleSubmit() : setStep((s) => s + 1)}
+            // onNext={() => step === 5 ? handleSubmit() : setStep((s) => s + 1)}
+            onNext={handleNext}
             onPrev={() => setStep((s) => Math.max(0, s - 1))}
             canSubmit={form.agreement.agreedToTerms}
         >
             {step === 0 && <StepParentVendor />}
-            {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Vendor"/>}
-            {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} />}
-            {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} />}
-            {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} />}
-            {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} />}
+            {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Vendor" errors={basicErrors} />}
+            {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} errors={profileErrors} />}
+            {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} errors={kycErrors} />}
+            {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} errors={controlErrors} />}
+            {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} errors={agreementErrors} />}
         </WizardShell>
     );
 }

@@ -24,6 +24,7 @@ import {
     getAllVendors,
     RelatedVendorResponse,
 } from "../../services/onbordingService";
+import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement } from "./validation";
 // ─── Form shape ───────────────────────────────────────────────────────────────
 export interface SubVendorForm {
     parentVendorId: string;   // selected vendor ID / name
@@ -44,17 +45,16 @@ const EMPTY_FORM: SubVendorForm = {
 };
 
 // ─── Step 1 — select parent Vendor ───────────────────────────────────────────
-// TODO: replace VENDOR_OPTIONS with data fetched from GET /api/vendors
-const VENDOR_OPTIONS = ["BAXI", "PayServ", "Flutterwave", "Moniepoint"];
-
 function StepParentSubVendor({
     selectedVendor,
     onSelect,
     relatedVends,
+    error,
 }: {
     selectedVendor: string;
     onSelect: (v: string) => void;
     relatedVends: RelatedVendorResponse[];
+    error?: string;
 }) {
     const chainVendor = selectedVendor || "[Vendor]";
 
@@ -73,15 +73,22 @@ function StepParentSubVendor({
                 <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.8 }}>
                     Select parent Vendor <span style={{ color: "#C0392B" }}>*</span>
                 </Typography>
-                <FormControl fullWidth size="small">
-
+                <FormControl
+                    fullWidth
+                    size="small"
+                    error={!!error}
+                >
                     <Select
                         displayEmpty
                         value={selectedVendor}
-                        onChange={(e) => onSelect(e.target.value)}
+                        onChange={(e) => {
+                            onSelect(e.target.value);
+                        }}
                         sx={{
                             bgcolor: "#F5F7FA",
-                            "& fieldset": { borderColor: "#E0E4EA" }
+                            "& fieldset": {
+                                borderColor: "#E0E4EA",
+                            },
                         }}
                     >
                         <MenuItem value="" disabled>
@@ -97,6 +104,16 @@ function StepParentSubVendor({
                             </MenuItem>
                         ))}
                     </Select>
+
+                    {error && (
+                        <Typography
+                            variant="caption"
+                            color="error"
+                            sx={{ mt: 0.5 }}
+                        >
+                            {error}
+                        </Typography>
+                    )}
                 </FormControl>
             </Box>
 
@@ -125,6 +142,14 @@ export default function OnboardingSubVendor({ open, onClose }: Props) {
     const [form, setForm] = useState<SubVendorForm>(EMPTY_FORM);
     const [loading, setLoading] = useState(false);
     const [relatedVends, setRelatedVends] = useState<RelatedVendorResponse[]>([]);
+
+    const [parentVendorError, setParentVendorError] = useState("");
+    const [basicErrors, setBasicErrors] = useState<Partial<Record<keyof BasicFormData, string>>>({});
+    const [profileErrors, setProfileErrors] = useState<Partial<Record<keyof ProfileFormData, string>>>({});
+    const [kycErrors, setKycErrors] = useState<Partial<Record<keyof KYCFormData, string>>>({});
+    const [controlErrors, setControlErrors] = useState<Partial<Record<keyof ControlsFormData, string>>>({});
+    const [agreementErrors, setAgreementErrors] = useState<Partial<Record<keyof AgreementFormData, string>>>({});
+
     function resetAndClose() { setStep(0); setForm(EMPTY_FORM); onClose(); }
 
     useEffect(() => {
@@ -261,22 +286,76 @@ export default function OnboardingSubVendor({ open, onClose }: Props) {
         setForm((prev) => ({ ...prev, agreement: { ...prev.agreement, agreedToTerms: !prev.agreement.agreedToTerms } }));
     }
 
+
+    const handleNext = () => {
+        if (step === 0) {
+            if (!form.parentVendorId) {
+                setParentVendorError(
+                    "Please select a parent vendor before continuing."
+                );
+                return;
+            }
+
+            setParentVendorError("");
+        }
+
+        if (step === 1) {
+            const errors = validateBasic(form.basic);
+            setBasicErrors(errors);
+            if (Object.keys(errors).length > 0)
+                return;
+        }
+        if (step === 2) {
+            const errors = validateProfile(form.profile);
+            setProfileErrors(errors);
+            if (Object.keys(errors).length > 0)
+                return;
+        }
+
+        if (step === 3) {
+            const errors = validateKYC(form.kyc);
+            setKycErrors(errors);
+            if (Object.keys(errors).length > 0)
+                return;
+        }
+
+        if (step === 4) {
+            const errors = validateControls(form.controls);
+            setControlErrors(errors);
+            if (Object.keys(errors).length > 0)
+                return;
+        }
+
+        if (step === 5) {
+            const errors = validateAgreement(form.agreement);
+            setAgreementErrors(errors);
+            if (Object.keys(errors).length > 0)
+                return;
+
+            handleSubmit();
+            return;
+        }
+
+        setStep((s) => s + 1);
+    };
+
     return (
+
         <WizardShell
             open={open}
             onClose={resetAndClose}
             entityLabel="subvendor"
             step={step}
-            onNext={() => step === 5 ? handleSubmit() : setStep((s) => s + 1)}
+            onNext={handleNext}
             onPrev={() => setStep((s) => Math.max(0, s - 1))}
             canSubmit={form.agreement.agreedToTerms}
         >
-            {step === 0 && <StepParentSubVendor selectedVendor={form.parentVendorId} onSelect={(v) => setForm((p) => ({ ...p, parentVendorId: v }))} relatedVends={relatedVends} />}
-            {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Subvendor" />}
-            {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} />}
-            {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} />}
-            {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} />}
-            {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} />}
+            {step === 0 && <StepParentSubVendor selectedVendor={form.parentVendorId} error={parentVendorError} onSelect={(v) => { setParentVendorError(""); setForm((p) => ({ ...p, parentVendorId: v })) }} relatedVends={relatedVends} />}
+            {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Subvendor" errors={basicErrors} />}
+            {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} errors={profileErrors}/>}
+            {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} errors={kycErrors}/>}
+            {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} errors={controlErrors}/>}
+            {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} errors={agreementErrors}/>}
         </WizardShell>
     );
 }

@@ -19,6 +19,7 @@ import {
   DEFAULT_TX_TYPES,
 } from "./WizardTypes";
 import { createVendor, getAllVendors, RelatedVendorResponse } from "../../services/onbordingService";
+import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement } from "./validation";
 
 export interface POSForm {
   parentCashierId: string;
@@ -39,16 +40,18 @@ const EMPTY_FORM: POSForm = {
 };
 
 // TODO: fetch from GET /api/agents
-const AGENT_OPTIONS = ["Agent Lagos", "Agent Abuja", "Agent PH"];
+
 
 function StepParentPOS({
   selected,
   onSelect,
-  cashiers
+  cashiers,
+  error,
 }: {
   selected: string;
   onSelect: (v: string) => void;
-  cashiers: RelatedVendorResponse[]
+  cashiers: RelatedVendorResponse[];
+  error?: string;
 }) {
   const chain = selected || "[Agent]";
   return (
@@ -85,6 +88,15 @@ function StepParentPOS({
               </MenuItem>
             ))}
           </Select>
+          {error && (
+            <Typography
+              variant="caption"
+              color="error"
+              sx={{ mt: 0.5 }}
+            >
+              {error}
+            </Typography>
+          )}
         </FormControl>
       </Box>
 
@@ -107,7 +119,13 @@ export default function OnboardingPOS({ open, onClose }: Props) {
   const [form, setForm] = useState<POSForm>(EMPTY_FORM);
   const [cashiers, setCashiers] = useState<RelatedVendorResponse[]>([]);
   const [loading, setLoading] = useState(false);
+  const [parentCashierError, setParentCashierError] = useState("");
 
+  const [basicErrors, setBasicErrors] = useState<Partial<Record<keyof BasicFormData, string>>>({});
+  const [profileErrors, setProfileErrors] = useState<Partial<Record<keyof ProfileFormData, string>>>({});
+  const [kycErrors, setKycErrors] = useState<Partial<Record<keyof KYCFormData, string>>>({});
+  const [controlErrors, setControlErrors] = useState<Partial<Record<keyof ControlsFormData, string>>>({});
+  const [agreementErrors, setAgreementErrors] = useState<Partial<Record<keyof AgreementFormData, string>>>({});
   function resetAndClose() { setStep(0); setForm(EMPTY_FORM); onClose(); }
 
   useEffect(() => {
@@ -244,19 +262,69 @@ export default function OnboardingPOS({ open, onClose }: Props) {
   function toggleAgreed() {
     setForm((prev) => ({ ...prev, agreement: { ...prev.agreement, agreedToTerms: !prev.agreement.agreedToTerms } }));
   }
+  const handleNext = () => {
+    if (step === 0) {
+      if (!form.parentCashierId) {
+        setParentCashierError(
+          "Please select a parent cashier before continuing."
+        );
+        return;
+      }
 
+      setParentCashierError("");
+    }
+
+    if (step === 1) {
+      const errors = validateBasic(form.basic);
+      setBasicErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+    if (step === 2) {
+      const errors = validateProfile(form.profile);
+      setProfileErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+
+    if (step === 3) {
+      const errors = validateKYC(form.kyc);
+      setKycErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+
+    if (step === 4) {
+      const errors = validateControls(form.controls);
+      setControlErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+
+    if (step === 5) {
+      const errors = validateAgreement(form.agreement);
+      setAgreementErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+
+      handleSubmit();
+      return;
+    }
+
+    setStep((s) => s + 1);
+  };
   return (
     <WizardShell open={open} onClose={resetAndClose} entityLabel="pos" step={step}
-      onNext={() => step === 5 ? handleSubmit() : setStep((s) => s + 1)}
+      onNext={handleNext}
       onPrev={() => setStep((s) => Math.max(0, s - 1))}
       canSubmit={form.agreement.agreedToTerms}
     >
-      {step === 0 && <StepParentPOS selected={form.parentCashierId} onSelect={(v) => setForm((p) => ({ ...p, parentCashierId: v }))} cashiers={cashiers}/>}
-      {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="POS" />}
-      {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} />}
-      {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} />}
-      {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} />}
-      {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} />}
+      {step === 0 && <StepParentPOS selected={form.parentCashierId} error={parentCashierError} onSelect={(v) => { setParentCashierError(""); setForm((p) => ({ ...p, parentCashierId: v })) }} cashiers={cashiers} />}
+      {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="POS" errors={basicErrors}/>}
+      {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} errors={profileErrors}/>}
+      {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} errors={kycErrors}/>}
+      {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} errors={controlErrors}/>}
+      {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} errors={agreementErrors}/>}
     </WizardShell>
   );
 }

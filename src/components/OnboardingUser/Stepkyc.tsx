@@ -6,6 +6,7 @@ import { KYCFormData } from "./WizardTypes";
 interface StepKYCProps {
   data: KYCFormData;
   onChange: (field: keyof KYCFormData, value: string) => void;
+  errors?: Partial<Record<keyof KYCFormData, string>>;
 }
 
 const inputSx = {
@@ -53,7 +54,7 @@ function UploadBox({ label, subtitle, required }: { label: string; subtitle: str
 
 const ID_TYPES = ["National ID (NIN)", "International Passport", "Driver's Licence", "Voter's Card"];
 
-export default function StepKYC({ data, onChange }: StepKYCProps) {
+export default function StepKYC({ data, errors = {}, onChange }: StepKYCProps) {
   return (
     <Box sx={{ px: 3, py: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
       <SectionHeading>Identity Documents</SectionHeading>
@@ -64,6 +65,8 @@ export default function StepKYC({ data, onChange }: StepKYCProps) {
           placeholder="e.g. RC-1234567"
           value={data.cacNumber}
           onChange={(e) => onChange("cacNumber", e.target.value)}
+          error={!!errors.cacNumber}
+          helperText={errors.cacNumber}
         />
       </Box>
 
@@ -73,6 +76,8 @@ export default function StepKYC({ data, onChange }: StepKYCProps) {
           placeholder="e.g. 12345678-0001"
           value={data.taxId}
           onChange={(e) => onChange("taxId", e.target.value)}
+          error={!!errors.taxId}
+          helperText={errors.taxId}
         />
       </Box>
 
@@ -82,6 +87,8 @@ export default function StepKYC({ data, onChange }: StepKYCProps) {
           placeholder="As on government ID"
           value={data.directorName}
           onChange={(e) => onChange("directorName", e.target.value)}
+          error={!!errors.directorName}
+          helperText={errors.directorName}
         />
       </Box>
 
@@ -92,18 +99,29 @@ export default function StepKYC({ data, onChange }: StepKYCProps) {
           type="date"
           value={data.dateOfBirth}
           onChange={(e) => onChange("dateOfBirth", e.target.value)}
+          error={!!errors.dateOfBirth}
+          helperText={errors.dateOfBirth}
         />
       </Box>
 
       <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
         <Box>
           <Label required>ID type</Label>
-          <FormControl size="small" fullWidth>
+          <FormControl size="small" fullWidth error={!!errors.idType}>
             <Select value={data.idType}
               onChange={(e) => onChange("idType", e.target.value)}
               sx={{ bgcolor: "#F5F7FA", "& fieldset": { borderColor: "#E0E4EA" } }}>
               {ID_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
             </Select>
+            {errors.idType && (
+              <Typography
+                variant="caption"
+                color="error"
+                sx={{ mt: 0.5 }}
+              >
+                {errors.idType}
+              </Typography>
+            )}
           </FormControl>
         </Box>
         <Box>
@@ -112,6 +130,8 @@ export default function StepKYC({ data, onChange }: StepKYCProps) {
             placeholder="Enter ID number"
             value={data.idNumber}
             onChange={(e) => onChange("idNumber", e.target.value)}
+            error={!!errors.idNumber}
+            helperText={errors.idNumber}
           />
         </Box>
       </Box>

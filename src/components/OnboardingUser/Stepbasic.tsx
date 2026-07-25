@@ -2,13 +2,13 @@
 import React from "react";
 import { Box, FormControl, MenuItem, Select, TextField, Typography } from "@mui/material";
 import { BasicFormData, RELATEDVENDORS } from "./WizardTypes";
-// import { RelatedVendorResponse } from "../../services/onbordingService";
+
 
 interface StepBasicProps {
     data: BasicFormData;
     onChange: (field: keyof BasicFormData, value: string) => void;
     entityLabel?: string; // "Vendor", "Subvendor", etc.
-    //relatedVendors: RelatedVendorResponse[];
+    errors?: Partial<Record<keyof BasicFormData, string>>;
 }
 
 const inputSx = {
@@ -28,7 +28,7 @@ function Label({ children, required }: { children: React.ReactNode; required?: b
     );
 }
 
-export default function StepBasic({ data, onChange, entityLabel = "Entity", }: StepBasicProps) {
+export default function StepBasic({ data, errors = {}, onChange, entityLabel = "Entity", }: StepBasicProps) {
     return (
         <Box sx={{ px: 3, py: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
             <Box>
@@ -37,6 +37,8 @@ export default function StepBasic({ data, onChange, entityLabel = "Entity", }: S
                     placeholder={`e.g. BAXI Lagos North`}
                     value={data.entityName}
                     onChange={(e) => onChange("entityName", e.target.value)}
+                    error={!!errors.entityName}
+                    helperText={errors.entityName}
                 />
             </Box>
 
@@ -47,6 +49,8 @@ export default function StepBasic({ data, onChange, entityLabel = "Entity", }: S
                         placeholder="Unique identifier"
                         value={data.license}
                         onChange={(e) => onChange("license", e.target.value)}
+                        error={!!errors.license}
+                        helperText={errors.license}
                     />
                 </Box>
                 <Box>
@@ -55,6 +59,8 @@ export default function StepBasic({ data, onChange, entityLabel = "Entity", }: S
                         placeholder="Optional"
                         value={data.subdomain}
                         onChange={(e) => onChange("subdomain", e.target.value)}
+                        error={!!errors.subdomain}
+                        helperText={errors.subdomain}
                     />
                 </Box>
             </Box>
@@ -66,18 +72,10 @@ export default function StepBasic({ data, onChange, entityLabel = "Entity", }: S
                     type="email"
                     value={data.adminEmail}
                     onChange={(e) => onChange("adminEmail", e.target.value)}
+                    error={!!errors.adminEmail}
+                    helperText={errors.adminEmail}
                 />
             </Box>
-
-            {/* <Box>
-                <Label>Admin password</Label>
-                <TextField size="small" fullWidth sx={inputSx}
-                    placeholder="Min 8 characters"
-                    type="password"
-                    value={data.adminPassword}
-                    onChange={(e) => onChange("adminPassword", e.target.value)}
-                />
-            </Box> */}
 
             <Box>
                 <Label>Trial Ends</Label>
@@ -86,6 +84,8 @@ export default function StepBasic({ data, onChange, entityLabel = "Entity", }: S
                     type="date"
                     value={data.trialEnds}
                     onChange={(e) => onChange("trialEnds", e.target.value)}
+                    error={!!errors.trialEnds}
+                    helperText={errors.trialEnds}
                 />
             </Box>
 
