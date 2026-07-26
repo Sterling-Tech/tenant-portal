@@ -28,8 +28,9 @@ import { useAppDispatch } from '../../store/store';
 import { extractAuthPayload, setAuth } from '../../store/slices/authSlice';
 import { toast } from 'react-toastify'
 import { loginUser, confirmOtp } from "../../services/authService";
-import { viewGroup } from '../../services/roleService';
+import { getUserPermissions, viewGroup } from '../../services/roleService';
 import { setPermissions } from '../../store/slices/permissionSlice';
+import { getErrorMessage } from '../../utils/getErrorMessage';
 
 
 
@@ -205,22 +206,64 @@ const Login: React.FC = () => {
                 })
             );
             // Fetch user group details if available
-            if (user?.group) {
-                const group = await viewGroup(user.group.id);
+            // if (user?.group) {
+            //     // const group = await viewGroup(user.group.id);
 
-                const permissions = group.permissions.map(
-                    p => p.permission.code
-                )
-                // const groups = await viewGroup(user.group.id);
-                // const group = groups[0];
+            //     // const permissions = group.permissions.map(
+            //     //     p => p.permission.code
+            //     // )
+            //     // dispatch(
+            //     //     setPermissions(permissions)
+            //     // );
+            //     const [group, userPermissions] = await Promise.all([
+            //         viewGroup(user.group.id),
+            //         getUserPermissions(user.id),
+            //     ]);
+            //     const groupPermissions = group.permissions.map(
+            //         p => p.permission.code
+            //     );
 
-                // const permissions = group.permissions.map(
-                //     p => p.permission.code
-                // )?? [];
+            //     const directPermissions = userPermissions.map(
+            //         p => p.permission.code
+            //     );
 
-                dispatch(
-                    setPermissions(permissions)
+            // }
+            if (user) {
+                const [group, userPermissions] =
+                    await Promise.all([
+                        user.group
+                            ? viewGroup(user.group.id)
+                            : Promise.resolve(null),
+
+                        getUserPermissions(user.id),
+                    ]);
+
+                const groupCodes =
+                    group?.permissions?.map(
+                        p => p.permission.code
+                    ) ?? [];
+
+                const userCodes =
+                    userPermissions.map(
+                        p => p.permission.code
+                    );
+
+                // const permissions = Array.from(
+                //     new Set([
+                //         ...groupCodes,
+                //         ...userCodes,
+                //     ])
+                // );
+                const combinedPermissions = [
+                    ...groupCodes,
+                    ...userCodes,
+                ];
+
+                const permissions = combinedPermissions.filter(
+                    (p, i) => combinedPermissions.indexOf(p) === i
                 );
+
+                dispatch(setPermissions(permissions));
             }
             console.log(
                 "Login successful, redirecting to /tenants/admin"
@@ -230,8 +273,8 @@ const Login: React.FC = () => {
         } catch (err: any) {
             console.error("Login error:", err);
 
-            setError(
-                err.message ||
+            setError(getErrorMessage(
+                err.message) ||
                 "Login failed. Please try again."
             );
         } finally {

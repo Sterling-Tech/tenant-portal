@@ -221,7 +221,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Collapse in={vendorMenuOpen} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
                         {/* Vendors */}
-                        {/* {can("view_vendors") && ( */}
+                        {can("view_vendors") && (
                             <ListItemButton
                                 selected={location.pathname === '/vendors'}
                                 onClick={() => handleNavigation('/vendors')}
@@ -244,7 +244,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 </ListItemIcon>
                                 <ListItemText primary="Vendors" />
                             </ListItemButton>
-                        {/* )} */}
+                        )}
                         {/* Onboarding */}
                         <ListItem disablePadding>
                             <ListItemButton
@@ -367,7 +367,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <List component="div" disablePadding>
 
                         {/* Customer */}
-                        {/* {can("view_customer") && ( */}
+                        {can("view_customer") && (
                             <ListItemButton
                                 selected={location.pathname === '/customer'}
                                 onClick={() => handleNavigation('/customer')}
@@ -390,7 +390,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 </ListItemIcon>
                                 <ListItemText primary="Customer" />
                             </ListItemButton>
-                        {/* )} */}
+                        )}
                         {/* maprefund */}
                         <ListItemButton
                             selected={location.pathname === '/customer/maprefund'}
@@ -440,7 +440,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </List>
                 </Collapse>
                 {/* Re-engineering */}
-                {/* {can("issue_engineering_tokens") && ( */}
+                {can("issue_engineering_tokens") && (
                     <>
                         <ListItem disablePadding>
                             <ListItemButton
@@ -510,7 +510,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </List>
                         </Collapse>
                     </>
-                {/* )} */}
+                )}
                 {/* Sub account*/}
                 <ListItem disablePadding>
                     <ListItemButton
@@ -560,7 +560,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </Collapse>
 
                 {/* ring fencing */}
-                {/* {can("manage_schemes") && ( */}
+                {can("manage_schemes") && (
                     <ListItem disablePadding>
                         <ListItemButton
                             selected={location.pathname === '/ringfence'}
@@ -585,7 +585,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <ListItemText primary="Ringfence Mgmt" />
                         </ListItemButton>
                     </ListItem>
-                {/* )} */}
+                 )} 
                 {/* Settings */}
                 <ListItem disablePadding>
                     <ListItemButton

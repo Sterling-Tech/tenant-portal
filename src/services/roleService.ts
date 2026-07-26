@@ -47,6 +47,10 @@ export interface RemoveGroupMembersPayload {
     members: number[];
 }
 
+export interface UserPermission {
+    permission: Permission;
+}
+
 export const createGroup = (
   payload: CreateGroupPayload
 ) => {
@@ -106,3 +110,13 @@ export const revokeGroupPermissions = (payload: {
     payload
   );
 };
+
+
+export const getUserPermissions = (userId?: number) => {
+    const query = userId ? `?user_id=${userId}` : "";
+
+    return get<UserPermission[]>(
+        `/user/permissions/${query}`
+    );
+};
+

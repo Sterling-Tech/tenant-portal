@@ -352,8 +352,8 @@ export default function FundingRequest() {
                 open={openMenu}
                 onClose={handleMenuClose}
             >
-                {/* {status === "pending_review" && can("review_funding_requests") && ( */}
-                {status === "pending_review" && (
+                {/* {status === "pending_review" && ( */}
+                {status === "pending_review" && can("review_funding_requests") && (
                     <>
                         <MenuItem
                             onClick={() => {
@@ -376,29 +376,29 @@ export default function FundingRequest() {
                     </>
                 )}
 
-                {/* {status === "pending_approval" && can("approve_funding_requests")&& ( */}
-                {status === "pending_approval" && (
-                    <>
-                        <MenuItem
-                            onClick={() => {
-                                handleMenuClose();
-                                setOpenApprove(true);
-                            }}
-                        >
-                            Approve
-                        </MenuItem>
+                {/* {status === "pending_approval" && ( */}
+                    { status === "pending_approval" && can("approve_funding_requests") && (
+                        <>
+                            <MenuItem
+                                onClick={() => {
+                                    handleMenuClose();
+                                    setOpenApprove(true);
+                                }}
+                            >
+                                Approve
+                            </MenuItem>
 
-                        <MenuItem
-                            sx={{ color: "error.main" }}
-                            onClick={() => {
-                                handleMenuClose();
-                                setOpenReject(true);
-                            }}
-                        >
-                            Reject
-                        </MenuItem>
-                    </>
-                )}
+                            <MenuItem
+                                sx={{ color: "error.main" }}
+                                onClick={() => {
+                                    handleMenuClose();
+                                    setOpenReject(true);
+                                }}
+                            >
+                                Reject
+                            </MenuItem>
+                        </>
+                    )}
 
                 {(status === "approved" ||
                     status === "rejected") && (

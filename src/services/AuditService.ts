@@ -59,6 +59,11 @@ export const auditService = {
     );
   },
 
+    // getHistory(params: AuditHistoryQuery) {
+    //     return get<PaginatedAuditHistory>(
+    //         `/audit/history/${buildQuery(params)}`
+    //     );
+    // },
   /**
    * Vendor History
    */

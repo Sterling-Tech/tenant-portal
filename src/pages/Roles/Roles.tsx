@@ -326,7 +326,7 @@ export default function GroupManagement() {
                 >
                     Edit
                 </MenuItem>
-                {/* {can("manage_group_permission") && ( */}
+                {can("manage_group_permission") && (
                     <MenuItem
                         onClick={() => {
                             console.log("permissions");
@@ -336,8 +336,8 @@ export default function GroupManagement() {
                     >
                         Manage Permissions
                     </MenuItem>
-                {/* )} */}
-                {/* {can("manage_group_members") && ( */}
+                )}
+                {can("manage_group_members") && (
                     <MenuItem
                         onClick={() => {
                             console.log("members");
@@ -347,7 +347,7 @@ export default function GroupManagement() {
                     >
                         Assign Members
                     </MenuItem>
-                {/* )} */}
+                )}
                 <MenuItem
                     sx={{ color: "red" }}
                     onClick={() => {
