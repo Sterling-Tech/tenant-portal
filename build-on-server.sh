@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash .
 # Run on the server to install deps and build the tenant-portal.
 # Usage: cd /var/www/quickcash-full/frontend/tenant-portal && bash build-on-server.sh
 
