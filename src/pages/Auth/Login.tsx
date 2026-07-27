@@ -180,8 +180,8 @@ const Login: React.FC = () => {
             // Login failed
             if (!response.ok) {
                 toast.error(
-                    response.data.message ||
-                    response.data.detail ||
+                    getErrorMessage(response.data.message) ||
+                    getErrorMessage(response.data.detail) ||
                     "Login failed. Please try again."
                 );
                 return;
@@ -205,29 +205,7 @@ const Login: React.FC = () => {
                     user,
                 })
             );
-            // Fetch user group details if available
-            // if (user?.group) {
-            //     // const group = await viewGroup(user.group.id);
 
-            //     // const permissions = group.permissions.map(
-            //     //     p => p.permission.code
-            //     // )
-            //     // dispatch(
-            //     //     setPermissions(permissions)
-            //     // );
-            //     const [group, userPermissions] = await Promise.all([
-            //         viewGroup(user.group.id),
-            //         getUserPermissions(user.id),
-            //     ]);
-            //     const groupPermissions = group.permissions.map(
-            //         p => p.permission.code
-            //     );
-
-            //     const directPermissions = userPermissions.map(
-            //         p => p.permission.code
-            //     );
-
-            // }
             if (user) {
                 const [group, userPermissions] =
                     await Promise.all([
@@ -248,12 +226,6 @@ const Login: React.FC = () => {
                         p => p.permission.code
                     );
 
-                // const permissions = Array.from(
-                //     new Set([
-                //         ...groupCodes,
-                //         ...userCodes,
-                //     ])
-                // );
                 const combinedPermissions = [
                     ...groupCodes,
                     ...userCodes,
@@ -264,19 +236,24 @@ const Login: React.FC = () => {
                 );
 
                 dispatch(setPermissions(permissions));
+                
+                localStorage.setItem(
+                    "permissions",
+                    JSON.stringify(permissions)
+                );
             }
             console.log(
                 "Login successful, redirecting to /tenants/admin"
             );
 
             navigate("/tenants/admin");
-        } catch (err: any) {
-            console.error("Login error:", err);
+        }
 
-            setError(getErrorMessage(
-                err.message) ||
-                "Login failed. Please try again."
-            );
+        catch (err: any) {
+            console.error(err);
+
+            toast.error(getErrorMessage(err));
+
         } finally {
             setIsLoading(false);
         }

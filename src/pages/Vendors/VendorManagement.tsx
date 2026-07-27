@@ -37,7 +37,9 @@ import {
 } from "@mui/icons-material";
 import { fetchVendors, createVendor, type VendorForm, Vendor, searchVendors, toggleVendorStatus } from "../../services/vendorService";
 import VendorHistoryModal from "../Settings/VendorHistoryModal";
-
+import useDebounce from "../../hooks/useDebounce"
+import { getErrorMessage } from '../../utils/getErrorMessage'
+import { toast } from 'react-toastify'
 const PAGE_SIZE = 10;
 
 const formatCurrency = (val: any) => {
@@ -66,7 +68,6 @@ export default function VendorHub() {
   const [selected, setSelected] = useState<Vendor | null>(null);
   const [verifiedFilter, setVerifiedFilter] = useState("all");
   const [loading, setLoading] = useState(false);
-  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -103,72 +104,108 @@ export default function VendorHub() {
     if (!text) return "-";
     return text.length > max ? text.slice(0, max) + "..." : text;
   };
+
   // ✅ Debounce search
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-    }, 500);
+  const debouncedSearch = useDebounce(search, 700);
 
-    return () => clearTimeout(handler);
-  }, [search]);
+  // const load = async (pageNumber = 1) => {
+  //   try {
+  //     setLoading(true);
+  //     const keyword = debouncedSearch.trim();
+  //     if (keyword.length >= 3) {
+  //       const res = await searchVendors(
+  //         keyword,
+  //         pageNumber
+  //       );
 
+  //       setVendors(res.results);
+  //       setCount(res.count);
+  //       setNext(res.next);
+  //       setPrevious(res.previous);
+  //       setSelected(res.results.length ? res.results[0] : null);
 
+  //       return;
+  //     }
+
+  //     // NORMAL MODE
+  //     const res = await fetchVendors({
+  //       page: pageNumber,
+  //       main_vendor: true,
+  //       account_status:
+  //         statusFilter === "all"
+  //           ? undefined
+  //           : (statusFilter as
+  //             | "active"
+  //             | "inactive"
+  //             | "suspended"),
+  //     });
+
+  //     setVendors(res.results);
+  //     setCount(res.count);
+  //     setNext(res.next);
+  //     setPrevious(res.previous);
+  //     setSelected(res.results.length ? res.results[0] : null);
+  //   } catch (err: any) {
+  //     const message = getErrorMessage(err);
+
+  //     if (message.toLowerCase().includes("throttled")) {
+  //       toast.warning(message);
+  //       return;
+  //     }
+
+  //     toast.error(message);
+
+  //     setVendors([]);
+  //     setCount(0);
+  //     setNext(null);
+  //     setPrevious(null);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const load = async (pageNumber = 1) => {
     try {
       setLoading(true);
 
-      // SEARCH MODE
-      if (debouncedSearch.trim()) {
-        const res = await searchVendors(
-          debouncedSearch,
-          pageNumber
-        );
+      const keyword = search.trim();
+
+      if (keyword.length >= 3) {
+        const res = await searchVendors(keyword, pageNumber);
 
         setVendors(res.results);
         setCount(res.count);
         setNext(res.next);
         setPrevious(res.previous);
-        setSelected(res.results.length ? res.results[0] : null);
+        setSelected(res.results[0] ?? null);
 
         return;
       }
 
-      // NORMAL MODE
       const res = await fetchVendors({
         page: pageNumber,
         main_vendor: true,
         account_status:
           statusFilter === "all"
             ? undefined
-            : (statusFilter as
-              | "active"
-              | "inactive"
-              | "suspended"),
+            : statusFilter as "active" | "inactive" | "suspended",
       });
 
       setVendors(res.results);
       setCount(res.count);
       setNext(res.next);
       setPrevious(res.previous);
-      setSelected(res.results.length ? res.results[0] : null);
-    } catch (err) {
-      console.error(err);
-
-      setVendors([]);
-      setCount(0);
-      setNext(null);
-      setPrevious(null);
-      setSelected(null);
+      setSelected(res.results[0] ?? null);
+    } catch (err: any) {
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
+
   useEffect(() => {
     load(page);
-  }, [page, debouncedSearch, statusFilter]);
-
+  }, [page, statusFilter]);
 
   const handleToggleStatus = async (vendor: Vendor) => {
     try {
@@ -206,7 +243,6 @@ export default function VendorHub() {
           <Button
             onClick={() => {
               setSearch("");
-              setDebouncedSearch("");
               setStatusFilter("all");
               setPage(1);
             }}
@@ -219,16 +255,25 @@ export default function VendorHub() {
 
 
       <Stack direction={{ xs: "column", lg: "row" }} spacing={2}>
-        {/* TABLE */}
         <Card sx={{ flex: 2, borderRadius: 3, overflowX: "auto" }}>
-          {/* SEARCH */}
-          <Stack sx={{ p: 2 }} direction="row" spacing={2}>
+          
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{ p: 2 }}
+          >
             <TextField
               fullWidth
               size="small"
               placeholder="Search vendors..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setPage(1);
+                  load(1);
+                }
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -238,36 +283,26 @@ export default function VendorHub() {
               }}
             />
 
-            {/* <FormControl size="small" sx={{ minWidth: 160 }}>
-              <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                displayEmpty
-                sx={{
-                  height: 40,
-                  borderRadius: 2,
-                  bgcolor: "#fff",
-                  fontSize: 14,
-                }}
-              >
-                <MenuItem value="all">
-                  <Typography fontSize={14}>All Status</Typography>
-                </MenuItem>
+            <Button
+              variant="contained"
+              startIcon={<Search />}
+              onClick={() => {
+                setPage(1);
+                load(1);
+              }}
+              sx={{
+                minWidth: 120,
+                whiteSpace: "nowrap",
+                px:2
+              }}
+            >
+              Search
+            </Button>
 
-                <MenuItem value="active">
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Chip size="small" color="success" label="Active" />
-                  </Stack>
-                </MenuItem>
-
-                <MenuItem value="suspended">
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Chip size="small" label="Inactive" />
-                  </Stack>
-                </MenuItem>
-              </Select>
-            </FormControl> */}
-            <FormControl size="small" sx={{ minWidth: 160 }}>
+            <FormControl
+              size="small"
+              sx={{ minWidth: 160 }}
+            >
               <Select
                 value={statusFilter}
                 onChange={(e) => {
@@ -300,6 +335,15 @@ export default function VendorHub() {
                 <Box py={3} textAlign="center">
                   <CircularProgress size={24} />
                 </Box>
+              ) : vendors.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    align="center"
+                  >
+                    No vendors found
+                  </TableCell>
+                </TableRow>
               ) : (
                 (vendors || []).map((v) => (
                   <TableRow
@@ -482,7 +526,7 @@ export default function VendorHub() {
                   />
 
                   {/* TOKEN WITH COPY */}
-                    {/* <Box>
+                  {/* <Box>
                       <Typography color="text.secondary" fontSize={13}>
                         API Token
                       </Typography>
@@ -585,7 +629,7 @@ export default function VendorHub() {
             Activate
           </MenuItem>
         )}
-        <MenuItem
+        {/* <MenuItem
           onClick={() => {
             setHistoryOpen(true);
             setAnchorEl(null);
@@ -596,7 +640,7 @@ export default function VendorHub() {
             <Edit fontSize="small" />
           </ListItemIcon>
           History
-        </MenuItem>
+        </MenuItem> */}
       </Menu>
       <Snackbar
         open={alert.open}

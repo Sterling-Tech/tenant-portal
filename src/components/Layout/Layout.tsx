@@ -46,6 +46,7 @@ import { useEnsureUserApiKey } from '../../hooks/useEnsureUserApiKey';
 import Onboarding from '../../pages/Onboarding/Onboarding';
 import { usePermission } from '../../hooks/usePermission';
 import { RootState } from '../../store/store';
+import {clearPermissions} from '../../store/slices/permissionSlice'
 
 const drawerWidth = 240;
 
@@ -146,6 +147,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
 
     const handleLogout = () => {
+        localStorage.removeItem("permissions");
+        dispatch(clearPermissions());
         dispatch(logoutUser());
         navigate('/login');
         handleMenuClose();
@@ -585,7 +588,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <ListItemText primary="Ringfence Mgmt" />
                         </ListItemButton>
                     </ListItem>
-                 )} 
+                )}
                 {/* Settings */}
                 <ListItem disablePadding>
                     <ListItemButton
@@ -661,7 +664,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </IconButton>
                     <IconButton onClick={handleMenuOpen}>
                         <Avatar sx={{ width: 32, height: 32 }}>
-                            {user?.firstName?.charAt(0) || 'U'}
+                            {user?.name?.charAt(0) || 'U'}
                         </Avatar>
                     </IconButton>
                     <Menu

@@ -171,6 +171,9 @@ export default function OnboardingPage() {
     inactive: filteredByTab.filter(
       (item) => item.account_status === "inactive"
     ).length,
+    suspended: filteredByTab.filter(
+      (item) => item.account_status === "suspended"
+    ).length,
   };
 const { can } = usePermission();
   return (
@@ -229,6 +232,7 @@ const { can } = usePermission();
           <StatCard label="TOTAL" value={stats.total} accent="#0F2D6B" />
           <StatCard label="ACTIVE" value={stats.active} accent="#1A7F4B" />
           <StatCard label="INACTIVE" value={stats.inactive} accent="#C0392B" />
+          <StatCard label="SUSPENDED" value={stats.suspended} accent="#C0392B" />
         </Box>
 
         {/* Search + actions */}

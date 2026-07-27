@@ -5,8 +5,15 @@ interface PermissionState {
     loading: boolean;
 }
 
+// const initialState: PermissionState = {
+//     permissions: [],
+//     loading: false,
+// };
+
 const initialState: PermissionState = {
-    permissions: [],
+    permissions: JSON.parse(
+        localStorage.getItem("permissions") || "[]"
+    ),
     loading: false,
 };
 
