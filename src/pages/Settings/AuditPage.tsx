@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import ActivityTab from "../Settings/ActivityTab";
 import CustomerCategoryHistoryTab from "./CustomerCategoryHistoryTab";
+import AuditHistoryPage from "./AuditHistoryTab";
 
 export default function AuditPage() {
     const [tab, setTab] = useState(0);
@@ -30,12 +31,14 @@ export default function AuditPage() {
                     onChange={(_, v) => setTab(v)}
                 >
                     <Tab label="Activity" />
+                    <Tab label="History" />
                     {/* <Tab label="Customer Category" /> */}
                 </Tabs>
             </Paper>
 
             {tab === 0 && <ActivityTab />}
-            {tab === 1 && <CustomerCategoryHistoryTab />}
+            {tab === 1 && <AuditHistoryPage />}
+            {tab === 3 && <CustomerCategoryHistoryTab />}
         </Box>
     );
 }

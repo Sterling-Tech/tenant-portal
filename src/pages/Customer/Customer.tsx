@@ -914,7 +914,7 @@ const CustomerManagement = () => {
         >
           Transactions
         </MenuItem>
-        <Divider />
+        {/* <Divider />
         <MenuItem
           onClick={() => {
             setSelected(menuRow);
@@ -923,7 +923,7 @@ const CustomerManagement = () => {
           }}
         >
           History
-        </MenuItem>
+        </MenuItem> */}
         <Divider />
         <Button
           variant="outlined"

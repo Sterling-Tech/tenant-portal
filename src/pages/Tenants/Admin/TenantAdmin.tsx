@@ -161,8 +161,8 @@ const TenantAdmin: React.FC = () => {
                 }
         };
 
-        const prepaid = breakdownData?.metering_type.find((m) => m.name === "Prepaid")?.count || 0;
-        const postpaid = breakdownData?.metering_type.find((m) => m.name === "Postpaid")?.count || 0;
+        const prepaid = breakdownData?.metering_type.find((m) => m.name === "prepaid")?.count || 0;
+        const postpaid = breakdownData?.metering_type.find((m) => m.name === "postpaid")?.count || 0;
         const totalCustomers = prepaid + postpaid;
         const prepaidPercent = totalCustomers > 0 ? (prepaid / totalCustomers) * 100 : 0;
         const postpaidPercent = totalCustomers > 0 ? (postpaid / totalCustomers) * 100 : 0;
@@ -539,7 +539,8 @@ const TenantAdmin: React.FC = () => {
                                                                 <Card>
                                                                         <CardHeader
                                                                                 avatar={<Assessment color="primary" />}
-                                                                                title="Debt Exposure"
+                                                                                // title="Debt Exposure"
+                                                                                title="Collection Breakdown"
                                                                                 subheader="BY CATEGORY"
                                                                         />
                                                                         <CardContent>

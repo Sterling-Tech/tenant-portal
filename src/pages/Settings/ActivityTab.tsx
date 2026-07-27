@@ -23,7 +23,8 @@ import {
   Event,
 } from "@mui/icons-material";
 
-import { auditService } from "../../services/AuditService";
+import { AuditLog, auditService } from "../../services/AuditService";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 const formatDate = (date: string) =>
   new Intl.DateTimeFormat("en-NG", {
@@ -46,7 +47,17 @@ const actionColor = (action: string) => {
 export default function ActivityTab() {
   const today = new Date().toISOString().slice(0, 10);
 
-  const [logs, setLogs] = useState<any[]>([]);
+  // const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+
+  const [page, setPage] = useState(1);
+
+  const [count, setCount] = useState(0);
+
+  const [next, setNext] = useState<string | null>(null);
+
+  const [previous, setPrevious] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -57,27 +68,50 @@ export default function ActivityTab() {
 
   const [error, setError] = useState("");
 
-  const loadLogs = useCallback(async () => {
-    try {
-      setLoading(true);
+  // const loadLogs = useCallback(async () => {
+  //   try {
+  //     setLoading(true);
 
-      const res = await auditService.getLogs({
-        start_date: startDate,
-        end_date: endDate,
-      });
+  //     const res = await auditService.getLogs({
+  //       start_date: startDate,
+  //       end_date: endDate,
+  //     });
 
-      setLogs(res.results);
-    } catch (err: any) {
-      setError("error fetching logs: " + (err.message || err));
-      setLogs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [startDate, endDate]);
+  //     setLogs(res.results);
+  //   } catch (err: any) {
+  //     setError("error fetching logs: " + (getErrorMessage(err.message || err)));
+  //     setLogs([]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [startDate, endDate]);
 
+  const loadLogs = useCallback(
+    async (pageNumber = page) => {
+      try {
+        setLoading(true);
+
+        const res = await auditService.getLogs({
+          start_date: startDate,
+          end_date: endDate,
+          page: pageNumber,
+        });
+
+        setLogs(res.results);
+        setCount(res.count);
+        setNext(res.next);
+        setPrevious(res.previous);
+      } catch (err: any) {
+        setError(getErrorMessage(err ?? err.message));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page, startDate, endDate]
+  );
   useEffect(() => {
-    loadLogs();
-  }, [loadLogs]);
+  loadLogs(page);
+}, [page, startDate, endDate]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return logs;
@@ -147,7 +181,7 @@ export default function ActivityTab() {
               fullWidth
               variant="contained"
               startIcon={<Refresh />}
-              onClick={loadLogs}
+              onClick={() => loadLogs()}
             >
               Refresh
             </Button>
@@ -295,7 +329,36 @@ export default function ActivityTab() {
               </Stack>
             </Card>
           ))}
+          <Stack
+    direction="row"
+    justifyContent="space-between"
+    alignItems="center"
+    mt={3}
+>
+    <Typography variant="body2">
+        Total Logs: {count}
+    </Typography>
 
+    <Stack direction="row" spacing={2}>
+        <Button
+            disabled={!previous}
+            onClick={() => setPage((p) => p - 1)}
+        >
+            Previous
+        </Button>
+
+        <Typography>
+            Page {page}
+        </Typography>
+
+        <Button
+            disabled={!next}
+            onClick={() => setPage((p) => p + 1)}
+        >
+            Next
+        </Button>
+    </Stack>
+</Stack>
         </Stack>
       )}
     </Box>

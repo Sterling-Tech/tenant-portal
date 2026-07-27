@@ -58,6 +58,7 @@ import {
 import * as XLSX from 'xlsx';
 import { useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store/store';
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type TransactionStatus = 'success' | 'pending' | 'failed';
@@ -97,7 +98,8 @@ const directionColor = (d: string): ChipColor => d === 'credit' ? 'success' : d 
 const categoryLabel = (c: string) => (c || '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || '—';
 const escapeCsv = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 
-const API_BASE_URL = 'http://188.166.161.13:8061/vendor';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 const buildHeaders = (): HeadersInit => {
   const token = typeof window !== 'undefined'
     ? localStorage.getItem('token') || localStorage.getItem('access_token') || localStorage.getItem('accessToken')
@@ -473,7 +475,7 @@ const VendorTransactions: React.FC = () => {
     const allResults: LedgerEntry[] = [];
     let page = 1; let hasNext = true;
     while (hasNext) {
-      const url = `${API_BASE_URL}/ledger/?start_date=${params.start_date}&end_date=${params.end_date}&vendor_id=${vendorsId}&page=${page}&page_size=200`;
+      const url = `${API_BASE_URL}/vendor/ledger/?start_date=${params.start_date}&end_date=${params.end_date}&vendor_id=${vendorsId}&page=${page}&page_size=200`;
       const res = await fetch(url, { method: 'GET', headers: buildHeaders() });
       if (!res.ok) throw new Error(`Ledger API failed (page ${page})`);
       const data = await res.json();
@@ -647,7 +649,7 @@ const VendorTransactions: React.FC = () => {
       setSuccess(`✓ Report generated — ${allEntries.length} entries exported`);
       setReportOpen(false);
     } catch (err: any) {
-      setReportError(err?.message || 'Failed to generate report. Please try again.');
+      setReportError(getErrorMessage(err?.message || 'Failed to generate report. Please try again.'));
     } finally {
       setGenerating(false);
     }
