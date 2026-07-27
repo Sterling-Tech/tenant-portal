@@ -266,6 +266,9 @@ export interface Customer {
     transformer?: string;
     service_center?: string;
     band?: string;
+    postpaid_arrears?: string | null;
+    service_unit?: string | null;
+    feeder_33?: string | null;
     tariff?: string | null;
     krn?: string | null;
     ti?: string | null;

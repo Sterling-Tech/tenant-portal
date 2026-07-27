@@ -1,4 +1,3 @@
-
 import {
     Dialog,
     DialogContent,
@@ -10,6 +9,7 @@ import {
     FormControl,
     Select,
     MenuItem,
+    CircularProgress,
 } from "@mui/material";
 
 export interface Field {
@@ -38,6 +38,10 @@ interface Props {
     onChange: (name: string, value: string) => void;
     onClose: () => void;
     onSubmit: () => void;
+    /** Disables both buttons and swaps the submit label while an API call is in flight */
+    loading?: boolean;
+    /** Disables just the submit button (e.g. required fields not yet filled) */
+    submitDisabled?: boolean;
 }
 
 export default function MeterActionModal({
@@ -48,6 +52,8 @@ export default function MeterActionModal({
     onChange,
     onClose,
     onSubmit,
+    loading = false,
+    submitDisabled = false,
 }: Props) {
     return (
         <Dialog
@@ -131,6 +137,7 @@ export default function MeterActionModal({
                     <Button
                         variant="outlined"
                         onClick={onClose}
+                        disabled={loading}
                         sx={{
                             px: 5,
                             height: 55,
@@ -142,13 +149,15 @@ export default function MeterActionModal({
                     <Button
                         variant="contained"
                         onClick={onSubmit}
+                        disabled={loading || submitDisabled}
+                        startIcon={loading ? <CircularProgress size={18} color="inherit" /> : null}
                         sx={{
                             px: 5,
                             height: 55,
                             bgcolor: "#243B67",
                         }}
                     >
-                        Submit
+                        {loading ? "Submitting..." : "Submit"}
                     </Button>
                 </Stack>
             </DialogContent>
