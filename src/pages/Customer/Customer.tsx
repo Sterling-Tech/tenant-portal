@@ -29,6 +29,10 @@ import {
   Tab,
   Snackbar,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import {
   ResponsiveContainer,
@@ -44,7 +48,15 @@ import {
 
 import { useNavigate } from "react-router-dom";
 import { Search, MoreVert, Refresh } from "@mui/icons-material";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import { fetchCustomers, fetchCustomer, fetchCustomerTransactions, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers, type CustomerForm } from "../../services/vendorService";
+import {
+  issueEngineeringToken,
+  type EngineeringTokenPayload,
+  type EngineeringTokenResponse,
+} from "../../services/engineeringtokenservice";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import { meterActions } from "./MeterActions";
 import MeterActionModal from "./MeterActionModal";
@@ -92,6 +104,16 @@ const CustomerManagement = () => {
 
   const [anchorE2, setAnchorE2] = useState<null | HTMLElement>(null);
   const [selectedAction, setSelectedAction] = useState<any>(null);
+  // The customer the meter action is being performed on — captured the moment
+  // an action is picked from the menu, so it can't go stale mid-flow.
+  const [actionCustomer, setActionCustomer] = useState<Customer | null>(null);
+  const [meterActionSubmitting, setMeterActionSubmitting] = useState(false);
+  const [meterActionResult, setMeterActionResult] = useState<{
+    open: boolean;
+    success: boolean;
+    message: string;
+    data?: EngineeringTokenResponse;
+  } | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -108,6 +130,121 @@ const CustomerManagement = () => {
   const handleMenuClose = () => {
     setAnchorE2(null);
   };
+
+  // Only these five meter actions map onto the real engineering-token
+  // endpoint (the same one BulkAssign already uses). Everything else in
+  // meterActions (change_sgc, change_tariff, remove_meter, vend) has no
+  // backend endpoint yet, so those keep the old placeholder behavior.
+  const SUPPORTED_METER_ACTIONS = ["free_issue", "max_power", "tamper", "clear_credit", "key_change"];
+
+  const isMeterActionFormValid = () => {
+    if (!selectedAction) return false;
+    return (selectedAction.fields || []).every(
+      (f: any) => (formValues[f.name] || "").trim() !== ""
+    );
+  };
+
+  const handleMeterActionSubmit = async () => {
+    if (!selectedAction) return;
+
+    if (!SUPPORTED_METER_ACTIONS.includes(selectedAction.id)) {
+      // No engineering-token endpoint for this one yet — keep the original
+      // placeholder behavior so nothing here regresses.
+      console.log(selectedAction.id, formValues);
+      setModalOpen(false);
+      setFormValues({});
+      return;
+    }
+
+    const meterNumber = actionCustomer?.meter_number;
+    if (!meterNumber) {
+      setMeterActionResult({
+        open: true,
+        success: false,
+        message: "This customer has no meter number on file, so a token cannot be issued.",
+      });
+      return;
+    }
+
+    let payload: EngineeringTokenPayload;
+    switch (selectedAction.id) {
+      case "free_issue":
+        payload = {
+          vend_type: "freeissue",
+          meter_number: meterNumber,
+          units: (formValues.units || "").trim(),
+          reason: (formValues.reason || "").trim(),
+        };
+        break;
+      case "max_power":
+        payload = {
+          vend_type: "maxpower",
+          meter_number: meterNumber,
+          kilowatt: (formValues.max_power || "").trim(),
+          reason: (formValues.reason || "").trim(),
+        };
+        break;
+      case "tamper":
+        payload = {
+          vend_type: "tampertoken",
+          meter_number: meterNumber,
+          reason: (formValues.reason || "").trim(),
+        };
+        break;
+      case "clear_credit":
+        payload = {
+          vend_type: "cleartoken",
+          meter_number: meterNumber,
+          reason: (formValues.reason || "").trim(),
+        };
+        break;
+      case "key_change":
+        payload = {
+          vend_type: "keychange",
+          meter_number: meterNumber,
+          to_ti: (formValues.to_ststi || "").trim(),
+          to_sgc: (formValues.to_sgc || "").trim(),
+          to_krn: (formValues.to_krn || "").trim(),
+          reason: (formValues.reason || "").trim(),
+        };
+        break;
+      default:
+        return;
+    }
+
+    setMeterActionSubmitting(true);
+    try {
+      const response = await issueEngineeringToken(payload);
+      setMeterActionResult({
+        open: true,
+        success: true,
+        message: `${response.description} issued successfully.`,
+        data: response,
+      });
+      setModalOpen(false);
+      setFormValues({});
+    } catch (err: any) {
+      // Same shape api.ts's makeApiCall throws elsewhere in this app: the
+      // raw parsed error body, not an ApiErrors instance.
+      const fieldErrors =
+        err?.errors && typeof err.errors === "object"
+          ? Object.values(err.errors).flat().join(" ")
+          : "";
+
+      const message =
+        err?.detail ||
+        err?.message ||
+        err?.error ||
+        fieldErrors ||
+        "Something went wrong while performing this action. Please try again.";
+
+      setMeterActionResult({ open: true, success: false, message });
+    } finally {
+      setMeterActionSubmitting(false);
+    }
+  };
+
+  const closeMeterActionResult = () => setMeterActionResult(null);
 
   const safeValue = (value: any, fallback = "N/A") => {
     if (
@@ -806,6 +943,7 @@ const CustomerManagement = () => {
               key={action.id}
               onClick={() => {
                 setSelectedAction(action);
+                setActionCustomer(menuRow);
                 setModalOpen(true);
                 handleMenuClose();
               }}
@@ -985,6 +1123,16 @@ const CustomerManagement = () => {
 
                     <Grid item xs={6}>
                       <Typography fontSize={12} color="#94A3B8">
+                        Feeder 33
+                      </Typography>
+
+                      <Typography fontWeight={700}>
+                        {safeValue(selected?.extra_info?.feeder_33)}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                      <Typography fontSize={12} color="#94A3B8">
                         Transformer
                       </Typography>
 
@@ -1000,6 +1148,16 @@ const CustomerManagement = () => {
 
                       <Typography fontWeight={700}>
                         {safeValue(selected?.extra_info?.service_center)}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                      <Typography fontSize={12} color="#94A3B8">
+                        Service Unit
+                      </Typography>
+
+                      <Typography fontWeight={700}>
+                        {safeValue(selected?.extra_info?.service_unit)}
                       </Typography>
                     </Grid>
 
@@ -1023,6 +1181,16 @@ const CustomerManagement = () => {
                       </Typography>
                     </Grid>
 
+                    <Grid item xs={6}>
+                      <Typography fontSize={12} color="#94A3B8">
+                        Postpaid Arrears
+                      </Typography>
+
+                      <Typography fontWeight={700}>
+                        ₦{safeValue(selected?.extra_info?.postpaid_arrears, "0.00")}
+                      </Typography>
+                    </Grid>
+
                     <Grid item xs={12}>
                       <Typography fontSize={12} color="#94A3B8">
                         Address
@@ -1030,6 +1198,63 @@ const CustomerManagement = () => {
 
                       <Typography fontWeight={700}>
                         {safeValue(selected?.extra_info?.address)}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <Divider sx={{ my: 1 }} />
+                      <Typography fontSize={13} fontWeight={700} color="#0F172A" mt={1}>
+                        Meter Configuration
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={6} md={4}>
+                      <Typography fontSize={12} color="#94A3B8">
+                        KRN
+                      </Typography>
+
+                      <Typography fontWeight={700}>
+                        {safeValue(selected?.extra_info?.krn)}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={6} md={4}>
+                      <Typography fontSize={12} color="#94A3B8">
+                        TI
+                      </Typography>
+
+                      <Typography fontWeight={700}>
+                        {safeValue(selected?.extra_info?.ti)}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={6} md={4}>
+                      <Typography fontSize={12} color="#94A3B8">
+                        SGC
+                      </Typography>
+
+                      <Typography fontWeight={700}>
+                        {safeValue(selected?.extra_info?.sgc)}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                      <Typography fontSize={12} color="#94A3B8">
+                        KCT1
+                      </Typography>
+
+                      <Typography fontWeight={700}>
+                        {safeValue(selected?.extra_info?.kct1)}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                      <Typography fontSize={12} color="#94A3B8">
+                        KCT2
+                      </Typography>
+
+                      <Typography fontWeight={700}>
+                        {safeValue(selected?.extra_info?.kct2)}
                       </Typography>
                     </Grid>
 
@@ -1779,27 +2004,116 @@ const CustomerManagement = () => {
         onClose={() => {
           setModalOpen(false);
           setFormValues({});
+          setSelectedAction(null);
+          setActionCustomer(null);
         }}
-        onSubmit={() => {
-          console.log(
-            selectedAction?.id,
-            formValues
-          );
-
-          /*
-            switch(selectedAction.id){
-                case "tamper":
-                   tamperToken(formValues)
-                   break;
-                case "vend":
-                   vendMeter(formValues)
-                   break;
-            }
-          */
-
-          setModalOpen(false);
-        }}
+        onSubmit={handleMeterActionSubmit}
+        loading={meterActionSubmitting}
+        submitDisabled={!isMeterActionFormValid()}
       />
+
+      {/* ══════════════════════════════════════════════════════════════════
+          METER ACTION RESULT — success or failure, same pattern as the
+          Bulk/Single Engineering Token pages (nice pop-up, backend error
+          surfaced verbatim on failure)
+      ══════════════════════════════════════════════════════════════════ */}
+      <Dialog open={Boolean(meterActionResult?.open)} onClose={closeMeterActionResult} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, pt: 3 }}>
+          {meterActionResult?.success ? (
+            <CheckCircleRoundedIcon sx={{ color: "#2E7D32", fontSize: 30 }} />
+          ) : (
+            <ErrorRoundedIcon sx={{ color: "#C62828", fontSize: 30 }} />
+          )}
+          <Typography variant="h6" fontWeight={600}>
+            {meterActionResult?.success ? "Action Successful" : "Action Failed"}
+          </Typography>
+        </DialogTitle>
+
+        <DialogContent>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: meterActionResult?.data ? 2 : 0 }}>
+            {meterActionResult?.message}
+          </Typography>
+
+          {meterActionResult?.success && meterActionResult?.data && (
+            <Box sx={{ bgcolor: "#F7F9FC", borderRadius: 2, p: 2.5 }}>
+              <Grid container spacing={1.5}>
+                <Grid item xs={5}>
+                  <Typography variant="caption" color="text.secondary">Token</Typography>
+                </Grid>
+                <Grid item xs={7} sx={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Typography variant="body2" fontWeight={600} sx={{ wordBreak: "break-all" }}>
+                    {meterActionResult.data.token}
+                  </Typography>
+                </Grid>
+
+                {meterActionResult.data.token2 && (
+                  <>
+                    <Grid item xs={5}>
+                      <Typography variant="caption" color="text.secondary">Token 2</Typography>
+                    </Grid>
+                    <Grid item xs={7} sx={{ display: "flex", justifyContent: "flex-end" }}>
+                      <Typography variant="body2" fontWeight={600} sx={{ wordBreak: "break-all" }}>
+                        {meterActionResult.data.token2}
+                      </Typography>
+                    </Grid>
+                  </>
+                )}
+
+                <Grid item xs={5}>
+                  <Typography variant="caption" color="text.secondary">Value</Typography>
+                </Grid>
+                <Grid item xs={7} sx={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Typography variant="body2" fontWeight={600}>{meterActionResult.data.value}</Typography>
+                </Grid>
+
+                <Grid item xs={5}>
+                  <Typography variant="caption" color="text.secondary">Invoice ID</Typography>
+                </Grid>
+                <Grid item xs={7} sx={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Typography variant="body2" fontWeight={600}>{meterActionResult.data.invoice_id}</Typography>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                </Grid>
+
+                <Grid item xs={12} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Typography variant="body2" color="text.secondary">{meterActionResult.data.description}</Typography>
+                  <Chip
+                    size="small"
+                    label={meterActionResult.data.token_type}
+                    sx={{ bgcolor: "#E3F2FD", color: "#1565C0", fontWeight: 600 }}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          {meterActionResult?.success && meterActionResult?.data && (
+            <Button
+              startIcon={<ContentCopyRoundedIcon />}
+              onClick={() => navigator.clipboard.writeText(meterActionResult.data!.token)}
+              sx={{ textTransform: "none", color: "#203864" }}
+            >
+              Copy Token
+            </Button>
+          )}
+          <Button
+            variant="contained"
+            onClick={closeMeterActionResult}
+            sx={{
+              textTransform: "none",
+              bgcolor: "#17315C",
+              fontWeight: 600,
+              "&:hover": { bgcolor: "#10284B" },
+            }}
+          >
+            {meterActionResult?.success ? "Done" : "Close"}
+          </Button>
+        </DialogActions>
+      </Dialog>
       <CustomerHistoryModal
         open={historyOpen}
         user={selected}
