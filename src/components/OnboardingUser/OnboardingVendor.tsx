@@ -68,10 +68,10 @@ function StepParentVendor() {
                     ))}
                 </Box>
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+            {/* <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
                 Vendors (e.g. BAXI, Moneypoint, OPay) sit directly under this Disco tenant.
                 All subvendors, agents, cashiers and POS must be created under a vendor.
-            </Typography>
+            </Typography> */}
         </Box>
     );
 }

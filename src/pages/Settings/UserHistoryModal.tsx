@@ -103,9 +103,12 @@ export default function UserHistoryModal({
             onClose={onClose}
             maxWidth="lg"
             fullWidth
+            
         >
 
-            <DialogTitle>
+            <DialogTitle
+            className="bg-blue-800 text-white"
+            >
 
                 <Stack
                     direction="row"
@@ -135,7 +138,7 @@ export default function UserHistoryModal({
 
                             <Typography
                                 variant="body2"
-                                color="text.secondary"
+                                // color="text.secondary"
                             >
                                 {user?.email}
                             </Typography>

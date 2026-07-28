@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
     Box,
     Typography,
@@ -15,6 +15,7 @@ import { Business, Save } from '@mui/icons-material';
 import { configureVendor } from '../../services/settingService';
 import { toast } from 'react-toastify';
 import CloseIcon from "@mui/icons-material/Close";
+import { fetchVendor } from '../../services/vendorService';
 
 
 interface ConfigureVendorProps {
@@ -29,6 +30,7 @@ export default function ConfigureVendor({
 }: ConfigureVendorProps) {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [fetching, setFetching] = useState(false);
 
     const [configurationForm, setConfigurationForm] = useState({
         funding_cap: "",
@@ -60,6 +62,31 @@ export default function ConfigureVendor({
 
         return Object.keys(newErrors).length === 0;
     };
+    const loadVendor = useCallback(async () => {
+    if (!vendorId) return;
+
+    try {
+        setFetching(true);
+
+        const vendor = await fetchVendor(vendorId);
+
+        setConfigurationForm({
+            funding_cap: vendor.funding_cap?.toString() ?? "",
+            transaction_max: vendor.transaction_max?.toString() ?? "",
+            commission_rate: vendor.commission_rate?.toString() ?? "",
+            monthly_target: vendor.monthly_target?.toString() ?? "",
+        });
+    } finally {
+        setFetching(false);
+    }
+}, [vendorId]);
+
+useEffect(() => {
+    if (open) {
+        loadVendor();
+    }
+}, [open, loadVendor]);
+
     const handleSaveConfiguration = async () => {
         if (!validateConfigurationForm()) return;
         if (!vendorId) {
@@ -72,7 +99,7 @@ export default function ConfigureVendor({
                 {
                     funding_cap: configurationForm.funding_cap,
                     transaction_max: configurationForm.transaction_max,
-                    commission_rate:configurationForm.commission_rate,
+                    commission_rate: configurationForm.commission_rate,
                     monthly_target: configurationForm.monthly_target,
                 },
                 vendorId
@@ -88,12 +115,26 @@ export default function ConfigureVendor({
         }
     };
 
+    const handleClose = () => {
+        setConfigurationForm({
+            funding_cap: "",
+            transaction_max: "",
+            commission_rate: "",
+            monthly_target: "",
+        });
+
+        setErrors({});
+
+        onClose();
+    };
+
     return (
         <div>
             <Drawer
                 anchor="right"
                 open={open}
-                onClose={onClose}
+                // onClose={onClose}
+                onClose={handleClose}
                 PaperProps={{
                     sx: {
                         width: {
@@ -125,7 +166,8 @@ export default function ConfigureVendor({
                     </Typography>
 
                     <IconButton
-                        onClick={onClose}
+                        // onClick={onClose}
+                        onClick={handleClose}
                         sx={{
                             color: "#fff",
                         }}

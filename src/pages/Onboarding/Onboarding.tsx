@@ -271,37 +271,7 @@ const { can } = usePermission();
                 </TableRow>
               </TableHead>
               <TableBody>
-                {/* {filtered.map((entity) => (
-                  <TableRow key={entity.id} hover sx={{ "&:last-child td": { border: 0 }, cursor: "pointer" }}>
-                    <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Avatar sx={{ bgcolor: entity.color, width: 38, height: 38, fontSize: "0.8rem", fontWeight: 700 }}>
-                          {entity.initials}
-                        </Avatar>
-                        <Box>
-                          <Typography sx={{ fontWeight: 600, fontSize: "0.9rem" }}>{entity.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">{entity.email}</Typography>
-                          <br />
-                          <Link href="#" underline="hover" color="primary" sx={{ fontSize: "0.75rem", fontWeight: 500 }}>
-                            {entity.breadcrumb}
-                          </Link>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell><StatusChip status={entity.status} /></TableCell>
-                    <TableCell><Typography sx={{ fontWeight: 600 }}>{entity.wallet}</Typography></TableCell>
-                    <TableCell><Typography color="text.secondary">{entity.parent}</Typography></TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Configure">
-                        <Button variant="outlined" size="small"
-                          startIcon={<SettingsOutlinedIcon sx={{ fontSize: "16px !important" }} />}
-                          sx={{ borderColor: "#D0D5DD", color: "text.primary", fontSize: "0.78rem", py: 0.5, "&:hover": { borderColor: "#B0B8C8", bgcolor: "#F9FAFB" } }}>
-                          Configure
-                        </Button>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))} */}
+
                 {filtered.map((entity) => (
                   <TableRow key={entity.id}>
                     <TableCell>

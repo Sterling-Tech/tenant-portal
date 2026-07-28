@@ -695,7 +695,7 @@ export const fetchAllVendorsOnly = () =>
         "/vendor/retrieve/?main_vendor=true"
     );
 export const fetchVendor = (id: string) =>
-    get<Vendor>(`/vendor/retrieve/?vendor_id=${id}/`);
+    get<Vendor>(`/vendor/retrieve/?vendor_id=${id}`);
 
 export const fetchVendorchildren = (id: string) =>
     get<Vendor[]>(`/vendor/retrieve-children/?vendor_id=${id}`);
