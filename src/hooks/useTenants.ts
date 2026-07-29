@@ -14,6 +14,7 @@ import {
 import { useVendorHierarchy } from '../contexts/VendorContext';
 import { getApiKeyCredentials } from '../utils/apiKeyStorage';
 import { API_KEY_READY_EVENT } from './useEnsureUserApiKey';
+import { ApiErrors } from '../services/api';
 
 const parseError = (error: unknown): string => {
     if (!error) return 'An unexpected error occurred';
@@ -203,7 +204,8 @@ export const useTenants = () => {
                 return tenant;
             } catch (err) {
                 setError(parseError(err));
-                throw err;
+                // throw err;
+                throw new Error
             } finally {
                 setMutationLoading(false);
             }
@@ -221,7 +223,7 @@ export const useTenants = () => {
                 return tenant;
             } catch (err) {
                 setError(parseError(err));
-                throw err;
+                throw new Error;
             } finally {
                 setMutationLoading(false);
             }
@@ -240,7 +242,7 @@ export const useTenants = () => {
                 await refreshTenants(lastQueryRef.current);
             } catch (err) {
                 setError(parseError(err));
-                throw err;
+                throw new Error;
             } finally {
                 setMutationLoading(false);
             }
@@ -261,7 +263,7 @@ export const useTenants = () => {
                 selectTenant(id);
             } catch (err) {
                 setError(parseError(err));
-                throw err;
+                throw new Error;
             } finally {
                 setMutationLoading(false);
             }
@@ -289,7 +291,7 @@ export const useTenants = () => {
                 return created;
             } catch (err) {
                 setError(parseError(err));
-                throw err;
+                throw new Error;
             } finally {
                 setMutationLoading(false);
             }
@@ -305,7 +307,7 @@ export const useTenants = () => {
             return updated;
         } catch (err) {
             setError(parseError(err));
-            throw err;
+            throw new Error;
         } finally {
             setMutationLoading(false);
         }

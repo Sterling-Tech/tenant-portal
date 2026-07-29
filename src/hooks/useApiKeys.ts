@@ -17,6 +17,7 @@ import {
     getApiKeyCredentials,
     setApiKeyCredentials,
 } from '../utils/apiKeyStorage';
+import { ApiErrors } from '../services/api';
 
 export const useApiKeys = (ownerType: 'vendor_org' | 'user', ownerId: string | null) => {
     const [keys, setKeys] = useState<ApiKey[]>([]);
@@ -54,7 +55,7 @@ export const useApiKeys = (ownerType: 'vendor_org' | 'user', ownerId: string | n
     const createKey = useCallback(
         async (scopes?: string[], expiresAt?: string | null) => {
             if (!ownerId) {
-                throw new Error('Owner ID is required to issue an API key');
+                throw new ApiErrors('Owner ID is required to issue an API key');
             }
             const issued = await issueApiKey({
                 owner_type: ownerType,

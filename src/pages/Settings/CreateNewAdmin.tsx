@@ -14,6 +14,8 @@ import {
 } from "@mui/material";
 import { adminForm, createNewAdmin } from '../../services/settingService';
 import { Fullscreen } from '@mui/icons-material';
+import { toast } from 'react-toastify';
+import { getErrorMessage } from '../../utils/getErrorMessage';
 
 export const genderOptions = [
     { value: 'male', label: 'Male' },
@@ -83,11 +85,7 @@ export default function CreateNewAdmin() {
             })
         } catch (error) {
             console.error("Error creating admin:", error);
-            // Optionally, set a general error message in the UI
-            setErrors((prev) => ({
-                ...prev,
-                general: "An error occurred while creating the admin. Please try again.",
-            }));
+            toast.error(getErrorMessage(error));
         } finally {
             setLoading(false);
         }

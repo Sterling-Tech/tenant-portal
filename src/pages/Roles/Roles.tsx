@@ -33,6 +33,7 @@ import ViewGroupModal from "../../components/Permissions/ViewGroupModal";
 import AssignPermissionModal from "../../components/Permissions/AssignGroupPermission";
 import DeleteGroupDialog from "../../components/Permissions/DeleteGroupModal";
 import { usePermission } from "../../hooks/usePermission";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 export default function GroupManagement() {
     const [groups, setGroups] = useState<Group[]>([]);
     const [loading, setLoading] = useState(false);
@@ -69,7 +70,11 @@ export default function GroupManagement() {
             console.log(groups);
 
             setGroups(groups);
-        } finally {
+        } catch(err){
+            console.log(err)
+            getErrorMessage(err)
+        }
+        finally {
             setLoading(false);
         }
     };
@@ -198,7 +203,7 @@ export default function GroupManagement() {
 
             loadGroups();
         } catch (err: any) {
-            toast.error(err.message || "Failed to delete group");
+            toast.error(err.message || err || "Failed to delete group");
         } finally {
             setDeleting(false);
         }

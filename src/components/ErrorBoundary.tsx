@@ -35,24 +35,37 @@ export default class ErrorBoundary extends React.Component<
     }
 
     render() {
-        if (this.state.hasError) {
-            return (
-                <div
+    if (this.state.hasError) {
+        return (
+            <div
+                style={{
+                    padding:40,
+                    textAlign:"center"
+                }}
+            >
+                <h2>Something went wrong.</h2>
+
+                <pre
                     style={{
-                        padding: 40,
-                        textAlign: "center",
+                        color:"red",
+                        whiteSpace:"pre-wrap"
                     }}
                 >
-                    <h2>Something went wrong.</h2>
+                    {/* {String(this.state.error)} */}
+                    {JSON.stringify(this.state.error,null,2)}
+                </pre>
 
-                    <p>
-                        Please refresh the page or contact support if the
-                        problem continues.
-                    </p>
-                </div>
-            );
-        }
-
-        return this.props.children;
+                <button
+                    onClick={() =>
+                        window.location.reload()
+                    }
+                >
+                    Refresh
+                </button>
+            </div>
+        );
     }
+
+    return this.props.children;
+}
 }

@@ -9,17 +9,36 @@ export interface ApiResponse<T> {
     status?: number;
 }
 
+// export class ApiErrors extends Error {
+//     status: number;
+//     data: any;
+
+//     constructor(message: string, status: number, data: any) {
+//         super(message);
+//         this.name = "ApiError";
+//         this.status = status;
+//         this.data = data;
+//     }
+// }
 export class ApiErrors extends Error {
-  status: number;
-  data: any;
- 
-  constructor(message: string, status: number, data: any) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status;
-    this.data = data;
-  }
+    status: number;
+    data: any;
+
+    constructor(
+        message: string,
+        status = 500,
+        data?: any
+    ) {
+        super(message);
+
+        this.name = "ApiError";
+        this.status = status;
+        this.data = data;
+
+        Object.setPrototypeOf(this, ApiErrors.prototype);
+    }
 }
+
 export interface ApiError {
     message: string;
     status?: number;
@@ -170,7 +189,12 @@ export async function makeApiCall<T>(
                 // Don't call handleUnauthorized - just throw the error
             }
 
-            throw errorData;
+            // throw errorData;
+            throw new ApiErrors(
+                errorData.message || "Request failed",
+                response.status,
+                errorData
+            );
         }
 
         // Handle 204 No Content (common for DELETE requests)
@@ -209,24 +233,27 @@ export async function makeApiCall<T>(
             return text as unknown as T;
         }
     } catch (error: any) {
-        console.error('API call failed:', {
-            error,
-            url,
-            message: error?.message,
-            stack: error?.stack,
-        });
 
-        // Handle network errors
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-            throw {
-                message: 'Network error: Unable to connect to the server. Please check if the backend is running.',
-                status: 0,
-                error: 'NETWORK_ERROR',
-            } as ApiError;
-        }
+    console.error(error);
 
+    if (error instanceof ApiErrors) {
         throw error;
     }
+
+    if (error instanceof TypeError) {
+        throw new ApiErrors(
+            "Unable to connect to the server.",
+            0,
+            error
+        );
+    }
+
+    throw new ApiErrors(
+        error?.message || "Unexpected error",
+        error?.status || 500,
+        error
+    );
+}
 }
 
 /**

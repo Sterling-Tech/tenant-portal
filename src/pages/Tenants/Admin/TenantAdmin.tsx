@@ -39,6 +39,8 @@ import type { Tenant, TenantConfiguration as TenantConfigurationType, TenantUser
 import { LineChart, PieChart } from '@mui/x-charts';
 import { fetchVendors, createVendor, type VendorForm, Vendor, searchVendors, toggleVendorStatus, AnalyticsBreakdown, AnalyticsCount, fetchanalytics, fetchAnalyticsBreakdown, fetchAnalyticsDashboad, AnalyticsDashboad } from '../../../services/vendorService';
 import { RootState } from '../../../store/store';
+import { toast } from 'react-toastify';
+import { getErrorMessage } from '../../../utils/getErrorMessage';
 type CustomerSummary = {
         total_customers?: number | string;
         active_customers?: number | string;
@@ -156,6 +158,7 @@ const TenantAdmin: React.FC = () => {
                         setAnalyticfetchData(analyticfetchRes || null);
                 } catch (err) {
                         console.error("Analytics error:", err);
+                        toast.error(getErrorMessage(err));
                 } finally {
                         setAnalyticsLoading(false);
                 }
@@ -180,6 +183,7 @@ const TenantAdmin: React.FC = () => {
                         setCount(res?.count || 0);
                 } catch (err) {
                         console.error(err);
+                        toast.error(getErrorMessage(err));
                         setVendors([]);
                         setCount(0);
                 } finally {
@@ -210,6 +214,7 @@ const TenantAdmin: React.FC = () => {
                                 }
                         } catch (err) {
                                 console.error('Search failed:', err);
+                                toast.error(getErrorMessage(err));
                         } finally {
                                 setSearchLoading(false);
                         }
@@ -316,33 +321,6 @@ const TenantAdmin: React.FC = () => {
                                                                 >
                                                                         Refresh
                                                                 </Button>
-
-                                                                {/* Date Here */}
-                                                                {/* <Stack direction="row" spacing={1} alignItems="center">
-                                        <TextField
-                                            type="date"
-                                            size="small"
-                                            value={startDate}
-                                            onChange={(e) => setStartDate(e.target.value)}
-                                        />
-
-                                        <TextField
-                                            type="date"
-                                            size="small"
-                                            value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)}
-                                        />
-
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<DateRange />}
-                                            onClick={() => loadAnalytics(startDate, endDate)}
-                                            disabled={analyticsLoading}
-                                        >
-                                            Apply
-                                        </Button>
-                                    </Stack> */}
-
 
                                                         </Stack>
                                                 </Box>

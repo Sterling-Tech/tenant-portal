@@ -14,6 +14,7 @@ import SchemeLists from './SchemeLists';
 import CreateSchemeModal from './CreateSchemeModal';
 import { createScheme, CreateSchemePayload, retrieveSchemes, retrieveSuppliers, Ringfences, Supplier } from '../../services/ringfenceService';
 import { toast } from "react-toastify";
+import { getErrorMessage } from '../../utils/getErrorMessage';
 
 export default function RingfenceDashboard() {
     const [open, setOpen] = useState(false);
@@ -33,7 +34,11 @@ export default function RingfenceDashboard() {
             setSchemes(schemeRes.results);
             setSuppliers(supplierRes.results);
 
-        } finally {
+        } catch(err){
+            console.log(err)
+            getErrorMessage(err)
+        }
+        finally {
             setLoading(false);
         }
     };
@@ -98,10 +103,7 @@ export default function RingfenceDashboard() {
             loadDashboard(); // refresh summary
 
         } catch (err: any) {
-            toast.error(
-                err?.message ??
-                "Unable to create scheme."
-            );
+            toast.error(getErrorMessage(err || err.message || "unable to generate scheme"));
         } finally {
             setLoading(false);
         }

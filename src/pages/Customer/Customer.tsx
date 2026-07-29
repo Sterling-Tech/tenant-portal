@@ -62,6 +62,8 @@ import { meterActions } from "./MeterActions";
 import MeterActionModal from "./MeterActionModal";
 import CustomerHistoryModal from "../Settings/CustomerHistoryModal";
 import { borderBottom } from "@mui/system";
+import { toast } from "react-toastify";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 
 const CustomerManagement = () => {
@@ -101,6 +103,8 @@ const CustomerManagement = () => {
   const [transactionLoading, setTransactionLoading] = useState(false);
   const [transactionCount, setTransactionCount] = useState(0);
   const [transactionPage, setTransactionPage] = useState(1);
+
+  const [transactionPageSize, setTransactionPageSize] = useState(5);
 
   const [anchorE2, setAnchorE2] = useState<null | HTMLElement>(null);
   const [selectedAction, setSelectedAction] = useState<any>(null);
@@ -270,8 +274,10 @@ const CustomerManagement = () => {
     });
   };
 
+
   const load = async (params?: any) => {
     setLoading(true);
+
     try {
       const res = await fetchCustomers({
         ...filters,
@@ -281,6 +287,13 @@ const CustomerManagement = () => {
 
       setCustomers(res.results);
       setCount(res.count);
+    } catch (err) {
+      console.error(err);
+
+      toast.error(getErrorMessage(err));
+
+      setCustomers([]);
+      setCount(0);
     } finally {
       setLoading(false);
     }
@@ -305,15 +318,31 @@ const CustomerManagement = () => {
     debounceRef.current = setTimeout(async () => {
       setLoading(true); // ✅ spinner trigger
 
+      // try {
+      //   const res = await searchCustomers(search);
+      //   setCustomers(res.results);
+      //   setCount(res.count);
+      // } finally {
+      //   setLoading(false);
+      // }
       try {
         const res = await searchCustomers(search);
+
         setCustomers(res.results);
         setCount(res.count);
+      } catch (err) {
+        console.error(err);
+
+        toast.error(getErrorMessage(err));
+
+        setCustomers([]);
+        setCount(0);
       } finally {
         setLoading(false);
       }
     }, 600);
   }, [search]);
+
 
   const loadCustomerTransactions = async (
     customerId: string | number,
@@ -330,6 +359,7 @@ const CustomerManagement = () => {
       setTransactions(res.results || []);
       setTransactionCount(res.count || 0);
       setTransactionPage(page);
+      setTransactionPageSize(res.results.length);
 
     } catch (err) {
       console.error(err);
@@ -341,32 +371,61 @@ const CustomerManagement = () => {
   };
 
   useEffect(() => {
+    // const loadFilters = async () => {
+    //   const [m, c, cat] = await Promise.all([
+    //     MeteringTypeS(),
+    //     CustomerClass(),
+    //     Customercategory(),
+    //   ]);
+
+    //   setMeteringTypes(m);
+    //   setClasses(c);
+    //   setCategories(cat);
+    // };
+
     const loadFilters = async () => {
-      const [m, c, cat] = await Promise.all([
-        MeteringTypeS(),
-        CustomerClass(),
-        Customercategory(),
-      ]);
+      try {
 
-      setMeteringTypes(m);
-      setClasses(c);
-      setCategories(cat);
+        const [m, c, cat] = await Promise.all([
+          MeteringTypeS(),
+          CustomerClass(),
+          Customercategory(),
+        ]);
+
+        setMeteringTypes(m);
+        setClasses(c);
+        setCategories(cat);
+
+      } catch (err) {
+        console.error(err);
+
+        toast.error(getErrorMessage(err));
+      }
     };
-
     loadFilters();
   }, []);
+
   const getStatus = (c: Customer) =>
     Number(c.wallet?.balance) > 0 ? "inactive" : "active";
 
 
   const handleRowClick = async (c: Customer) => {
-    const full = await fetchCustomer({ customer_id: c.id });
-    setSelected(full);
-    setOpenViewModal(true);
-    // setTimeout(() => {
-    //   detailRef.current?.scrollIntoView({ behavior: "smooth" });
-    // }, 100);
+    try {
+
+      const full = await fetchCustomer({
+        customer_id: c.id,
+      });
+
+      setSelected(full);
+      setOpenViewModal(true);
+
+    } catch (err) {
+      console.error(err);
+
+      toast.error(getErrorMessage(err));
+    }
   };
+
   const handleCreateClick = () => {
     setFormMode('create');
     setCustomerForm({
@@ -436,7 +495,7 @@ const CustomerManagement = () => {
 
     } catch (err: any) {
       console.error(err); // 🔥 SEE REAL ERROR
-
+      getErrorMessage(err)
       setNotification({
         type: "error",
         message: err?.response?.data?.message || "Failed to create customer",
@@ -478,6 +537,13 @@ const CustomerManagement = () => {
         }),
       }));
   }, [transactions]);
+
+  const PAGE_SIZE = 5;
+
+const showing = Math.min(
+    ((transactionPage - 1) * PAGE_SIZE) + transactions.length,
+    transactionCount
+);
 
   return (
     <Box sx={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -926,12 +992,12 @@ const CustomerManagement = () => {
         </MenuItem> */}
         <Divider />
         <Button
-          variant="outlined"
+          // variant="outlined"
           endIcon={<MoreHorizIcon />}
           onClick={handleMenuOpen}
           style={{ marginLeft: "20px" }}
         >
-          MENU
+          More
         </Button>
         <Menu
           anchorEl={anchorE2}
@@ -1404,9 +1470,13 @@ const CustomerManagement = () => {
                         alignItems="center"
                         mt={2}
                       >
-                        <Typography fontSize={13}>
+                        {/* <Typography fontSize={13}>
                           Showing {transactions.length} of{" "}
                           {transactionCount}
+                        </Typography> */}
+
+                        <Typography fontSize={13}>
+                          Showing {showing} of {transactionCount}
                         </Typography>
 
                         <Stack direction="row" spacing={1}>

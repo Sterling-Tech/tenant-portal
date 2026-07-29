@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ApproveFundingDialog from './ApproveFundingDialog';
 import { usePermission } from '../../hooks/usePermission';
+import { getErrorMessage } from '../../utils/getErrorMessage';
 
 
 export default function FundingRequest() {
@@ -38,7 +39,11 @@ export default function FundingRequest() {
 
             setTotalCount(response.count);
 
-        } finally {
+        } catch(err: any){
+            console.log(err)
+            getErrorMessage(err)
+        }
+        finally {
 
             setLoading(false);
 
@@ -71,8 +76,8 @@ export default function FundingRequest() {
 
         } catch (err: any) {
 
-            toast.error(
-                err.message ??
+            toast.error(getErrorMessage(err || err.message)
+                 ??
                 "Unable to review request"
             );
 
@@ -99,8 +104,7 @@ export default function FundingRequest() {
 
             await loadFundingRequests();
         } catch (err: any) {
-            toast.error(
-                err.message || "Unable to approve request"
+                toast.error(getErrorMessage(err || err.message || "Unable to approve request") 
             );
         } finally {
             setProcessing(false);
@@ -124,9 +128,7 @@ export default function FundingRequest() {
 
             await loadFundingRequests();
         } catch (err: any) {
-            toast.error(
-                err.message || "Unable to reject request"
-            );
+            toast.error(getErrorMessage(err || err.message || "Unable to reject request"));
         } finally {
             setProcessing(false);
         }

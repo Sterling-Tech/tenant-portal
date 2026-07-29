@@ -9,6 +9,7 @@ import {
     updateBindingStatus,
     deleteBinding,
 } from '../services/vendorHierarchyService';
+import { ApiErrors } from '../services/api';
 
 export const useOrgBindings = (orgId: string | null) => {
     const [bindings, setBindings] = useState<VendorRoleBinding[]>([]);
@@ -40,7 +41,7 @@ export const useOrgBindings = (orgId: string | null) => {
     const createBinding = useCallback(
         async (payload: BindingForm) => {
             if (!orgId) {
-                throw new Error('Organisation ID is required');
+                throw new ApiErrors('Organisation ID is required');
             }
             const created = await addOrgBinding(orgId, payload);
             await refresh();

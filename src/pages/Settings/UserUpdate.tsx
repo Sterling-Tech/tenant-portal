@@ -17,6 +17,7 @@ import { useAppSelector } from '../../store/hooks';
 import { genderOptions } from './CreateNewAdmin';
 import { toast } from 'react-toastify';
 import { updateUser } from '../../services/settingService';
+import { getErrorMessage } from '../../utils/getErrorMessage';
 export default function UserUpdate() {
     const { user } = useAppSelector((state) => state.auth);
 
@@ -88,7 +89,7 @@ export default function UserUpdate() {
             setErrors({});
         } catch (error) {
             console.error(error);
-            toast.error("Failed to update user");
+            toast.error(getErrorMessage(error));
         } finally {
             setLoading(false);
         }

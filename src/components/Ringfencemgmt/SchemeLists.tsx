@@ -26,6 +26,7 @@ import AssignVendorModal from "./AssignVendorModal";
 import AssignCustomerModal from "./AssignCustomerModal";
 import { Customer, fetchCustomers, fetchVendors, Vendor } from "../../services/vendorService";
 import SchemeVendorList from "./SchemeVendorList";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 
 export default function SchemeLists() {
@@ -68,7 +69,10 @@ export default function SchemeLists() {
             if (res.results.length > 0) {
                 setSelected(res.results[0]);
             }
-        } finally {
+        } catch(err){
+            console.log(err)
+            getErrorMessage(err)
+        }finally {
             setLoading(false);
         }
     };
@@ -118,7 +122,11 @@ export default function SchemeLists() {
             setCustomerHasNext(!!res.next);
             setCustomerPage(page);
 
-        } finally {
+        } catch(err){
+            console.log(err)
+            getErrorMessage(err)
+        }
+        finally {
             setLoading(false);
         }
     };
@@ -175,7 +183,11 @@ export default function SchemeLists() {
             toast.success("Scheme updated successfully");
 
             setEditOpen(false);
-        } finally {
+        } catch(err){
+            console.log(err);
+            getErrorMessage(err)
+        }
+        finally {
             setLoading(false);
         }
     };
