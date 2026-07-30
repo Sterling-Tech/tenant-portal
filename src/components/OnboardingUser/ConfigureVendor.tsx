@@ -134,7 +134,7 @@ useEffect(() => {
                 anchor="right"
                 open={open}
                 // onClose={onClose}
-                onClose={handleClose}
+                // onClose={handleClose}
                 PaperProps={{
                     sx: {
                         width: {

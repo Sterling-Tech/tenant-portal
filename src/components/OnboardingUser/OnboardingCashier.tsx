@@ -19,7 +19,9 @@ import {
   DEFAULT_TX_TYPES,
 } from "./WizardTypes";
 import { createVendor, getAllVendors, RelatedVendorResponse } from "../../services/onbordingService";
-import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement } from "./validation";
+import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement, DRAFT_KEYS, saveDraft, getDraft, clearDraft } from "./validation";
+import { toast } from "react-toastify";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 export interface CashierForm {
   parentAgentId: string;
   basic: BasicFormData;
@@ -118,7 +120,7 @@ export default function OnboardingCashier({ open, onClose }: Props) {
   const [form, setForm] = useState<CashierForm>(EMPTY_FORM);
   const [agents, setAgents] = useState<RelatedVendorResponse[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   const [parentAgentError, setParentAgentError] = useState("");
   const [basicErrors, setBasicErrors] = useState<Partial<Record<keyof BasicFormData, string>>>({});
   const [profileErrors, setProfileErrors] = useState<Partial<Record<keyof ProfileFormData, string>>>({});
@@ -241,10 +243,11 @@ export default function OnboardingCashier({ open, onClose }: Props) {
       console.log("PAYLOAD:", payload);
 
       await createVendor(payload);
-
+      clearDraft(STORAGE_KEY);
       resetAndClose();
     } catch (error) {
       console.error(error);
+      toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -276,56 +279,99 @@ export default function OnboardingCashier({ open, onClose }: Props) {
     }
 
     if (step === 1) {
-                const errors = validateBasic(form.basic);
-                setBasicErrors(errors);
-                if (Object.keys(errors).length > 0)
-                    return;
-            }
-            if (step === 2) {
-                const errors = validateProfile(form.profile);
-                setProfileErrors(errors);
-                if (Object.keys(errors).length > 0)
-                    return;
-            }
-    
-            if (step === 3) {
-                const errors = validateKYC(form.kyc);
-                setKycErrors(errors);
-                if (Object.keys(errors).length > 0)
-                    return;
-            }
-    
-            if (step === 4) {
-                const errors = validateControls(form.controls);
-                setControlErrors(errors);
-                if (Object.keys(errors).length > 0)
-                    return;
-            }
-    
-            if (step === 5) {
-                const errors = validateAgreement(form.agreement);
-                setAgreementErrors(errors);
-                if (Object.keys(errors).length > 0)
-                    return;
-    
-                handleSubmit();
-                return;
-            }
+      const errors = validateBasic(form.basic);
+      setBasicErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+    if (step === 2) {
+      const errors = validateProfile(form.profile);
+      setProfileErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+
+    if (step === 3) {
+      const errors = validateKYC(form.kyc);
+      setKycErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+
+    if (step === 4) {
+      const errors = validateControls(form.controls);
+      setControlErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+
+    if (step === 5) {
+      const errors = validateAgreement(form.agreement);
+      setAgreementErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+
+      handleSubmit();
+      return;
+    }
 
     setStep((s) => s + 1);
+  };
+
+  // save and continue
+  const STORAGE_KEY = DRAFT_KEYS.CASHIER;
+
+  const handleSaveDraft = () => {
+    saveDraft(STORAGE_KEY, {
+      step,
+      form,
+    });
+
+    toast.success("Draft saved successfully.");
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    try {
+      const draft = getDraft<{
+        step: number;
+        form: CashierForm;
+      }>(STORAGE_KEY);
+
+      if (!draft) return;
+
+      setStep(draft.step ?? 0);
+      setForm(draft.form ?? EMPTY_FORM);
+
+      toast.info("Draft restored.");
+    } catch {
+      clearDraft(STORAGE_KEY);
+    }
+  }, [open]);
+
+  const discardDraft = () => {
+    clearDraft(STORAGE_KEY);
+
+    setStep(0);
+    setForm(EMPTY_FORM);
+
+    toast.success("Draft discarded.");
   };
   return (
     <WizardShell open={open} onClose={resetAndClose} entityLabel="cashier" step={step}
       onNext={handleNext}
       onPrev={() => setStep((s) => Math.max(0, s - 1))}
       canSubmit={form.agreement.agreedToTerms}
+      onDiscardDraft={discardDraft}
+      onSaveDraft={handleSaveDraft}
     >
       {step === 0 && <StepParentCashier selected={form.parentAgentId} error={parentAgentError} onSelect={(v) => { setParentAgentError(""); setForm((p) => ({ ...p, parentAgentId: v })) }} agents={agents} />}
-      {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Cashier" errors={basicErrors}/>}
-      {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} errors={profileErrors}/>}
-      {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} errors={kycErrors}/>}
-      {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} errors={controlErrors}/>}
-      {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} errors={agreementErrors}/>}
+      {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Cashier" errors={basicErrors} />}
+      {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} errors={profileErrors} />}
+      {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} errors={kycErrors} />}
+      {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} errors={controlErrors} />}
+      {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} errors={agreementErrors} />}
     </WizardShell>
   );
 }

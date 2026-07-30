@@ -1,7 +1,7 @@
 
 import React from "react";
-import { Box, FormControl, MenuItem, Select, TextField, Typography } from "@mui/material";
-import { BasicFormData, RELATEDVENDORS } from "./WizardTypes";
+import { Box, TextField, Typography } from "@mui/material";
+import { BasicFormData } from "./WizardTypes";
 
 
 interface StepBasicProps {

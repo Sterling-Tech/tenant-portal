@@ -20,7 +20,9 @@ import {
   DEFAULT_TX_TYPES,
 } from "./WizardTypes";
 import { createVendor, getAllVendors, RelatedVendorResponse } from "../../services/onbordingService";
-import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement } from "./validation";
+import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement, clearDraft, getDraft, DRAFT_KEYS, saveDraft } from "./validation";
+import { toast } from "react-toastify";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 export interface AgentForm {
   parentSubvendorId: string;
@@ -242,10 +244,11 @@ export default function OnboardingAgent({ open, onClose }: Props) {
       console.log("PAYLOAD:", payload);
 
       await createVendor(payload);
-
+      clearDraft(STORAGE_KEY);
       resetAndClose();
     } catch (error) {
       console.error(error);
+      toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -277,56 +280,99 @@ export default function OnboardingAgent({ open, onClose }: Props) {
     }
 
     if (step === 1) {
-                const errors = validateBasic(form.basic);
-                setBasicErrors(errors);
-                if (Object.keys(errors).length > 0)
-                    return;
-            }
-            if (step === 2) {
-                const errors = validateProfile(form.profile);
-                setProfileErrors(errors);
-                if (Object.keys(errors).length > 0)
-                    return;
-            }
-    
-            if (step === 3) {
-                const errors = validateKYC(form.kyc);
-                setKycErrors(errors);
-                if (Object.keys(errors).length > 0)
-                    return;
-            }
-    
-            if (step === 4) {
-                const errors = validateControls(form.controls);
-                setControlErrors(errors);
-                if (Object.keys(errors).length > 0)
-                    return;
-            }
-    
-            if (step === 5) {
-                const errors = validateAgreement(form.agreement);
-                setAgreementErrors(errors);
-                if (Object.keys(errors).length > 0)
-                    return;
-    
-                handleSubmit();
-                return;
-            }
+      const errors = validateBasic(form.basic);
+      setBasicErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+    if (step === 2) {
+      const errors = validateProfile(form.profile);
+      setProfileErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+
+    if (step === 3) {
+      const errors = validateKYC(form.kyc);
+      setKycErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+
+    if (step === 4) {
+      const errors = validateControls(form.controls);
+      setControlErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+    }
+
+    if (step === 5) {
+      const errors = validateAgreement(form.agreement);
+      setAgreementErrors(errors);
+      if (Object.keys(errors).length > 0)
+        return;
+
+      handleSubmit();
+      return;
+    }
 
     setStep((s) => s + 1);
+  };
+
+  // save and continue
+  const STORAGE_KEY = DRAFT_KEYS.AGENT;
+
+  const handleSaveDraft = () => {
+    saveDraft(STORAGE_KEY, {
+      step,
+      form,
+    });
+
+    toast.success("Draft saved successfully.");
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    try {
+      const draft = getDraft<{
+        step: number;
+        form: AgentForm;
+      }>(STORAGE_KEY);
+
+      if (!draft) return;
+
+      setStep(draft.step ?? 0);
+      setForm(draft.form ?? EMPTY_FORM);
+
+      toast.info("Draft restored.");
+    } catch {
+      clearDraft(STORAGE_KEY);
+    }
+  }, [open]);
+
+  const discardDraft = () => {
+    clearDraft(STORAGE_KEY);
+
+    setStep(0);
+    setForm(EMPTY_FORM);
+
+    toast.success("Draft discarded.");
   };
   return (
     <WizardShell open={open} onClose={resetAndClose} entityLabel="agent" step={step}
       onNext={handleNext}
       onPrev={() => setStep((s) => Math.max(0, s - 1))}
       canSubmit={form.agreement.agreedToTerms}
+      onSaveDraft={handleSaveDraft}
+      onDiscardDraft={discardDraft}
     >
       {step === 0 && <StepParentAgent selected={form.parentSubvendorId} error={parentSubVendorError} onSelect={(v) => { setParentSubVendorError(""); setForm((p) => ({ ...p, parentSubvendorId: v })) }} subVendors={subVendors} />}
-      {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Agent" errors={basicErrors}/>}
-      {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} errors={profileErrors}/>}
-      {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} errors={kycErrors}/>}
+      {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Agent" errors={basicErrors} />}
+      {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} errors={profileErrors} />}
+      {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} errors={kycErrors} />}
       {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} errors={controlErrors} />}
-      {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} errors={agreementErrors}/>}
+      {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} errors={agreementErrors} />}
     </WizardShell>
   );
 }

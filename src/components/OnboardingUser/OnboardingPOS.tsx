@@ -19,7 +19,9 @@ import {
   DEFAULT_TX_TYPES,
 } from "./WizardTypes";
 import { createVendor, getAllVendors, RelatedVendorResponse } from "../../services/onbordingService";
-import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement } from "./validation";
+import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement, DRAFT_KEYS, saveDraft, getDraft, clearDraft } from "./validation";
+import { toast } from "react-toastify";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 export interface POSForm {
   parentCashierId: string;
@@ -241,10 +243,12 @@ export default function OnboardingPOS({ open, onClose }: Props) {
       console.log("PAYLOAD:", payload);
 
       await createVendor(payload);
+      clearDraft(STORAGE_KEY);
 
       resetAndClose();
     } catch (error) {
       console.error(error);
+      toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -313,11 +317,55 @@ export default function OnboardingPOS({ open, onClose }: Props) {
 
     setStep((s) => s + 1);
   };
+
+  // save and continue
+      const STORAGE_KEY = DRAFT_KEYS.POS;
+    
+      const handleSaveDraft = () => {
+        saveDraft(STORAGE_KEY, {
+          step,
+          form,
+        });
+    
+        toast.success("Draft saved successfully.");
+      };
+    
+      useEffect(() => {
+        if (!open) return;
+    
+        try {
+          const draft = getDraft<{
+            step: number;
+            form: POSForm;
+          }>(STORAGE_KEY);
+    
+          if (!draft) return;
+    
+          setStep(draft.step ?? 0);
+          setForm(draft.form ?? EMPTY_FORM);
+    
+          toast.info("Draft restored.");
+        } catch {
+          clearDraft(STORAGE_KEY);
+        }
+      }, [open]);
+    
+      const discardDraft = () => {
+        clearDraft(STORAGE_KEY);
+    
+        setStep(0);
+        setForm(EMPTY_FORM);
+    
+        toast.success("Draft discarded.");
+      };
+
   return (
     <WizardShell open={open} onClose={resetAndClose} entityLabel="pos" step={step}
       onNext={handleNext}
       onPrev={() => setStep((s) => Math.max(0, s - 1))}
       canSubmit={form.agreement.agreedToTerms}
+      onDiscardDraft={discardDraft}
+      onSaveDraft={handleSaveDraft}
     >
       {step === 0 && <StepParentPOS selected={form.parentCashierId} error={parentCashierError} onSelect={(v) => { setParentCashierError(""); setForm((p) => ({ ...p, parentCashierId: v })) }} cashiers={cashiers} />}
       {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="POS" errors={basicErrors}/>}

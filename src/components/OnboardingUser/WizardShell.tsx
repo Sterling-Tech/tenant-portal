@@ -17,11 +17,13 @@ interface WizardShellProps {
   onNext: () => void;
   onPrev: () => void;
   canSubmit: boolean;         // enables final button
+  onSaveDraft: () => void;
+  onDiscardDraft: () => void;
   children: React.ReactNode;  // step content
 }
 
 export default function WizardShell({
-  open, onClose, entityLabel, step, onNext, onPrev, canSubmit, children,
+  open, onClose, entityLabel, step, onNext, onPrev, canSubmit, onDiscardDraft, onSaveDraft, children,
 }: WizardShellProps) {
   const totalSteps = WIZARD_STEPS.length;
   const isLast = step === totalSteps - 1;
@@ -29,7 +31,7 @@ export default function WizardShell({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      // onClose={onClose}
       fullWidth
       maxWidth="md"
       PaperProps={{
@@ -94,41 +96,66 @@ export default function WizardShell({
           flexShrink: 0,
         }}
       >
-        <Typography variant="body2" color="text.secondary">
-          Step {step + 1} of {totalSteps}
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            Step {step + 1} of {totalSteps}
+          </Typography>
 
-        <Box sx={{ display: "flex", gap: 1.5 }}>
-          {step > 0 && (
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              color="error"
+              variant="outlined"
+              onClick={onDiscardDraft}
+            >
+              Discard
+            </Button>
+
             <Button
               variant="outlined"
-              startIcon={<ArrowBackIcon />}
-              onClick={onPrev}
+              onClick={onSaveDraft}
+            >
+              Save & Continue Later
+            </Button>
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 1.5 }}>
+            {step > 0 && (
+              <Button
+                variant="outlined"
+                startIcon={<ArrowBackIcon />}
+                onClick={onPrev}
+                sx={{
+                  borderColor: "#D0D5DD",
+                  color: "text.primary",
+                  fontWeight: 600,
+                  "&:hover": { borderColor: "#B0B8C8", bgcolor: "#F9FAFB" },
+                }}
+              >
+                Previous
+              </Button>
+            )}
+            <Button
+              variant="contained"
+              endIcon={isLast ? <CheckIcon /> : <ArrowForwardIcon />}
+              onClick={onNext}
+              disabled={isLast && !canSubmit}
               sx={{
-                borderColor: "#D0D5DD",
-                color: "text.primary",
+                bgcolor: "#0F2D6B",
+                px: 3,
                 fontWeight: 600,
-                "&:hover": { borderColor: "#B0B8C8", bgcolor: "#F9FAFB" },
+                "&:hover": { bgcolor: "#0A1F4D" },
+                "&.Mui-disabled": { bgcolor: "#B0BFD8", color: "#fff" },
               }}
             >
-              Previous
+              {isLast ? `Create ${entityLabel}` : "Next"}
             </Button>
-          )}
-          <Button
-            variant="contained"
-            endIcon={isLast ? <CheckIcon /> : <ArrowForwardIcon />}
-            onClick={onNext}
-            disabled={isLast && !canSubmit}
-            sx={{
-              bgcolor: "#0F2D6B",
-              px: 3,
-              fontWeight: 600,
-              "&:hover": { bgcolor: "#0A1F4D" },
-              "&.Mui-disabled": { bgcolor: "#B0BFD8", color: "#fff" },
-            }}
-          >
-            {isLast ? `Create ${entityLabel}` : "Next"}
-          </Button>
+          </Box>
         </Box>
       </Box>
     </Dialog>

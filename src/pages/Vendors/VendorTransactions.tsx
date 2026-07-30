@@ -158,7 +158,7 @@ const VendorTransactions: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"analytics" | "ledger">("analytics");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "suspended">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "credit" | "debit">("all");
   const today = new Date();
   const past = new Date();
@@ -566,7 +566,7 @@ const VendorTransactions: React.FC = () => {
         setReportOpen(false);
         return;
       }
-      
+
       // 4. Build columns dynamically based on what's toggled on
       const activeColumns = REPORT_COLUMNS.filter(c => reportColumns[c.key]);
       if (activeColumns.length === 0) {
@@ -665,6 +665,36 @@ const VendorTransactions: React.FC = () => {
 
 
   const handleFilterChange = (action: () => void) => { action(); setTransactionPage(0); setLedgerPage(0); };
+  const getStatus = (vendor: Vendor) => {
+    switch (vendor.account_status?.toLowerCase()) {
+      case "active":
+        return "active";
+
+      case "suspended":
+        return "suspended";
+
+      case "inactive":
+      default:
+        return "inactive";
+    }
+  };
+  const statusConfig = {
+    active: {
+      label: "Active",
+      bg: "#DCFCE7",
+      color: "#15803D",
+    },
+    inactive: {
+      label: "Inactive",
+      bg: "#F3F4F6",
+      color: "#6B7280",
+    },
+    suspended: {
+      label: "Suspended",
+      bg: "#FEF3C7",
+      color: "#B45309",
+    },
+  };
 
   return (
     <Box
@@ -766,7 +796,7 @@ const VendorTransactions: React.FC = () => {
                 }}
               />
               <Stack direction="row" spacing={1} mt={2}>
-                {["all", "active", "inactive"].map((tab) => (
+                {["all", "active", "inactive", "suspended"].map((tab) => (
                   <Box
                     key={tab}
                     onClick={() => setStatusFilter(tab as any)}
@@ -794,8 +824,10 @@ const VendorTransactions: React.FC = () => {
                   </Box>
                 ) : (
                   vendors?.map((v) => {
-                    const isActive = v?.account_status === "active";
-
+                    // const isActive = v?.account_status === "active";
+                    const status = getStatus(v);
+                    const chip = statusConfig[status];
+                    const selected = vendorsId === v.id;
                     return (
                       <Box
                         key={v.id}
@@ -804,13 +836,26 @@ const VendorTransactions: React.FC = () => {
                           selectVendor(v.id);
                         }}
                         sx={{
-                          p: 1,
+                          p: 1.5,
                           borderRadius: 2,
                           cursor: "pointer",
-                          transition: "0.2s",
-                          border: vendorsId === v.id ? "1px solid #dbeafe" : "1px solid transparent",
-                          bgcolor: vendorsId === v.id ? "#eff6ff" : "#fff",
-                          "&:hover": { bgcolor: "#f9fafb" },
+                          transition: "all .25s",
+
+                          bgcolor: selected ? "#DBEAFE" : "#fff",
+
+                          border: selected
+                            ? "2px solid #2563EB"
+                            : "1px solid #E5E7EB",
+
+                          boxShadow: selected
+                            ? "0 4px 14px rgba(37,99,235,.18)"
+                            : "0 1px 2px rgba(0,0,0,.05)",
+
+                          "&:hover": {
+                            bgcolor: selected ? "#DBEAFE" : "#F9FAFB",
+                            transform: "translateY(-1px)",
+                            boxShadow: "0 4px 10px rgba(0,0,0,.08)",
+                          },
                         }}
                       >
 
@@ -862,14 +907,15 @@ const VendorTransactions: React.FC = () => {
                             </Typography>
 
                             <Chip
-                              label={isActive ? "Active" : "Inactive"}
+                              label={chip.label}
                               size="small"
                               sx={{
                                 mt: 0.5,
-                                height: 18,
+                                height: 20,
                                 fontSize: 10,
-                                bgcolor: isActive ? "#dcfce7" : "#e5e7eb",
-                                color: isActive ? "#16a34a" : "#6b7280",
+                                fontWeight: 600,
+                                bgcolor: chip.bg,
+                                color: chip.color,
                               }}
                             />
                           </Box>

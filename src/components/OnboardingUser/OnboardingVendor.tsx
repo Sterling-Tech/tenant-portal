@@ -23,7 +23,9 @@ import {
 import {
     createVendor,
 } from "../../services/onbordingService";
-import { validateProfile,validateBasic, validateKYC, validateControls, validateAgreement } from "./validation";
+import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement, saveDraft, getDraft, clearDraft, DRAFT_KEYS } from "./validation";
+import { toast } from "react-toastify";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 // ─── Form shape ───────────────────────────────────────────────────────────────
 export interface VendorForm {
     // Step 1 – parent is always "Tenant", no user input needed
@@ -188,10 +190,11 @@ export default function OnboardingVendor({ open, onClose }: Props) {
             console.log("PAYLOAD:", payload);
 
             await createVendor(payload);
-
+            clearDraft(STORAGE_KEY);
             resetAndClose();
         } catch (error) {
             console.error(error);
+            toast.error(getErrorMessage(error))
         } finally {
             setLoading(false);
         }
@@ -257,6 +260,47 @@ export default function OnboardingVendor({ open, onClose }: Props) {
 
         setStep((s) => s + 1);
     };
+
+    // save and continue
+    const STORAGE_KEY = DRAFT_KEYS.VENDOR;
+
+    const handleSaveDraft = () => {
+        saveDraft(STORAGE_KEY, {
+            step,
+            form,
+        });
+
+        toast.success("Draft saved successfully.");
+    };
+
+    useEffect(() => {
+        if (!open) return;
+
+        try {
+            const draft = getDraft<{
+                step: number;
+                form: VendorForm;
+            }>(STORAGE_KEY);
+
+            if (!draft) return;
+
+            setStep(draft.step ?? 0);
+            setForm(draft.form ?? EMPTY_FORM);
+
+            toast.info("Draft restored.");
+        } catch {
+            clearDraft(STORAGE_KEY);
+        }
+    }, [open]);
+
+    const discardDraft = () => {
+        clearDraft(STORAGE_KEY);
+
+        setStep(0);
+        setForm(EMPTY_FORM);
+
+        toast.success("Draft discarded.");
+    };
     return (
         <WizardShell
             open={open}
@@ -267,6 +311,8 @@ export default function OnboardingVendor({ open, onClose }: Props) {
             onNext={handleNext}
             onPrev={() => setStep((s) => Math.max(0, s - 1))}
             canSubmit={form.agreement.agreedToTerms}
+            onDiscardDraft={discardDraft}
+            onSaveDraft={handleSaveDraft}
         >
             {step === 0 && <StepParentVendor />}
             {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Vendor" errors={basicErrors} />}

@@ -229,3 +229,29 @@ export function validateAgreement(
 
     return errors;
 }
+
+export const saveDraft = (
+    key: string,
+    data: unknown
+) => {
+    localStorage.setItem(key, JSON.stringify(data));
+};
+
+export const getDraft = <T,>(key: string): T | null => {
+    const data = localStorage.getItem(key);
+
+    if (!data) return null;
+
+    return JSON.parse(data);
+};
+
+export const clearDraft = (key: string) => {
+    localStorage.removeItem(key);
+};
+export const DRAFT_KEYS = {
+    VENDOR: "vendor_onboarding_draft",
+    SUBVENDOR: "subvendor_onboarding_draft",
+    AGENT: "agent_onboarding_draft",
+    CASHIER: "cashier_onboarding_draft",
+    POS: "pos_onboarding_draft",
+} as const;

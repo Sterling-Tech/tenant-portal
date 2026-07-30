@@ -22,6 +22,8 @@ import { TAB_CONFIG, TAB_DATA, theme } from "../../components/OnboardingUser/con
 import { getAllVendors, RelatedVendorResponse } from "../../services/onbordingService";
 import ConfigureVendor from "../../components/OnboardingUser/ConfigureVendor";
 import { usePermission } from "../../hooks/usePermission";
+import { toast } from "react-toastify";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
 
@@ -132,6 +134,7 @@ export default function OnboardingPage() {
         setEntities(data);
       } catch (error) {
         console.error(error);
+        toast.error(getErrorMessage(error))
       } finally {
         setLoading(false);
       }
