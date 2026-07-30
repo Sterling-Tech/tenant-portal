@@ -230,18 +230,20 @@ const CustomerManagement = () => {
     } catch (err: any) {
       // Same shape api.ts's makeApiCall throws elsewhere in this app: the
       // raw parsed error body, not an ApiErrors instance.
+      
       const fieldErrors =
         err?.errors && typeof err.errors === "object"
           ? Object.values(err.errors).flat().join(" ")
           : "";
 
       const message =
+        err ||
         err?.detail ||
         err?.message ||
         err?.error ||
         fieldErrors ||
         "Something went wrong while performing this action. Please try again.";
-
+        // toast.error(getErrorMessage(message))
       setMeterActionResult({ open: true, success: false, message });
     } finally {
       setMeterActionSubmitting(false);
@@ -290,10 +292,11 @@ const CustomerManagement = () => {
     } catch (err) {
       console.error(err);
 
-      toast.error(getErrorMessage(err));
+      // toast.error(getErrorMessage(err));
 
       setCustomers([]);
       setCount(0);
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -317,14 +320,6 @@ const CustomerManagement = () => {
 
     debounceRef.current = setTimeout(async () => {
       setLoading(true); // ✅ spinner trigger
-
-      // try {
-      //   const res = await searchCustomers(search);
-      //   setCustomers(res.results);
-      //   setCount(res.count);
-      // } finally {
-      //   setLoading(false);
-      // }
       try {
         const res = await searchCustomers(search);
 
@@ -332,9 +327,6 @@ const CustomerManagement = () => {
         setCount(res.count);
       } catch (err) {
         console.error(err);
-
-        toast.error(getErrorMessage(err));
-
         setCustomers([]);
         setCount(0);
       } finally {
@@ -363,7 +355,6 @@ const CustomerManagement = () => {
 
     } catch (err) {
       console.error(err);
-
       setTransactions([]);
     } finally {
       setTransactionLoading(false);
@@ -371,18 +362,7 @@ const CustomerManagement = () => {
   };
 
   useEffect(() => {
-    // const loadFilters = async () => {
-    //   const [m, c, cat] = await Promise.all([
-    //     MeteringTypeS(),
-    //     CustomerClass(),
-    //     Customercategory(),
-    //   ]);
-
-    //   setMeteringTypes(m);
-    //   setClasses(c);
-    //   setCategories(cat);
-    // };
-
+ 
     const loadFilters = async () => {
       try {
 
@@ -398,8 +378,6 @@ const CustomerManagement = () => {
 
       } catch (err) {
         console.error(err);
-
-        toast.error(getErrorMessage(err));
       }
     };
     loadFilters();
@@ -421,8 +399,6 @@ const CustomerManagement = () => {
 
     } catch (err) {
       console.error(err);
-
-      toast.error(getErrorMessage(err));
     }
   };
 
@@ -495,7 +471,7 @@ const CustomerManagement = () => {
 
     } catch (err: any) {
       console.error(err); // 🔥 SEE REAL ERROR
-      getErrorMessage(err)
+      //toast.error(getErrorMessage(err))
       setNotification({
         type: "error",
         message: err?.response?.data?.message || "Failed to create customer",

@@ -183,7 +183,7 @@ const TenantAdmin: React.FC = () => {
                         setCount(res?.count || 0);
                 } catch (err) {
                         console.error(err);
-                        toast.error(getErrorMessage(err));
+                        getErrorMessage(err);
                         setVendors([]);
                         setCount(0);
                 } finally {
@@ -214,7 +214,7 @@ const TenantAdmin: React.FC = () => {
                                 }
                         } catch (err) {
                                 console.error('Search failed:', err);
-                                toast.error(getErrorMessage(err));
+                                getErrorMessage(err);
                         } finally {
                                 setSearchLoading(false);
                         }
