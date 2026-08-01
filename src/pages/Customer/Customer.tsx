@@ -54,8 +54,10 @@ import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import { fetchCustomers, fetchCustomer, fetchCustomerTransactions, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers, type CustomerForm } from "../../services/vendorService";
 import {
   issueEngineeringToken,
+  getSavedEngineeringTokens,
   type EngineeringTokenPayload,
   type EngineeringTokenResponse,
+  type SavedEngineeringToken,
 } from "../../services/engineeringtokenservice";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import { meterActions } from "./MeterActions";
@@ -105,6 +107,11 @@ const CustomerManagement = () => {
   const [transactionPage, setTransactionPage] = useState(1);
 
   const [transactionPageSize, setTransactionPageSize] = useState(5);
+
+  const [engineeringTokens, setEngineeringTokens] = useState<SavedEngineeringToken[]>([]);
+  const [engineeringTokensLoading, setEngineeringTokensLoading] = useState(false);
+
+  const [tokenCopied, setTokenCopied] = useState(false);
 
   const [anchorE2, setAnchorE2] = useState<null | HTMLElement>(null);
   const [selectedAction, setSelectedAction] = useState<any>(null);
@@ -250,7 +257,10 @@ const CustomerManagement = () => {
     }
   };
 
-  const closeMeterActionResult = () => setMeterActionResult(null);
+  const closeMeterActionResult = () => {
+    setMeterActionResult(null);
+    setTokenCopied(false);
+  };
 
   const safeValue = (value: any, fallback = "N/A") => {
     if (
@@ -335,6 +345,64 @@ const CustomerManagement = () => {
     }, 600);
   }, [search]);
 
+
+  const loadEngineeringTokens = async (customerId: string | number) => {
+    setEngineeringTokensLoading(true);
+    try {
+      const data = await getSavedEngineeringTokens(customerId);
+      setEngineeringTokens(data);
+    } catch (err) {
+      console.error(err);
+      setEngineeringTokens([]);
+      toast.error(getErrorMessage(err));
+    } finally {
+      setEngineeringTokensLoading(false);
+    }
+  };
+
+  // navigator.clipboard is only available in secure contexts (HTTPS or
+  // localhost). If the site is served over plain HTTP in production,
+  // navigator.clipboard is undefined and calling .writeText on it throws
+  // "Cannot read properties of undefined (reading 'writeText')" — which is
+  // exactly the crash reported. This falls back to the older
+  // document.execCommand approach so copying still works either way.
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (err) {
+      console.error("Clipboard API failed, falling back", err);
+    }
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const successful = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      return successful;
+    } catch (err) {
+      console.error("Fallback clipboard copy failed", err);
+      return false;
+    }
+  };
+
+  const handleCopyToken = async () => {
+    const token = meterActionResult?.data?.token;
+    if (!token) return;
+    const ok = await copyToClipboard(token);
+    if (ok) {
+      setTokenCopied(true);
+      setTimeout(() => setTokenCopied(false), 2000);
+    } else {
+      toast.error("Couldn't copy the token. Please copy it manually.");
+    }
+  };
 
   const loadCustomerTransactions = async (
     customerId: string | number,
@@ -498,6 +566,9 @@ const CustomerManagement = () => {
       transactions.length === 0
     ) {
       loadCustomerTransactions(selected.id);
+    }
+    if (viewTab === "engineering" && selected?.id) {
+      loadEngineeringTokens(selected.id);
     }
   }, [viewTab, selected]);
 
@@ -1056,6 +1127,7 @@ const showing = Math.min(
                 <Tab label="CIS Information" value="cis" />
                 <Tab label="Transactions" value="transactions" />
                 <Tab label="Charts" value="charts" />
+                <Tab label="Engineering Tokens" value="engineering" />
               </Tabs>
 
               {/* OVERVIEW */}
@@ -1559,6 +1631,123 @@ const showing = Math.min(
                       </Box>
                     )}
                   </Card>
+                </Box>
+              )}
+
+              {/* ENGINEERING TOKENS */}
+              {viewTab === "engineering" && (
+                <Box p={3}>
+                  {engineeringTokensLoading ? (
+                    <Box
+                      height={250}
+                      display="flex"
+                      justifyContent="center"
+                      alignItems="center"
+                    >
+                      <CircularProgress />
+                    </Box>
+                  ) : (
+                    <Box sx={{ overflowX: "auto" }}>
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Vend Type</TableCell>
+                            <TableCell>Meter Number</TableCell>
+                            <TableCell>Token</TableCell>
+                            <TableCell>Token 2</TableCell>
+                            <TableCell>Units / Amount</TableCell>
+                            <TableCell>Reason</TableCell>
+                            <TableCell>Invoice ID</TableCell>
+                            <TableCell>KRN / TI / SGC</TableCell>
+                            <TableCell>Issued By</TableCell>
+                            <TableCell>Date</TableCell>
+                          </TableRow>
+                        </TableHead>
+
+                        <TableBody>
+                          {engineeringTokens.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={10}>
+                                <Box py={6} textAlign="center">
+                                  <Typography color="#94A3B8">
+                                    No engineering tokens found for this customer
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            engineeringTokens.map((t) => (
+                              <TableRow key={t.id} hover>
+                                <TableCell>
+                                  <Chip
+                                    label={t.vend_type}
+                                    size="small"
+                                    sx={{ bgcolor: "#EEF2FF", color: "#3730A3", textTransform: "capitalize" }}
+                                  />
+                                </TableCell>
+
+                                <TableCell>{safeValue(t.meter_number)}</TableCell>
+
+                                <TableCell>
+                                  <Typography
+                                    fontSize={12}
+                                    sx={{
+                                      maxWidth: 160,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {safeValue(t.token)}
+                                  </Typography>
+                                </TableCell>
+
+                                <TableCell>
+                                  <Typography
+                                    fontSize={12}
+                                    sx={{
+                                      maxWidth: 160,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {safeValue(t.token2)}
+                                  </Typography>
+                                </TableCell>
+
+                                <TableCell>{safeValue(t.units || t.amount)}</TableCell>
+
+                                <TableCell>
+                                  <Typography
+                                    fontSize={12}
+                                    sx={{
+                                      maxWidth: 160,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {safeValue(t.reason)}
+                                  </Typography>
+                                </TableCell>
+
+                                <TableCell>{safeValue(t.invoice_id)}</TableCell>
+
+                                <TableCell>
+                                  {[t.krn, t.ti, t.sgc].filter(Boolean).join(" / ") || "N/A"}
+                                </TableCell>
+
+                                <TableCell>{safeValue(t.issued_by)}</TableCell>
+
+                                <TableCell>{formatDate(t.timestamp)}</TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </Box>
+                  )}
                 </Box>
               )}
 
@@ -2139,11 +2328,11 @@ const showing = Math.min(
         <DialogActions sx={{ px: 3, pb: 3 }}>
           {meterActionResult?.success && meterActionResult?.data && (
             <Button
-              startIcon={<ContentCopyRoundedIcon />}
-              onClick={() => navigator.clipboard.writeText(meterActionResult.data!.token)}
-              sx={{ textTransform: "none", color: "#203864" }}
+              startIcon={tokenCopied ? <CheckCircleRoundedIcon sx={{ fontSize: 18 }} /> : <ContentCopyRoundedIcon />}
+              onClick={handleCopyToken}
+              sx={{ textTransform: "none", color: tokenCopied ? "#2E7D32" : "#203864" }}
             >
-              Copy Token
+              {tokenCopied ? "Copied!" : "Copy Token"}
             </Button>
           )}
           <Button
