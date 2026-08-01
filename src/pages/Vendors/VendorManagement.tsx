@@ -55,6 +55,7 @@ const formatCurrency = (val: any) => {
 export default function VendorHub() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [vendorTypeFilter, setVendorTypeFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuVendor, setMenuVendor] = useState<any>(null);
@@ -108,61 +109,6 @@ export default function VendorHub() {
   // ✅ Debounce search
   const debouncedSearch = useDebounce(search, 700);
 
-  // const load = async (pageNumber = 1) => {
-  //   try {
-  //     setLoading(true);
-  //     const keyword = debouncedSearch.trim();
-  //     if (keyword.length >= 3) {
-  //       const res = await searchVendors(
-  //         keyword,
-  //         pageNumber
-  //       );
-
-  //       setVendors(res.results);
-  //       setCount(res.count);
-  //       setNext(res.next);
-  //       setPrevious(res.previous);
-  //       setSelected(res.results.length ? res.results[0] : null);
-
-  //       return;
-  //     }
-
-  //     // NORMAL MODE
-  //     const res = await fetchVendors({
-  //       page: pageNumber,
-  //       main_vendor: true,
-  //       account_status:
-  //         statusFilter === "all"
-  //           ? undefined
-  //           : (statusFilter as
-  //             | "active"
-  //             | "inactive"
-  //             | "suspended"),
-  //     });
-
-  //     setVendors(res.results);
-  //     setCount(res.count);
-  //     setNext(res.next);
-  //     setPrevious(res.previous);
-  //     setSelected(res.results.length ? res.results[0] : null);
-  //   } catch (err: any) {
-  //     const message = getErrorMessage(err);
-
-  //     if (message.toLowerCase().includes("throttled")) {
-  //       toast.warning(message);
-  //       return;
-  //     }
-
-  //     toast.error(message);
-
-  //     setVendors([]);
-  //     setCount(0);
-  //     setNext(null);
-  //     setPrevious(null);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const load = async (pageNumber = 1) => {
     try {
       setLoading(true);
@@ -188,6 +134,10 @@ export default function VendorHub() {
           statusFilter === "all"
             ? undefined
             : statusFilter as "active" | "inactive" | "suspended",
+        vendor_type:
+          vendorTypeFilter === "all"
+            ? undefined
+            : vendorTypeFilter as "internal" | "external",
       });
 
       setVendors(res.results);
@@ -205,7 +155,7 @@ export default function VendorHub() {
 
   useEffect(() => {
     load(page);
-  }, [page, statusFilter]);
+  }, [page, statusFilter, vendorTypeFilter]);
 
   const handleToggleStatus = async (vendor: Vendor) => {
     try {
@@ -316,6 +266,23 @@ export default function VendorHub() {
                 <MenuItem value="suspended">Suspended</MenuItem>
               </Select>
             </FormControl>
+
+            <FormControl
+              size="small"
+              sx={{ minWidth: 160 }}
+            >
+              <Select
+                value={vendorTypeFilter}
+                onChange={(e) => {
+                  setVendorTypeFilter(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <MenuItem value="all">All Vendor</MenuItem>
+                <MenuItem value="internal">Internal Vendors</MenuItem>
+                <MenuItem value="external">External Vendors</MenuItem>
+              </Select>
+            </FormControl>
           </Stack>
 
           {/* TABLE */}
@@ -326,6 +293,7 @@ export default function VendorHub() {
                 <TableCell>Email</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Wallet</TableCell>
+                <TableCell>Vendor Type</TableCell>
                 <TableCell />
               </TableRow>
             </TableHead>
@@ -391,6 +359,18 @@ export default function VendorHub() {
                     <TableCell>
                       {formatCurrency(v.wallet?.balance)}
                     </TableCell>
+                    
+                    <TableCell>
+                      <Chip
+                        label={v.vendor_type}
+                        color={
+                          v.vendor_type === "internal"
+                            ? "success"
+                            : "default"
+                        }
+                        size="small"
+                      />
+                    </TableCell>
 
                     <TableCell>
                       <IconButton
@@ -403,6 +383,7 @@ export default function VendorHub() {
                         <MoreVert />
                       </IconButton>
                     </TableCell>
+
                   </TableRow>
                 )))}
             </TableBody>
@@ -495,18 +476,9 @@ export default function VendorHub() {
                     label="Location"
                     value={`${selected.city || ""}, ${selected.state || ""}, ${selected.country || ""}`}
                   />
+                  <Row label="Vendor Type" value={selected.vendor_type} />
                   <Row label="Postal Code" value={selected.postal_code} />
-                  {/* <Row label="Address" value={selected.profile?.address} />
-
-                  <Row
-                    label="Location"
-                    value={`${selected.profile?.city || ""}, ${selected.profile?.state || ""}`}
-                  />
-
-                  <Row
-                    label="Postal Code"
-                    value={selected.profile?.postal_code}
-                  /> */}
+                  
 
                   <Row label="Hierarchy" value={selected.hierachy} />
 
@@ -629,18 +601,7 @@ export default function VendorHub() {
             Activate
           </MenuItem>
         )}
-        {/* <MenuItem
-          onClick={() => {
-            setHistoryOpen(true);
-            setAnchorEl(null);
-            setSelectedUser(menuVendor);
-          }}
-        >
-          <ListItemIcon>
-            <Edit fontSize="small" />
-          </ListItemIcon>
-          History
-        </MenuItem> */}
+       
       </Menu>
       <Snackbar
         open={alert.open}

@@ -6,6 +6,7 @@ export interface VendorQuery {
   vendor_id?: number;
   main_vendor?: boolean;
   account_status?: "all" | "active" | "inactive" | "suspended";
+  vendor_type?: "all" | "internal" | "external";
   search?: string;
 }
 
@@ -22,6 +23,7 @@ export interface Vendor {
   postal_code: string;
 
   account_status: "active" | "inactive" | "suspended";
+  vendor_type?: "all" | "internal" | "external"
 
   hierachy: string;
 
@@ -96,6 +98,7 @@ export interface VendorRelatedVendor {
   email: string;
   business_name: string;
   account_status: "active" | "inactive" | "suspended";
+  vendor_type?: "all" | "internal" | "external"
   hierachy: string;
 }
 
@@ -163,23 +166,31 @@ export interface PaginatedVendorResponse {
   results: Vendor[];
 }
 export interface Debt {
-    id: string,
-    customer: {
-      name: string
-      address: string
-    }
-    description: string
-    payment_plan: {
-      id: number
-      name: string
-      description: string
-      code: string
-    }
-    effective_date: string
-    rate: number
-    debt_type: string
-    balance: string
-    last_debit: string
+  id: string;
+
+  customer: {
+    name: string;
+    address: string;
+  };
+
+  payment_plan: {
+    id: number;
+    name: string;
+    description: string;
+    code: string;
+    is_active?: boolean;
+  };
+
+  effective_date: string;
+  rate: number;
+  balance: string;
+
+  debt_type?: string;
+  description?: string;
+  last_debit?: string;
+
+  is_suspended: boolean;
+  is_settled: boolean;
 }
 
 
@@ -361,6 +372,7 @@ export interface VendorFormMvp {
 export interface VendorResponse extends VendorFormMvp {
   id: number;
   account_status: string;
+  vendor_type?: "all" | "internal" | "external";
   token: string;
   created_at: string;
 
@@ -436,6 +448,9 @@ export interface AnalyticsDashboad {
     all: string,
     inactive: string,
     active: string,
+    suspended:string,
+    internal:string,
+    external:string,
     aggregated_wallet_balance: string
   },
   user_summary: {
@@ -517,6 +532,7 @@ export interface VendorT {
   business_name: string;
   account_status: string;
   hierachy: string;
+  vendor_type?: "all" | "internal" | "external";
 }
 export type FundingRequestStatus =
     | "pending_review"
@@ -555,7 +571,17 @@ export interface FundingOperationPayload {
     funding_request: number;
     action: FundingAction;
 }
+export interface PaymentPlan {
+  name: string;
+  description: string;
+  code: string;
+}
 
+export interface UpdateDebt {
+  payment_plan: number;
+  rate: number | string;
+  effective_date: string;
+}
 export const buildQuery = (params?: Record<string, unknown>) => {
     if (!params || Object.keys(params).length === 0) return '';
     const query = new URLSearchParams();
@@ -646,6 +672,9 @@ export const fetchVendors = (params?: VendorQuery) => {
   if (params?.account_status && params.account_status !== "all") {
     search.append("account_status", params.account_status);
   }
+  if (params?.vendor_type && params.vendor_type !== "all") {
+    search.append("vendor_type", params.vendor_type);
+  }
 
   if (params?.search) {
     search.append("search", params.search);
@@ -655,40 +684,6 @@ export const fetchVendors = (params?: VendorQuery) => {
     `/vendor/retrieve/?${search.toString()}`
   );
 };
-// new
-// export const fetchVendors = (params?: VendorQuery) => {
-//   const search = new URLSearchParams();
-
-//   if (params?.page != null) {
-//     search.append("page", String(params.page));
-//   }
-
-//   if (params?.vendor_id != null) {
-//     search.append("vendor_id", String(params.vendor_id));
-//   }
-
-//   if (params?.main_vendor !== undefined) {
-//     search.append("main_vendor", String(params.main_vendor));
-//   }
-
-//   if (
-//     params?.account_status &&
-//     params.account_status !== "all"
-//   ) {
-//     search.append("account_status", params.account_status);
-//   }
-
-//   if (params?.search?.trim()) {
-//     search.append("search", params.search.trim());
-//   }
-
-//   const query = search.toString();
-
-//   return get<PaginatedResponse<Vendor>>(
-//     `/vendor/retrieve/${query ? `?${query}` : ""}`
-//   );
-// };
-  // fetch all vendors without pagination
 
   export const fetchAllVendors = () =>
     get<Vendor[]>(`/vendor/retrieve/all/`);
@@ -729,6 +724,18 @@ export const fetchCustomerTransactions = (
 
 export const fetchDebt = (id?: string) =>
     get<Debt[]>(`/customer/debt/?customer_id=${id}`);
+export const updateDebt = (id:string, payload:UpdateDebt)=>{
+  return put<Debt>(`/customer/debt/?debt_id=${id}`,payload)
+}
+
+export const suspendActivateDebt = (debtId: number | string) => {
+  return put<Debt>(
+    "/customer/debt/activate-suspend/",
+    {
+      debt: Number(debtId),
+    }
+  );
+};
 
 export const fetchDebtHistory = (id?: string) =>
   get<PaginatedDebtHistory>(
@@ -737,11 +744,7 @@ export const fetchDebtHistory = (id?: string) =>
       : `/customer/debt/history/`
   );
 
-export interface PaymentPlan {
-  name: string;
-  description: string;
-  code: string;
-}
+
 
 export const fetchPaymentPlans = () =>
   get<PaymentPlan[]>(`/customer/debt-plan/`);

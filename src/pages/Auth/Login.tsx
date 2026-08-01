@@ -179,14 +179,9 @@ const Login: React.FC = () => {
 
             // Login failed
             if (!response.ok) {
-                toast.error(
-                    getErrorMessage(response.data.message) ||
-                    getErrorMessage(response.data.detail) ||
-                    "Login failed. Please try again."
-                );
+                toast.error(getErrorMessage(response.data) || "Login failed. Please try again.");
                 return;
             }
-
             // Login successful (200)
             const { user, token, refreshToken } =
                 extractAuthPayload(response.data);
@@ -236,7 +231,7 @@ const Login: React.FC = () => {
                 );
 
                 dispatch(setPermissions(permissions));
-                
+
                 localStorage.setItem(
                     "permissions",
                     JSON.stringify(permissions)
@@ -268,6 +263,7 @@ const Login: React.FC = () => {
             });
             if (!response.ok) {
                 toast.error(
+                    response.data ||
                     response.data.message ||
                     response.data.detail ||
                     "Invalid OTP"
@@ -310,6 +306,7 @@ const Login: React.FC = () => {
 
             if (response.status !== 202) {
                 toast.error(
+                    response.data ||
                     response.data.message ||
                     response.data.detail ||
                     "Unable to resend OTP"
@@ -380,7 +377,7 @@ const Login: React.FC = () => {
                     <Box sx={{ textAlign: 'center', mb: 3 }}>
                         <LoginIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
                         <Typography variant="h4" component="h1" gutterBottom>
-                            QuickCash Tenant Portal
+                             QuickCash Tenant Portal
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                             Sign in to access your tenant dashboard

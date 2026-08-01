@@ -12,14 +12,20 @@ import {
   Alert,
   Radio,
   Checkbox,
-  CircularProgress
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from "@mui/material";
 import { CalendarToday, Search } from "@mui/icons-material";
-import { createDebt, fetchCustomerDebtAnalytic, fetchDebt, fetchDebtAnalytics, type VendorForm, fetchDebtHistory, fetchPaymentPlans, searchCustomers } from "../../services/vendorService";
+import { createDebt, fetchCustomerDebtAnalytic, fetchDebt, fetchDebtAnalytics, type VendorForm, fetchDebtHistory, fetchPaymentPlans, searchCustomers, Debt, updateDebt, suspendActivateDebt } from "../../services/vendorService";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import { toast } from "react-toastify";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 const fmt = (n: Number) =>
   "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2 });
@@ -31,6 +37,12 @@ const DEBT_TYPES = [
   // reversals
   { label: "Rreversal", value: "reversal" },
 ];
+
+interface EditDebtForm {
+  payment_plan: number | "";
+  rate: string;
+  effective_date: string;
+}
 
 export default function DebtManager() {
   const [meter, setMeter] = useState("");
@@ -57,6 +69,17 @@ export default function DebtManager() {
   const [rate, setRate] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingDebt, setEditingDebt] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+
+
+  const [editForm, setEditForm] = useState<EditDebtForm>({
+    payment_plan: "",
+    rate: "",
+    effective_date: "",
+  });
 
   const infoBox = {
     fontSize: 12,
@@ -151,50 +174,6 @@ export default function DebtManager() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // const handleCreateDebt = async () => {
-  //   try {
-  //     if (!customer) return;
-
-  //     setCreating(true);
-
-  //     await createDebt({
-  //       customer: customer.id,
-  //       description,
-  //       payment_plan: Number(paymentPlan), // now using code
-  //       effective_date: date,
-  //       rate: Number(rate),
-  //       debt_type: debtType,
-  //       amount: Number(amount),
-  //     });
-
-  //     setSuccessMsg("Debt created successfully");
-
-  //     const debtRes = await fetchDebt(customer.id);
-  //     setDebts(debtRes || []);
-
-  //     setVendorForm({
-  //       business_name: "",
-  //       email: "",
-  //       phone_number: "",
-  //       address: "",
-  //       city: "",
-  //       state: "",
-  //       country: "",
-  //       postal_code: "",
-  //       hierachy: "",
-  //       related_vendor: undefined,
-  //     });
-
-  //     setErrors({});
-
-  //   } catch (err) {
-  //     console.error(err);
-  //     setErrorMsg("Failed to create debt");
-  //   } finally {
-  //     setCreating(false);
-  //   }
-  // };
-
   const handleCreateDebt = async () => {
     const isValid = validateDebtForm();
 
@@ -233,6 +212,7 @@ export default function DebtManager() {
       setCreating(false);
     }
   };
+
   const handleSearch = async () => {
     try {
       setLoading(true);
@@ -275,6 +255,67 @@ export default function DebtManager() {
   };
 
 
+  const handleEditDebt = (debt: Debt) => {
+    setEditingDebt(debt);
+
+    setEditForm({
+      payment_plan: debt.payment_plan?.id ?? "",
+      rate: String(debt.rate ?? ""),
+      effective_date: debt.effective_date ?? "",
+    });
+
+    setEditOpen(true);
+  };
+
+
+  const handleCloseEdit = () => {
+    setEditOpen(false);
+    setEditingDebt(null);
+  };
+
+  const handleSuspendActivateDebt = async (debt: Debt) => {
+    const action = debt.is_suspended ? "activate" : "suspend";
+
+    if (!window.confirm(`Are you sure you want to ${action} this debt?`)) {
+      return;
+    }
+
+    try {
+      await suspendActivateDebt(debt.id);
+
+      toast.success(
+        `Debt ${action === "activate" ? "activated" : "suspended"} successfully`
+      );
+
+      handleSearch();
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleUpdateDebt = async () => {
+    if (!editingDebt) return;
+
+    try {
+      setSaving(true);
+
+      await updateDebt(editingDebt.id, {
+        payment_plan: Number(editForm.payment_plan),
+        rate: Number(editForm.rate),
+        effective_date: editForm.effective_date,
+      });
+
+      toast.success("Debt updated successfully");
+
+      handleCloseEdit();
+
+      handleSearch(); // reload the list
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
   /* ---------------- UI ---------------- */
 
   return (
@@ -474,17 +515,18 @@ export default function DebtManager() {
                 <Divider sx={{ my: 2 }} />
 
                 {/* ACTIVE DEBT */}
-                {debts.map((d: any) => (
+                {/* {debts.map((d: any) => (
                   <Card
                     key={d.id}
                     sx={{
                       p: 2,
                       borderRadius: 3,
                       border: "1px solid #fecaca",
-                      background: "#fff1f2"
+                      background: "#fff1f2",
+                      marginBottom: 5,
                     }}
                   >
-                    <Stack spacing={1}>
+                    <Stack spacing={5}>
                       <Typography fontSize={11} color="#b91c1c">
                         ACTIVE DEBT
                       </Typography>
@@ -556,6 +598,155 @@ export default function DebtManager() {
                             ? new Date(d.last_debit).toLocaleDateString()
                             : "—"}
                         </Typography>
+                      </Stack>
+                    </Stack>
+                  </Card>
+                ))} */}
+                {debts.map((d: any) => (
+                  <Card
+                    key={d.id}
+                    sx={{
+                      p: 2,
+                      mb: 3, // 👈 separates each card
+                      borderRadius: 3,
+                      border: "1px solid #fecaca",
+                      bgcolor: "#fff1f2",
+                    }}
+                  >
+                    <Stack spacing={2}>
+                      {/* Header */}
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Typography
+                          fontSize={11}
+                          fontWeight={700}
+                          color="#b91c1c"
+                        >
+                          ACTIVE DEBT
+                        </Typography>
+
+                        <Chip
+                          label="Running"
+                          size="small"
+                          color="error"
+                          sx={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                          }}
+                        />
+                      </Stack>
+
+                      {/* Amount */}
+                      <Typography
+                        fontSize={30}
+                        fontWeight={900}
+                        color="#dc2626"
+                      >
+                        {fmt(Number(d.balance))}
+                      </Typography>
+
+                      {/* Progress */}
+                      <LinearProgress
+                        variant="determinate"
+                        value={
+                          customerAnalytic
+                            ? (customerAnalytic.recovered_debt /
+                              (customerAnalytic.recovered_debt +
+                                customerAnalytic.remaining_debt)) *
+                            100
+                            : 0
+                        }
+                        sx={{
+                          height: 7,
+                          borderRadius: 10,
+                          backgroundColor: "#fee2e2",
+                          "& .MuiLinearProgress-bar": {
+                            backgroundColor: "#10b981",
+                          },
+                        }}
+                      />
+
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                      >
+                        <Typography fontSize={12} color="#10b981">
+                          {customerAnalytic
+                            ? (
+                              (customerAnalytic.recovered_debt /
+                                (customerAnalytic.recovered_debt +
+                                  customerAnalytic.remaining_debt)) *
+                              100
+                            ).toFixed(1)
+                            : 0}
+                          % repaid
+                        </Typography>
+
+                        <Typography fontSize={12} color="#10b981">
+                          {fmt(customerAnalytic?.recovered_debt || 0)} recovered
+                        </Typography>
+
+                        <Typography fontSize={12} color="#64748b">
+                          {fmt(customerAnalytic?.remaining_debt || 0)} remaining
+                        </Typography>
+                      </Stack>
+
+                      <Divider />
+
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography fontSize={12}>Plan</Typography>
+                        <Typography fontSize={12} fontWeight={600}>
+                          {d.payment_plan?.name}
+                        </Typography>
+                      </Stack>
+
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography fontSize={12}>Rate</Typography>
+                        <Typography fontSize={12} fontWeight={600}>
+                          {d.rate}% per cycle
+                        </Typography>
+                      </Stack>
+
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography fontSize={12}>Last Deduction</Typography>
+                        <Typography
+                          fontSize={12}
+                          fontWeight={600}
+                          color="#dc2626"
+                        >
+                          {d.last_debit
+                            ? new Date(d.last_debit).toLocaleDateString()
+                            : "—"}
+                        </Typography>
+                      </Stack>
+
+                      {/* Actions */}
+                      <Divider />
+
+                      <Stack
+                        direction="row"
+                        justifyContent="flex-end"
+                        spacing={1.5}
+                      >
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          onClick={() => handleEditDebt(d)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color={d.is_suspended ? "success" : "warning"}
+                          onClick={() => handleSuspendActivateDebt(d)}
+                        >
+                          {d.is_suspended ? "Activate" : "Suspend"}
+                        </Button>
                       </Stack>
                     </Stack>
                   </Card>
@@ -709,7 +900,7 @@ export default function DebtManager() {
                               </Box>
 
                               {/* ACTION BUTTONS */}
-                              <Stack direction="row" spacing={1} mt={2}>
+                              {/* <Stack direction="row" spacing={1} mt={2}>
                                 <Button
                                   size="small"
                                   sx={{
@@ -733,7 +924,7 @@ export default function DebtManager() {
                                 >
                                   ⏸ Suspend
                                 </Button>
-                              </Stack>
+                              </Stack> */}
 
 
                             </Box>
@@ -896,7 +1087,7 @@ export default function DebtManager() {
                     borderRadius: 2,
                     fontSize: 13,
                     bgcolor: "#f9fafb",
-                    alignItems: "center", 
+                    alignItems: "center",
                     paddingTop: "8px",
                     paddingBottom: "8px",
                   },
@@ -956,7 +1147,7 @@ export default function DebtManager() {
                         <Checkbox
                           checked={selected}
                           onChange={(e) => {
-                            e.stopPropagation(); 
+                            e.stopPropagation();
                             togglePlan();
                           }}
                           onClick={(e) => e.stopPropagation()}
@@ -1062,6 +1253,113 @@ export default function DebtManager() {
       >
         <Alert severity="error">{errorMsg}</Alert>
       </Snackbar>
+
+      {/* edit modal */}
+      <Dialog
+        open={editOpen}
+        onClose={handleCloseEdit}
+        maxWidth="sm"
+        fullWidth
+      >
+        {/* <DialogTitle className="bg-blue-800 text-white">Edit Debt</DialogTitle> */}
+        <DialogTitle
+          sx={{
+            bgcolor: "#1e40af",
+            color: "#fff",
+            py: 2,
+            fontWeight: 600,
+          }}
+        >
+          Edit Debt
+        </DialogTitle>
+
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Stack spacing={3} >
+              <TextField
+                label="Interest Rate (%)"
+                fullWidth
+                type="number"
+                value={editForm.rate}
+                onChange={(e) =>
+                  setEditForm({
+                    ...editForm,
+                    rate: e.target.value,
+                  })
+                }
+              />
+
+              <FormControl fullWidth>
+                <InputLabel>Payment Plan</InputLabel>
+
+                <Select
+                  value={editForm.payment_plan}
+                  label="Payment Plan"
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      payment_plan: Number(e.target.value),
+                    })
+                  }
+                >
+                  {paymentPlans.map((plan: any) => (
+                    <MenuItem
+                      key={plan.id}
+                      value={plan.id}
+                    >
+                      {plan.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="Effective Date"
+                type="date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={editForm.effective_date}
+                onChange={(e) =>
+                  setEditForm({
+                    ...editForm,
+                    effective_date: e.target.value,
+                  })
+                }
+              />
+
+              <Typography variant="body2">
+                Customer: <strong>{editingDebt?.customer?.name}</strong>
+              </Typography>
+
+              <Typography variant="body2">
+                Meter Number: <strong>{editingDebt?.customer?.meter_number}</strong>
+              </Typography>
+
+              <Typography variant="body2">
+                Debt Created:{" "}
+                <strong>
+                  {editingDebt?.created_at
+                    ? new Date(editingDebt.created_at).toLocaleDateString()
+                    : "-"}
+                </strong>
+              </Typography>
+            </Stack>
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleCloseEdit}>
+            Cancel
+          </Button>
+
+          <Button
+            variant="contained"
+            onClick={handleUpdateDebt}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

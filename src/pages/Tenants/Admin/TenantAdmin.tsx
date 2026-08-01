@@ -51,6 +51,9 @@ type VendorSummary = {
         all?: number | string;
         active?: number | string;
         inactive?: number | string;
+        suspended?:number | string;
+        internal?:number | string;
+        external?:number | string;
 };
 const TenantAdmin: React.FC = () => {
         const {
@@ -77,7 +80,7 @@ const TenantAdmin: React.FC = () => {
         const [createSuccess, setCreateSuccess] = useState<string | null>(null);
         const [domainModalOpen, setDomainModalOpen] = useState(false);
         const [customerFilter, setCustomerFilter] = useState<'all' | 'active' | 'inactive'>('all');
-        const [vendorFilter, setVendorFilter] = useState<'all' | 'active' | 'inactive'>('all');
+        const [vendorFilter, setVendorFilter] = useState<'all' | 'active' | 'inactive' | 'suspended' |'internal' | 'external'>('all');
 
         const today = new Date().toISOString().split('T')[0];
 
@@ -138,7 +141,13 @@ const TenantAdmin: React.FC = () => {
                         ? vendorSummary.active
                         : vendorFilter === 'inactive'
                                 ? vendorSummary.inactive
-                                : vendorSummary.all;
+                                :vendorFilter === 'suspended'
+                                        ?vendorSummary.suspended
+                                        :vendorFilter==='internal'
+                                                ?vendorSummary.internal
+                                                :vendorFilter==='external'
+                                                        ?vendorSummary.external
+                                                        : vendorSummary.all;
 
         const loadAnalytics = async (start?: string, end?: string) => {
                 setAnalyticsLoading(true);
@@ -450,7 +459,13 @@ const TenantAdmin: React.FC = () => {
                                                                                                                                 ? 'Total Vendors'
                                                                                                                                 : vendorFilter === 'active'
                                                                                                                                         ? 'Active Vendors'
-                                                                                                                                        : 'Inactive Vendors'}
+                                                                                                                                        :vendorFilter ==='suspended'
+                                                                                                                                                ? 'Suspended Vendors'
+                                                                                                                                                :vendorFilter ==='internal'
+                                                                                                                                                        ? 'Internal Vendors'
+                                                                                                                                                        :vendorFilter ==='external'
+                                                                                                                                                                ? 'external Vendors'
+                                                                                                                                                                : 'Inactive Vendors'}
                                                                                                                 </Typography>
 
                                                                                                                 <TextField
@@ -474,6 +489,9 @@ const TenantAdmin: React.FC = () => {
                                                                                                                         <MenuItem value="all">All</MenuItem>
                                                                                                                         <MenuItem value="active">Active</MenuItem>
                                                                                                                         <MenuItem value="inactive">Inactive</MenuItem>
+                                                                                                                        <MenuItem value="suspended">Suspended</MenuItem>
+                                                                                                                        <MenuItem value="internal">Internal</MenuItem>
+                                                                                                                        <MenuItem value="external">External</MenuItem>
                                                                                                                 </TextField>
                                                                                                         </Box>
                                                                                                 }
