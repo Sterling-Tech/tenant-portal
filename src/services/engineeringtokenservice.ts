@@ -1,4 +1,4 @@
-import { post } from "./api";
+import { get, post } from "./api";
 
 export type VendType =
   | "freeissue"
@@ -222,4 +222,44 @@ export const downloadCsvReport = (csvText: string, filename = "bulk-engineering-
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+};
+
+// ═════════════════════════════════════════════════════════════════════════
+// SAVED TOKENS — for the "Engineering Tokens" tab on the customer detail
+// view. Nothing above this line was touched.
+// ═════════════════════════════════════════════════════════════════════════
+
+/** A single previously-issued engineering token, as returned by the saved-tokens endpoint */
+export interface SavedEngineeringToken {
+  id: number;
+  meter_number: string;
+  vend_type: VendType;
+  token: string;
+  token2?: string;
+  token_type: string;
+  units?: string;
+  amount?: string;
+  reason: string;
+  invoice_id: string;
+  krn?: string;
+  ti?: string;
+  sgc?: string;
+  timestamp: string;
+  issued_by: string;
+}
+
+/**
+ * GET /vendor/tokens/engineering/saved/?customer_id=
+ * Previously issued engineering tokens for a customer, most recent first.
+ * Requires `issue_engineering_tokens`. The documented response is a plain
+ * array, but this also tolerates a paginated `{ results: [...] }` shape in
+ * case that changes later.
+ */
+export const getSavedEngineeringTokens = async (
+  customerId: number | string
+): Promise<SavedEngineeringToken[]> => {
+  const data = await get<any>(`/vendor/tokens/engineering/saved/?customer_id=${customerId}`);
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.results)) return data.results;
+  return [];
 };
