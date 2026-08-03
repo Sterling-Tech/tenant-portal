@@ -67,15 +67,7 @@ const STATUS_COLORS: Record<RefundStatus, { dot: string; text: string }> = {
   Failed: { dot: "#D9362F", text: "#D9362F" },
 };
 
-// function StatusDot({ status }: { status: RefundStatus }) {
-//   const cfg = STATUS_COLORS[status];
-//   return (
-//     <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
-//       <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: cfg.dot, flexShrink: 0 }} />
-//       <Typography sx={{ fontSize: "0.8rem", fontWeight: 600, color: cfg.text }}>{status}</Typography>
-//     </Box>
-//   );
-// }
+
 function StatusDot({ status }: { status: string }) {
   const cfg =
     STATUS_COLORS[status as RefundStatus] ?? {

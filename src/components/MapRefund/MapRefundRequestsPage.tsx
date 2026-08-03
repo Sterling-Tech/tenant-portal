@@ -191,7 +191,7 @@ export default function MapRefundRequestsPage() {
       );
     }
   };
-  const PAGE_SIZE = 10;
+  const PAGE_SIZE = 50;
 
   const totalPages = Math.ceil(
     totalCount / PAGE_SIZE

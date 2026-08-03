@@ -178,10 +178,10 @@ export default function OnboardingPage() {
       (item) => item.account_status === "suspended"
     ).length,
   };
-const { can } = usePermission();
+  const { can } = usePermission();
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ minHeight: "100vh"}}>
+      <Box sx={{ minHeight: "100vh" }}>
 
         {/* Breadcrumb */}
         <Breadcrumbs separator={<NavigateNextIcon fontSize="small" sx={{ color: "#9AA4B2" }} />} sx={{ mb: 1.5 }}>
@@ -252,12 +252,20 @@ const { can } = usePermission();
             sx={{ whiteSpace: "nowrap", borderColor: "#D0D5DD", color: "text.primary", bgcolor: "#fff", "&:hover": { borderColor: "#B0B8C8", bgcolor: "#F9FAFB" }, px: 5 }}>
             Export
           </Button> */}
-          {can("create_vendors")&&(
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)}
-            sx={{ whiteSpace: "nowrap", px: 5, bgcolor: "#0F2D6B" }}>
-            {config.buttonLabel}
-          </Button>
-           )}
+          <Tooltip
+            title={
+              can("create_vendors")
+                ? ""
+                : "You don't have permission to perform this action."
+            }
+          >
+            <span>
+              <Button disabled={!can("create_vendors")} variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)}
+                sx={{ whiteSpace: "nowrap", px: 5, bgcolor: "#0F2D6B" }}>
+                {config.buttonLabel}
+              </Button>
+            </span>
+          </Tooltip>
         </Box>
 
         {/* Table */}
@@ -351,13 +359,13 @@ const { can } = usePermission();
               </TableBody>
             </Table>
           </TableContainer>
-          
+
         </Card>
         <ConfigureVendor
-            open={configOpen}
-            onClose={() => setConfigOpen(false)}
-            vendorId={selectedVendorId}
-          />
+          open={configOpen}
+          onClose={() => setConfigOpen(false)}
+          vendorId={selectedVendorId}
+        />
       </Box>
 
       {/* ── Per-entity wizard modals ── */}

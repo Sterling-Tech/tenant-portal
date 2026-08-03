@@ -55,13 +55,15 @@ export function validateProfile(
         errors.businessType =
             "Business type is required";
 
-    if (!data.website.trim()) {
-        errors.website =
-            "Website is required";
-    } else if (!urlRegex.test(data.website)) {
-        errors.website =
-            "Enter a valid website";
-    }
+    // if (!data.website.trim()) {
+    //     errors.website =
+    //         "Website is required";
+            
+    // } 
+    // else if (!urlRegex.test(data.website)) {
+    //     errors.website =
+    //         "Enter a valid website";
+    // }
 
     if (!data.streetAddress.trim())
         errors.streetAddress =

@@ -37,6 +37,7 @@ import {
   Public as PublicIcon,
   History,
   Group,
+  Policy,
 } from "@mui/icons-material";
 
 import { useAppSelector } from "../../store/store";
@@ -50,6 +51,7 @@ import { RelatedVendorResponse } from "../../services/onbordingService";
 import AuditPage from "./AuditPage";
 import Roles from "../Roles/Roles";
 import { usePermission } from "../../hooks/usePermission";
+import RetrievePolicy from "./passwordpolicy/RetrievePolicy";
 
 //const API_BASE_URL = "http://188.166.161.13:8001/api/v1";
 
@@ -240,6 +242,11 @@ const Settings: React.FC = () => {
               icon={<Group />}
             />
             )}
+             <Tab
+              value="policy"
+              label="Password Policy"
+              icon={<Policy />}
+            />
           </Tabs>
         </Box>
 
@@ -256,6 +263,8 @@ const Settings: React.FC = () => {
         {activeTab === "audit" && <AuditPage />}
 
         {activeTab === "roles" && <Roles />}
+
+        {activeTab === "policy" && <RetrievePolicy />}
       </Card>
     </Box>
   );

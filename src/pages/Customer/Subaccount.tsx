@@ -16,7 +16,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Tooltip
 } from "@mui/material";
 import { CalendarToday, Search } from "@mui/icons-material";
 import { createDebt, fetchCustomerDebtAnalytic, fetchDebt, fetchDebtAnalytics, type VendorForm, fetchDebtHistory, fetchPaymentPlans, searchCustomers, Debt, updateDebt, suspendActivateDebt } from "../../services/vendorService";
@@ -26,6 +27,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
+import { usePermission } from "../../hooks/usePermission";
 
 const fmt = (n: Number) =>
   "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2 });
@@ -317,7 +319,7 @@ export default function DebtManager() {
     }
   };
   /* ---------------- UI ---------------- */
-
+  const { can } = usePermission();
   return (
     <Box sx={{ background: "#f4f6fb", minHeight: "100vh" }}>
 
@@ -725,28 +727,44 @@ export default function DebtManager() {
 
                       {/* Actions */}
                       <Divider />
-
                       <Stack
                         direction="row"
                         justifyContent="flex-end"
                         spacing={1.5}
                       >
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="primary"
-                          onClick={() => handleEditDebt(d)}
+
+
+                        <Tooltip
+                          title={
+                            can("retrieve_admin")
+                              ? ""
+                              : "You don't have permission to perform this action."
+                          }
                         >
-                          Edit
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          color={d.is_suspended ? "success" : "warning"}
-                          onClick={() => handleSuspendActivateDebt(d)}
-                        >
-                          {d.is_suspended ? "Activate" : "Suspend"}
-                        </Button>
+                          <span>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                              disabled={!can("retrieve_admin")}
+                              //disabled={!can("manage_debt_config")}
+                              onClick={() => handleEditDebt(d)}
+                              sx={{ mr: 3 }}
+                            >
+                              Edit
+                            </Button>
+
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color={d.is_suspended ? "success" : "warning"}
+                              disabled={!can("retrieve_admin")}
+                              onClick={() => handleSuspendActivateDebt(d)}
+                            >
+                              {d.is_suspended ? "Activate" : "Suspend"}
+                            </Button>
+                          </span>
+                        </Tooltip>
                       </Stack>
                     </Stack>
                   </Card>
@@ -941,6 +959,7 @@ export default function DebtManager() {
           </Grid>
 
           {/* RIGHT */}
+
           <Grid item xs={12} md={4}>
             <Card sx={{ p: 3, borderRadius: 4 }}>
               <Typography fontWeight={800} mb={1}>
@@ -1201,25 +1220,34 @@ export default function DebtManager() {
                 })}
               </FormControl>
 
-
-              <Button
-                fullWidth
-                onClick={handleCreateDebt}
-                disabled={creating}
-                sx={{
-                  mt: 3,
-                  background: "#dc2626",
-                  color: "#fff",
-                  borderRadius: 3,
-                  fontWeight: 700,
-                  py: 1.2,
-                  "&:hover": {
-                    background: "#b91c1c"
-                  }
-                }}
+              <Tooltip
+                title={
+                  can("retrieve_admin")
+                    ? ""
+                    : "You don't have permission to perform this action."
+                }
               >
-                {creating ? <LinearProgress /> : "+ Create Debt Record"}
-              </Button>
+                <span>
+                  <Button
+                    fullWidth
+                    onClick={handleCreateDebt}
+                    disabled={!can("retrieve_admin") || creating}
+                    sx={{
+                      mt: 3,
+                      background: "#dc2626",
+                      color: "#fff",
+                      borderRadius: 3,
+                      fontWeight: 700,
+                      py: 1.2,
+                      "&:hover": {
+                        background: "#b91c1c"
+                      }
+                    }}
+                  >
+                    {creating ? <LinearProgress /> : "+ Create Debt Record"}
+                  </Button>
+                </span>
+              </Tooltip>
             </Card>
           </Grid>
 

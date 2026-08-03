@@ -525,6 +525,7 @@ const VendorTransactions: React.FC = () => {
 
         const meta = [
           ['TRANSACTION LEDGER REPORT'],
+          ['Vendor Name', vendors.find(v => v.id === vendorsId)?.business_name || 'Unknown'],
           [],
           ['Period', `${reportForm.start_date}  →  ${reportForm.end_date}`],
           ['Generated', new Date().toLocaleString()],
@@ -543,6 +544,7 @@ const VendorTransactions: React.FC = () => {
 
         const wsSummary = XLSX.utils.aoa_to_sheet([
           ['TRANSACTION LEDGER REPORT — SUMMARY'],
+          ['Vendor Name', vendors.find(v => v.id === vendorsId)?.business_name || 'Unknown'],
           [],
           ['Date Range', `${reportForm.start_date} to ${reportForm.end_date}`],
           ['Category', CATEGORY_OPTIONS.find(c => c.value === reportForm.category)?.label || 'All'],
@@ -590,6 +592,7 @@ const VendorTransactions: React.FC = () => {
       // ── Meta info rows ──
       const meta = [
         ['TRANSACTION LEDGER REPORT'],
+        ['Vendor Name', vendors.find(v => v.id === vendorsId)?.business_name || 'Unknown'],
         [],
         ['Period', `${reportForm.start_date}  →  ${reportForm.end_date}`],
         ['Generated', new Date().toLocaleString()],
@@ -623,6 +626,7 @@ const VendorTransactions: React.FC = () => {
       // 6. Second sheet: clean Summary
       const summarySheetData = [
         ['TRANSACTION LEDGER REPORT — SUMMARY'],
+        ['Vendor Name', vendors.find(v => v.id === vendorsId)?.business_name || 'Unknown'],
         [],
         ['Date Range', `${reportForm.start_date} to ${reportForm.end_date}`],
         ['Category', CATEGORY_OPTIONS.find(c => c.value === reportForm.category)?.label || 'All'],

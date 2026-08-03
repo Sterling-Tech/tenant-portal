@@ -27,10 +27,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../store/store';
 import { extractAuthPayload, setAuth } from '../../store/slices/authSlice';
 import { toast } from 'react-toastify'
-import { loginUser, confirmOtp } from "../../services/authService";
+import { loginUser, confirmOtp, resetExpiredPassword } from "../../services/authService";
 import { getUserPermissions, viewGroup } from '../../services/roleService';
 import { setPermissions } from '../../store/slices/permissionSlice';
 import { getErrorMessage } from '../../utils/getErrorMessage';
+import ExpiredPasswordModal from './ExpiredPasswordModal';
 
 
 
@@ -62,6 +63,16 @@ const Login: React.FC = () => {
     const [loginCredentials, setLoginCredentials] = useState({
         email: "",
         password: "",
+    });
+
+    const [expiredPasswordOpen, setExpiredPasswordOpen] = useState(false);
+    const [expiredLoading, setExpiredLoading] = useState(false);
+    const [expiredEmail, setExpiredEmail] = useState("");
+
+    const [expiredPasswordForm, setExpiredPasswordForm] = useState({
+        old_password: "",
+        new_password: "",
+        confirm_password: "",
     });
 
     const OTP_DURATION = 5 * 60; // 5 mins
@@ -178,8 +189,40 @@ const Login: React.FC = () => {
             }
 
             // Login failed
+            // if (!response.ok) {
+            //     toast.error(getErrorMessage(response.data) || "Login failed. Please try again.");
+            //     return;
+            // }
             if (!response.ok) {
-                toast.error(getErrorMessage(response.data) || "Login failed. Please try again.");
+                const error = response.data;
+
+                // const isExpired =
+                //     response.status === 403 &&
+                //     (
+                //         error?.code === "password_expired" ||
+                //         error?.detail?.toLowerCase().includes("password expired") ||
+                //         error?.message?.toLowerCase().includes("password expired")
+                //     );
+                const message =
+                    error?.detail ??
+                    error?.message ??
+                    "";
+
+                const isExpired =
+                    response.status === 403 &&
+                    (
+                        error === 'password_expired' ||
+                        error?.code === "password_expired" ||
+                        message.toLowerCase().includes("password expired")
+                    );
+
+                if (isExpired) {
+                    setPendingEmail(response.data.email ?? formData.email);
+                    setExpiredPasswordOpen(true);
+                    return;
+                }
+
+                toast.error(getErrorMessage(error));
                 return;
             }
             // Login successful (200)
@@ -337,6 +380,69 @@ const Login: React.FC = () => {
         }
     };
 
+    const handleResetExpiredPassword = async () => {
+        if (!expiredPasswordForm.old_password) {
+            toast.error("Current password is required");
+            return;
+        }
+
+        if (!expiredPasswordForm.new_password) {
+            toast.error("New password is required");
+            return;
+        }
+
+        if (!expiredPasswordForm.confirm_password) {
+            toast.error("Please confirm your new password");
+            return;
+        }
+
+        if (
+            expiredPasswordForm.new_password !==
+            expiredPasswordForm.confirm_password
+        ) {
+            toast.error("Passwords do not match");
+            return;
+        }
+
+        try {
+            setExpiredLoading(true);
+
+            const response = await resetExpiredPassword({
+                email: pendingEmail,
+                old_password: expiredPasswordForm.old_password,
+                new_password: expiredPasswordForm.new_password,
+                confirm_password:
+                    expiredPasswordForm.confirm_password,
+            });
+
+            if (!response.ok) {
+                toast.error(getErrorMessage(response.data));
+                return;
+            }
+
+            toast.success(
+                "Password changed successfully. Please login with your new password."
+            );
+
+            setExpiredPasswordOpen(false);
+
+            setExpiredPasswordForm({
+                old_password: "",
+                new_password: "",
+                confirm_password: "",
+            });
+
+            setFormData({
+                email: pendingEmail,
+                password: "",
+            });
+        } catch (err) {
+            toast.error(getErrorMessage(err));
+        } finally {
+            setExpiredLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (!otpOpen) return;
 
@@ -377,7 +483,7 @@ const Login: React.FC = () => {
                     <Box sx={{ textAlign: 'center', mb: 3 }}>
                         <LoginIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
                         <Typography variant="h4" component="h1" gutterBottom>
-                             QuickCash Tenant Portal
+                            QuickCash Tenant Portal
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                             Sign in to access your tenant dashboard
@@ -638,6 +744,13 @@ const Login: React.FC = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <ExpiredPasswordModal
+                open={expiredPasswordOpen}
+                email={expiredEmail}
+                loading={expiredLoading}
+                onSubmit={handleResetExpiredPassword}
+            />
         </Box>
     );
 };

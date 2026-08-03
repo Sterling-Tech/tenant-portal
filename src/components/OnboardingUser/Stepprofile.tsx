@@ -65,13 +65,13 @@ export default function StepProfile({ data, errors = {}, onChange }: StepProfile
             </Box>
 
             <Box>
-                <Label required>Website</Label>
+                <Label>Website</Label>
                 <TextField size="small" fullWidth sx={inputSx}
                     placeholder="www.tenant.com"
                     value={data.website}
                     onChange={(e) => onChange("website", e.target.value)}
-                    error={!!errors?.website}
-                    helperText={errors?.website}
+                    // error={!!errors?.website}
+                    // helperText={errors?.website}
                 />
             </Box>
 

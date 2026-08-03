@@ -12,6 +12,13 @@ export interface OtpPayload {
     otp: string;
 }
 
+export interface ResetExpiredPasswordPayload {
+    email: string;
+    old_password: string;
+    new_password: string;
+    confirm_password: string;
+}
+
 async function parseResponse(response: Response) {
     const contentType = response.headers.get("content-type");
 
@@ -56,4 +63,27 @@ export const confirmOtp = async (payload: OtpPayload) => {
         status: response.status,
         data,
     };
+};
+
+export const resetExpiredPassword = async (
+  payload: ResetExpiredPasswordPayload
+) => {
+  const response = await fetch(
+    `${AUTH_URL}/user/reset-expired-password/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const data = await parseResponse(response);
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    data,
+  };
 };

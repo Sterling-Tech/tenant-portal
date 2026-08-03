@@ -100,6 +100,8 @@ const CustomerManagement = () => {
   const [page, setPage] = useState(1);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [next, setNext] = useState<string | null>(null);
+  const [previous, setPrevious] = useState<string | null>(null);
 
   const [transactions, setTransactions] = useState<any[]>([]);
   const [transactionLoading, setTransactionLoading] = useState(false);
@@ -237,7 +239,7 @@ const CustomerManagement = () => {
     } catch (err: any) {
       // Same shape api.ts's makeApiCall throws elsewhere in this app: the
       // raw parsed error body, not an ApiErrors instance.
-      
+
       const fieldErrors =
         err?.errors && typeof err.errors === "object"
           ? Object.values(err.errors).flat().join(" ")
@@ -250,7 +252,7 @@ const CustomerManagement = () => {
         err?.error ||
         fieldErrors ||
         "Something went wrong while performing this action. Please try again.";
-        // toast.error(getErrorMessage(message))
+      // toast.error(getErrorMessage(message))
       setMeterActionResult({ open: true, success: false, message });
     } finally {
       setMeterActionSubmitting(false);
@@ -287,31 +289,58 @@ const CustomerManagement = () => {
   };
 
 
+  // const load = async (params?: any) => {
+  //   setLoading(true);
+
+  //   try {
+  //     const res = await fetchCustomers({
+  //       ...filters,
+  //       page,
+  //       ...params,
+  //     });
+
+  //     setCustomers(res.results);
+  //     setCount(res.count);
+  //   } catch (err) {
+  //     console.error(err);
+
+  //     // toast.error(getErrorMessage(err));
+
+  //     setCustomers([]);
+  //     setCount(0);
+  //     toast.error(getErrorMessage(err));
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const load = async (params?: any) => {
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      const res = await fetchCustomers({
-        ...filters,
-        page,
-        ...params,
-      });
+  try {
+    const res = await fetchCustomers({
+      ...filters,
+      page,
+      ...params,
+    });
 
-      setCustomers(res.results);
-      setCount(res.count);
-    } catch (err) {
-      console.error(err);
+    setCustomers(res.results);
+    setCount(res.count);
+    setNext(res.next);
+    setPrevious(res.previous);
+  } catch (err) {
+    console.error(err);
 
-      // toast.error(getErrorMessage(err));
+    setCustomers([]);
+    setCount(0);
+    setNext(null);
+    setPrevious(null);
 
-      setCustomers([]);
-      setCount(0);
-      toast.error(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
+    toast.error(getErrorMessage(err));
+  } finally {
+    setLoading(false);
+  }
+};
   useEffect(() => {
     load();
   }, [filters, page]);
@@ -430,7 +459,7 @@ const CustomerManagement = () => {
   };
 
   useEffect(() => {
- 
+
     const loadFilters = async () => {
       try {
 
@@ -587,11 +616,12 @@ const CustomerManagement = () => {
 
   const PAGE_SIZE = 5;
 
-const showing = Math.min(
-    ((transactionPage - 1) * PAGE_SIZE) + transactions.length,
-    transactionCount
-);
+  // const showing = Math.min(
+  //   ((transactionPage - 1) * PAGE_SIZE) + transactions.length,
+  //   transactionCount
+  // );
 
+const totalPages = Math.ceil(count / PAGE_SIZE);
   return (
     <Box sx={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* HEADER */}
@@ -946,7 +976,7 @@ const showing = Math.min(
                 )))}
             </TableBody>
           </Table>
-          <Stack direction="row" justifyContent="space-between" p={2}>
+          {/* <Stack direction="row" justifyContent="space-between" p={2}>
             <Typography fontSize={13}>
               Showing {customers.length} of {count}
             </Typography>
@@ -966,7 +996,28 @@ const showing = Math.min(
                 Next
               </Button>
             </Stack>
-          </Stack>
+          </Stack> */}
+          <Stack direction="row" justifyContent="space-between" p={2}>
+  <Typography fontSize={13}>
+    Page {page} of {count}
+  </Typography>
+
+  <Stack direction="row" spacing={1}>
+    <Button
+      disabled={!previous}
+      onClick={() => setPage((p) => p - 1)}
+    >
+      Prev
+    </Button>
+
+    <Button
+      disabled={!next}
+      onClick={() => setPage((p) => p + 1)}
+    >
+      Next
+    </Button>
+  </Stack>
+</Stack>
         </TableContainer>
       </Card>
 
@@ -1518,14 +1569,14 @@ const showing = Math.min(
                         alignItems="center"
                         mt={2}
                       >
-                        {/* <Typography fontSize={13}>
+                        <Typography fontSize={13}>
                           Showing {transactions.length} of{" "}
                           {transactionCount}
-                        </Typography> */}
-
-                        <Typography fontSize={13}>
-                          Showing {showing} of {transactionCount}
                         </Typography>
+
+                        {/* <Typography fontSize={13}>
+                          Showing {showing} of {transactionCount}
+                        </Typography> */}
 
                         <Stack direction="row" spacing={1}>
                           <Button
