@@ -16,6 +16,8 @@ import {
     DialogActions,
     Divider,
     Link,
+    Paper,
+    Stack,
 } from '@mui/material';
 
 import {
@@ -23,6 +25,10 @@ import {
     VisibilityOff,
     Login as LoginIcon,
 } from '@mui/icons-material';
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../store/store';
 import { extractAuthPayload, setAuth } from '../../store/slices/authSlice';
@@ -32,6 +38,8 @@ import { getUserPermissions, viewGroup } from '../../services/roleService';
 import { setPermissions } from '../../store/slices/permissionSlice';
 import { getErrorMessage } from '../../utils/getErrorMessage';
 import ExpiredPasswordModal from './ExpiredPasswordModal';
+import { Policy, retrievePolicy } from '../Settings/passwordpolicy/policy';
+
 
 
 
@@ -74,6 +82,10 @@ const Login: React.FC = () => {
         new_password: "",
         confirm_password: "",
     });
+    // password policy
+    const [passwordPolicy, setPasswordPolicy] = useState<Policy | null>(null);
+    const [showPolicy, setShowPolicy] = useState(false);
+
 
     const OTP_DURATION = 5 * 60; // 5 mins
     const [timeLeft, setTimeLeft] = useState(OTP_DURATION);
@@ -324,7 +336,43 @@ const Login: React.FC = () => {
                     user,
                 })
             );
+             if (user) {
+                const [group, userPermissions] =
+                    await Promise.all([
+                        user.group
+                            ? viewGroup(user.group.id)
+                            : Promise.resolve(null),
 
+                        getUserPermissions(user.id),
+                    ]);
+
+                const groupCodes =
+                    group?.permissions?.map(
+                        p => p.permission.code
+                    ) ?? [];
+
+                const userCodes =
+                    userPermissions.map(
+                        p => p.permission.code
+                    );
+
+                const combinedPermissions = [
+                    ...groupCodes,
+                    ...userCodes,
+                ];
+
+                const permissions = combinedPermissions.filter(
+                    (p, i) => combinedPermissions.indexOf(p) === i
+                );
+
+                dispatch(setPermissions(permissions));
+
+                localStorage.setItem(
+                    "permissions",
+                    JSON.stringify(permissions)
+                );
+            }
+            
             toast.success("Login successful");
 
             setOtpOpen(false);
@@ -466,6 +514,59 @@ const Login: React.FC = () => {
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
+    // password policy
+
+    // useEffect(() => {
+    //     const loadPolicy = async () => {
+    //         try {
+    //             const policy = await retrievePolicy();
+    //             setPasswordPolicy(policy);
+    //         } catch (err) {
+    //             console.error(err);
+    //         }
+    //     };
+
+    //     loadPolicy();
+    // }, []);
+    // console.log("passwordPolicy", passwordPolicy);
+
+    const passwordChecks = {
+        minLength: formData.password.length >= 8,
+        upperCase: /[A-Z]/.test(formData.password),
+        lowerCase: /[a-z]/.test(formData.password),
+        number: /\d/.test(formData.password),
+        symbol: /[!@#$%^&*(),.?":{}|<>_\-+=\\[\]/`~;]/.test(formData.password),
+    };
+
+    const Requirement = ({
+        passed,
+        text,
+    }: {
+        passed: boolean;
+        text: string;
+    }) => (
+        <Stack direction="row" spacing={1} alignItems="center">
+            {passed ? (
+                <CheckCircleIcon color="success" fontSize="small" />
+            ) : (
+                <CancelIcon color="error" fontSize="small" />
+            )}
+
+            <Typography
+                variant="body2"
+                color={passed ? "success.main" : "error.main"}
+            >
+                {text}
+            </Typography>
+        </Stack>
+    );
+
+    const passwordValid =
+        passwordChecks.minLength &&
+        passwordChecks.upperCase &&
+        passwordChecks.lowerCase &&
+        passwordChecks.number &&
+        passwordChecks.symbol;
 
     return (
         <Box
@@ -514,6 +615,8 @@ const Login: React.FC = () => {
                             fullWidth
                             label="Password"
                             name="password"
+                            onFocus={() => setShowPolicy(true)}
+                            onBlur={() => setShowPolicy(false)}
                             type={showPassword ? 'text' : 'password'}
                             value={formData.password}
                             onChange={handleInputChange}
@@ -534,12 +637,119 @@ const Login: React.FC = () => {
                                 ),
                             }}
                         />
+                        {/* password policy */}
+                        {/* {showPolicy && passwordPolicy?.is_enabled && (
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    mt: 2,
+                                    p: 2,
+                                    bgcolor: "#f8fafc",
+                                    borderRadius: 2,
+                                }}
+                            >
+                                <Typography
+                                    variant="subtitle2"
+                                    fontWeight={600}
+                                    gutterBottom
+                                >
+                                    Password Requirements
+                                </Typography>
+
+                                <Stack spacing={0.5}>
+                                    <Typography variant="body2">
+                                        • Minimum {passwordPolicy.min_length} characters
+                                    </Typography>
+
+                                    {passwordPolicy.require_upper && (
+                                        <Typography variant="body2">
+                                            • At least one uppercase letter
+                                        </Typography>
+                                    )}
+
+                                    {passwordPolicy.require_lower && (
+                                        <Typography variant="body2">
+                                            • At least one lowercase letter
+                                        </Typography>
+                                    )}
+
+                                    {passwordPolicy.require_number && (
+                                        <Typography variant="body2">
+                                            • At least one number
+                                        </Typography>
+                                    )}
+
+                                    {passwordPolicy.require_symbol && (
+                                        <Typography variant="body2">
+                                            • At least one special character
+                                        </Typography>
+                                    )}
+
+                                    {passwordPolicy.password_expiry_days > 0 && (
+                                        <Typography
+                                            variant="body2"
+                                            color="warning.main"
+                                        >
+                                            • Password expires every{" "}
+                                            {passwordPolicy.password_expiry_days} days
+                                        </Typography>
+                                    )}
+                                </Stack>
+                            </Paper>
+                        )} */}
+                        {showPolicy && (
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    mt: 2,
+                                    p: 2,
+                                    bgcolor: "#f8fafc",
+                                    borderRadius: 2,
+                                    borderColor: "primary.light",
+                                }}
+                            >
+                                <Typography
+                                    variant="subtitle2"
+                                    fontWeight={600}
+                                    gutterBottom
+                                >
+                                    Password Requirements
+                                </Typography>
+
+                                <Stack spacing={1}>
+                                    <Requirement
+                                        passed={passwordChecks.minLength}
+                                        text="Minimum 8 characters"
+                                    />
+
+                                    <Requirement
+                                        passed={passwordChecks.upperCase}
+                                        text="At least one uppercase letter"
+                                    />
+
+                                    <Requirement
+                                        passed={passwordChecks.lowerCase}
+                                        text="At least one lowercase letter"
+                                    />
+
+                                    <Requirement
+                                        passed={passwordChecks.number}
+                                        text="At least one number"
+                                    />
+
+                                    <Requirement
+                                        passed={passwordChecks.symbol}
+                                        text="At least one special character"
+                                    />
+                                </Stack>
+                            </Paper>
+                        )}
                         <Button
                             type="submit"
                             fullWidth
                             variant="contained"
                             size="large"
-                            disabled={isLoading}
+                            disabled={isLoading || !passwordValid}
                             sx={{ mt: 3, mb: 2 }}
                         >
                             {isLoading ? (

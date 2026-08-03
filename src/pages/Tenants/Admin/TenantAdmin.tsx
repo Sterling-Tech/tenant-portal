@@ -335,7 +335,7 @@ const TenantAdmin: React.FC = () => {
 
                                                 {summary && (
                                                         <Grid container spacing={2} mb={3}>
-                                                                <Grid item xs={12} md={3}>
+                                                                <Grid item xs={12} md={4}>
                                                                         <Card>
                                                                                 <CardContent>
                                                                                         <Typography color="text.secondary" variant="body2">
@@ -345,7 +345,7 @@ const TenantAdmin: React.FC = () => {
                                                                                 </CardContent>
                                                                         </Card>
                                                                 </Grid>
-                                                                <Grid item xs={12} md={3}>
+                                                                <Grid item xs={12} md={4}>
                                                                         <Card>
                                                                                 <CardContent>
                                                                                         <Typography color="text.secondary" variant="body2">
@@ -358,7 +358,7 @@ const TenantAdmin: React.FC = () => {
                                                                                 </CardContent>
                                                                         </Card>
                                                                 </Grid>
-                                                                <Grid item xs={12} md={3}>
+                                                                {/* <Grid item xs={12} md={3}>
                                                                         <Card>
                                                                                 <CardContent>
                                                                                         <Typography color="text.secondary" variant="body2">
@@ -367,12 +367,12 @@ const TenantAdmin: React.FC = () => {
                                                                                         <Typography variant="h5">{analyticsData?.analytics.collection_efficiency || 0}%</Typography>
                                                                                 </CardContent>
                                                                         </Card>
-                                                                </Grid>
-                                                                <Grid item xs={12} md={3}>
+                                                                </Grid> */}
+                                                                <Grid item xs={12} md={4}>
                                                                         <Card>
                                                                                 <CardContent>
                                                                                         <Typography color="text.secondary" variant="body2">
-                                                                                                Outstanding Debt
+                                                                                                Current Debt Balance
                                                                                         </Typography>
                                                                                         <Typography variant="h5">
                                                                                                 ₦{Number(analyticsData?.analytics?.total_debt || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
