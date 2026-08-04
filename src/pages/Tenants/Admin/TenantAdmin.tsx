@@ -338,7 +338,7 @@ const TenantAdmin: React.FC = () => {
                                                                 <Grid item xs={12} md={4}>
                                                                         <Card>
                                                                                 <CardContent>
-                                                                                        <CardHeader
+                                                                                        {/* <CardHeader
                                                                                                 title={
                                                                                                         <Box display="flex" justifyContent="space-between" alignItems="center">
                                                                                                                 <Typography variant="body2" color="text.secondary">
@@ -383,7 +383,7 @@ const TenantAdmin: React.FC = () => {
                                                                                                                 padding: '0px 0px',
                                                                                                         },
                                                                                                 }}
-                                                                                        />
+                                                                                        /> */}
                                                                                         <Typography color="text.secondary" variant="body2">
                                                                                                 Total Transactions Today
                                                                                         </Typography>
