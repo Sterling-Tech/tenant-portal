@@ -338,6 +338,52 @@ const TenantAdmin: React.FC = () => {
                                                                 <Grid item xs={12} md={4}>
                                                                         <Card>
                                                                                 <CardContent>
+                                                                                        <CardHeader
+                                                                                                title={
+                                                                                                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                                                                                <Typography variant="body2" color="text.secondary">
+                                                                                                                        {customerFilter === 'all'
+                                                                                                                                ? 'Total Customers'
+                                                                                                                                : customerFilter === 'active'
+                                                                                                                                        ? 'Active Customers'
+                                                                                                                                        : 'Inactive Customers'}
+                                                                                                                </Typography>
+
+                                                                                                                <TextField
+                                                                                                                        select
+                                                                                                                        size="small"
+                                                                                                                        value={customerFilter}
+                                                                                                                        onChange={(e) => setCustomerFilter(e.target.value as any)}
+                                                                                                                        variant="standard"
+                                                                                                                        InputProps={{ disableUnderline: true }}
+                                                                                                                        sx={{
+                                                                                                                                width: 90,
+                                                                                                                                '& .MuiInputBase-root': {
+                                                                                                                                        padding: 0,
+                                                                                                                                        margin: 0,
+                                                                                                                                },
+                                                                                                                                '& .MuiSelect-select': {
+                                                                                                                                        padding: '4px 8px',
+                                                                                                                                },
+                                                                                                                        }}
+                                                                                                                >
+                                                                                                                        <MenuItem value="all">All</MenuItem>
+                                                                                                                        <MenuItem value="active">Active</MenuItem>
+                                                                                                                </TextField>
+                                                                                                        </Box>
+                                                                                                }
+                                                                                                sx={{
+                                                                                                        height: 0,
+                                                                                                        paddingBottom: 0,
+                                                                                                        '& .MuiInputBase-root': {
+                                                                                                                padding: 0,
+                                                                                                                margin: 0,
+                                                                                                        },
+                                                                                                        '& .MuiSelect-select': {
+                                                                                                                padding: '0px 0px',
+                                                                                                        },
+                                                                                                }}
+                                                                                        />
                                                                                         <Typography color="text.secondary" variant="body2">
                                                                                                 Total Transactions Today
                                                                                         </Typography>

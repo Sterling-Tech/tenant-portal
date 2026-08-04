@@ -372,7 +372,7 @@ const Login: React.FC = () => {
                     JSON.stringify(permissions)
                 );
             }
-            
+
             toast.success("Login successful");
 
             setOtpOpen(false);
@@ -697,7 +697,7 @@ const Login: React.FC = () => {
                                 </Stack>
                             </Paper>
                         )} */}
-                        {showPolicy && (
+                        {/* {showPolicy && (
                             <Paper
                                 variant="outlined"
                                 sx={{
@@ -743,13 +743,14 @@ const Login: React.FC = () => {
                                     />
                                 </Stack>
                             </Paper>
-                        )}
+                        )} */}
                         <Button
                             type="submit"
                             fullWidth
                             variant="contained"
                             size="large"
-                            disabled={isLoading || !passwordValid}
+                            // disabled={isLoading || !passwordValid}
+                            disabled={isLoading}
                             sx={{ mt: 3, mb: 2 }}
                         >
                             {isLoading ? (
