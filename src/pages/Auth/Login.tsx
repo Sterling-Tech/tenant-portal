@@ -85,7 +85,8 @@ const Login: React.FC = () => {
     // password policy
     const [passwordPolicy, setPasswordPolicy] = useState<Policy | null>(null);
     const [showPolicy, setShowPolicy] = useState(false);
-
+    //totp
+    const [twoFaMethod, setTwoFaMethod] = useState<"email" | "authenticator">("email");
 
     const OTP_DURATION = 5 * 60; // 5 mins
     const [timeLeft, setTimeLeft] = useState(OTP_DURATION);
@@ -185,36 +186,25 @@ const Login: React.FC = () => {
 
         try {
             const response = await loginUser(formData);
-            // 2FA enabled → OTP sent
-            if (response.status === 202) {
-                setLoginCredentials({
-                    email: formData.email,
-                    password: formData.password,
-                });
-                setPendingEmail(formData.email);
-                setOtpOpen(true);
 
-                toast.info(
-                    "Verification code sent to your email"
-                );
+            // Login requires second factor
+            if (response.status === 202) {
+                setPendingEmail(formData.email);
+
+                setTwoFaMethod(response.data.method); // "email" | "authenticator"
+
+                setOtpOpen(true);
+                if (response.data.method === "email") {
+                    toast.info("A verification code has been sent to your email.");
+                } else {
+                    toast.info("Enter the code from your Authenticator app.");
+                }
+
                 return;
             }
-
-            // Login failed
-            // if (!response.ok) {
-            //     toast.error(getErrorMessage(response.data) || "Login failed. Please try again.");
-            //     return;
-            // }
+            
             if (!response.ok) {
                 const error = response.data;
-
-                // const isExpired =
-                //     response.status === 403 &&
-                //     (
-                //         error?.code === "password_expired" ||
-                //         error?.detail?.toLowerCase().includes("password expired") ||
-                //         error?.message?.toLowerCase().includes("password expired")
-                //     );
                 const message =
                     error?.detail ??
                     error?.message ??
@@ -336,7 +326,7 @@ const Login: React.FC = () => {
                     user,
                 })
             );
-             if (user) {
+            if (user) {
                 const [group, userPermissions] =
                     await Promise.all([
                         user.group
@@ -775,47 +765,60 @@ const Login: React.FC = () => {
                 fullWidth
 
             >
-                <DialogTitle
-                    sx={{
-                        textAlign: "center",
-                        fontWeight: 700,
-                        pb: 1,
-                    }}
-                >
-                    Verify Login
+                <DialogTitle sx={{ textAlign: "center", fontWeight: 700 }}>
+                    {twoFaMethod === "email"
+                        ? "Verify Email OTP"
+                        : "Verify Authenticator Code"}
                 </DialogTitle>
 
                 <DialogContent>
-                    <Typography
-                        variant="body2"
-                        textAlign="center"
-                        color="text.secondary"
-                        sx={{ mb: 3 }}
-                    >
-                        We've sent a 6-digit verification code to
-                    </Typography>
+                    {twoFaMethod === "email" ? (
+                        <>
+                            <Typography
+                                variant="body2"
+                                textAlign="center"
+                                color="text.secondary"
+                                sx={{ mb: 2 }}
+                            >
+                                We've sent a 6-digit verification code to
+                            </Typography>
 
-                    {otpMessage && (
-                        <Alert
-                            severity={
-                                otpMessage.includes("sent")
-                                    ? "success"
-                                    : "error"
-                            }
-                            sx={{ mt: 2 }}
-                        >
-                            {otpMessage}
-                        </Alert>
+                            <Typography
+                                textAlign="center"
+                                fontWeight={600}
+                                sx={{ mb: 3 }}
+                            >
+                                {pendingEmail}
+                            </Typography>
+                            {/* {otpMessage && (
+                                <Alert
+                                    severity={
+                                        otpMessage.includes("sent")
+                                            ? "success"
+                                            : "error"
+                                    }
+                                    sx={{ mt: 2 }}
+                                >
+                                    {otpMessage}
+                                </Alert>
+                            )} */}
+                        </>
+                    ) : (
+                        <>
+                            <Typography
+                                variant="body2"
+                                textAlign="center"
+                                color="text.secondary"
+                                sx={{ mb: 2 }}
+                            >
+                                Open your Authenticator app and enter the current 6-digit code.
+                            </Typography>
+
+                            <Alert severity="info" sx={{ mb: 3 }}>
+                                Use Google Authenticator, Microsoft Authenticator, or any TOTP app linked to your account. The code refreshes automatically every 30 seconds.
+                            </Alert>
+                        </>
                     )}
-
-                    <Typography
-                        textAlign="center"
-                        fontWeight={600}
-                        sx={{ mb: 4 }}
-                    >
-                        {pendingEmail}
-                    </Typography>
-
                     <Box
                         sx={{
                             display: "flex",
@@ -860,72 +863,67 @@ const Login: React.FC = () => {
                             />
                         ))}
                     </Box>
-
-                    <Typography
-                        variant="caption"
-                        display="block"
-                        textAlign="center"
-                        color="text.secondary"
-                        sx={{ mt: 3 }}
-                    >
-                        Enter the 6-digit code sent to your email
-                    </Typography>
-
-                    <Typography
-                        textAlign="center"
-                        sx={{
-                            mt: 3,
-                            fontWeight: 600,
-                            color: timeLeft < 60
-                                ? "error.main"
-                                : "text.secondary",
-                        }}
-                    >
-                        OTP expires in {formatTime(timeLeft)}
-                    </Typography>
-                </DialogContent>
-
-                <Box
-                    sx={{
-                        mt: 3,
-                        textAlign: "center",
-                    }}
-                >
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                    >
-                        Didn't receive OTP
-                    </Typography>
-
-                    <Button
-                        size="small"
-                        variant="text"
-                        disabled={
-                            !canResend ||
-                            resendingOtp
-                        }
-                        onClick={handleResendOtp}
-                    >
-                        {resendingOtp
-                            ? "Sending..."
-                            : canResend
-                                ? "Resend OTP"
-                                : `Resend in ${formatTime(
-                                    timeLeft
-                                )}`}
-                    </Button>
-
-                    {otpMessage && (
+                    {twoFaMethod === "email" ? (
+                        <>
+                            <Typography
+                                variant="caption"
+                                display="block"
+                                textAlign="center"
+                                color="text.secondary"
+                                sx={{ mt: 3 }}
+                            >
+                                Enter the 6-digit code sent to your email
+                            </Typography>
+                            <Typography
+                                textAlign="center"
+                                sx={{
+                                    mt: 3,
+                                    fontWeight: 600,
+                                    color: timeLeft < 60
+                                        ? "error.main"
+                                        : "text.secondary",
+                                }}
+                            >
+                                OTP expires in {formatTime(timeLeft)}
+                            </Typography>
+                        </>
+                    ) : (
                         <Typography
                             variant="caption"
                             display="block"
-                            sx={{ mt: 1 }}
+                            textAlign="center"
+                            color="text.secondary"
+                            sx={{ mt: 3 }}
                         >
-                            {otpMessage}
+                            Enter the 6-digit from your Authenticator app
                         </Typography>
                     )}
-                </Box>
+
+                </DialogContent>
+                {twoFaMethod === "email" ? (
+                    <Box sx={{ mt: 3, textAlign: "center" }}>
+                        <Typography variant="body2" color="text.secondary">
+                            Didn't receive the code?
+                        </Typography>
+
+                        <Button
+                            size="small"
+                            variant="text"
+                            disabled={!canResend || resendingOtp}
+                            onClick={handleResendOtp}
+                        >
+                            {resendingOtp
+                                ? "Sending..."
+                                : canResend
+                                    ? "Resend OTP"
+                                    : `Resend in ${formatTime(timeLeft)}`}
+                        </Button>
+                    </Box>
+                ) : (
+                    <Alert severity="info" sx={{ mt: 3 }}>
+                        Open your Authenticator app to retrieve the latest verification code.
+                    </Alert>
+                )}
 
                 <DialogActions
                     sx={{

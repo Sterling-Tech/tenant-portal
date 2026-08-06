@@ -427,7 +427,23 @@ export interface AnalyticsBreakdown {
     category_name: string;
     count: number;
   }[];
-
+  //added
+  branch_breakdown: {
+    branch_name: string;
+    count: number;
+  }[];
+  tariff_breakdown: {
+    tariff_name: string;
+    count: number;
+  }[];
+  feeder_breakdown: {
+    feeder_name: string;
+    count: number;
+  }[];
+  transformer_breakdown: {
+    transformer_name: string;
+    count: number;
+  }[];
   metering_type: {
     name: string;
     count: number;
@@ -795,6 +811,14 @@ export const fetchAnalyticsBreakdown = () =>
 export const createCustomer = (payload: CustomerForm) =>
     post<Customer>('/customer/', payload);
 
+export const EditCustomer = (
+  customerId: string | number,
+  payload: CustomerForm
+) =>
+  put<Customer>(
+    `/customer/?customer_id=${customerId}`,
+    payload
+  );
 export const createVendor = (payload: VendorForm) =>
     post<Vendor>('/vendor/create/', payload);
 

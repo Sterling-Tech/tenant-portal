@@ -14,6 +14,8 @@ export interface User {
     password?:string;
     username?:string;
     name?: string;
+    phone?:string;
+    user_type?:string;
     firstName?: string;
     lastName?: string;
     first_name?: string;
@@ -26,6 +28,8 @@ export interface User {
     is_staff?: boolean;
     isStaff?: boolean;
     is_2fa_enabled: boolean,
+    two_fa_method: "email" | "authenticator";
+    totp_confirmed: boolean;
     group: UserGroup | null;
 }
 

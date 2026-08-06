@@ -16,6 +16,12 @@ import {
         TextField,
         Tooltip,
         Typography,
+        LinearProgress,
+        ToggleButtonGroup,
+        ToggleButton,
+        FormControl,
+        InputLabel,
+        Select,
 } from '@mui/material';
 import {
         Add,
@@ -51,7 +57,7 @@ type VendorSummary = {
         all?: number | string;
         active?: number | string;
         inactive?: number | string;
-        
+
 };
 const TenantAdmin: React.FC = () => {
         const {
@@ -78,8 +84,10 @@ const TenantAdmin: React.FC = () => {
         const [createSuccess, setCreateSuccess] = useState<string | null>(null);
         const [domainModalOpen, setDomainModalOpen] = useState(false);
         const [customerFilter, setCustomerFilter] = useState<'all' | 'active' | 'inactive'>('all');
-        const [vendorFilter, setVendorFilter] = useState<'all' | 'active' | 'inactive'>('all');
-
+        // const [vendorFilter, setVendorFilter] = useState<'all' | 'active' | 'inactive'>('all');
+        const [vendorDebtFilter, setVendorDebtFilter] = useState<'all' | 'external_wallet_amount' | 'internal_wallet_amount'>('all');
+        const [transactionFilter, setTransactionFilter] = useState<'all' | 'energy_payments' | 'debt_payments'>('all');
+        const [collectionFilter, setCollectionFilter] = useState<'category' | 'branch' | 'tariff' | 'feeder' | 'transformer'>('category');
         const today = new Date().toISOString().split('T')[0];
 
         const [startDate, setStartDate] = useState<string>(today);
@@ -91,6 +99,11 @@ const TenantAdmin: React.FC = () => {
         const [vendorsLoading, setVendorsLoading] = useState(true);
 
         const [analyticsLoading, setAnalyticsLoading] = useState(false);
+        //daily transaction graph state
+        const [transactionType, setTransactionType] = useState<"collections" | "debts">("collections");
+        const [selectedRegion, setSelectedRegion] = useState("");
+        const [selectedCategory, setSelectedCategory] = useState("");
+
 
         const [configDraft, setConfigDraft] = useState({
                 max_users: '',
@@ -99,29 +112,117 @@ const TenantAdmin: React.FC = () => {
                 max_storage_mb: '',
         });
 
-        const dailyTransactionsMock = useMemo(() => {
-                const transactions = breakdownData?.daily_transaction || [];
+        // const dailyTransactionsMock = useMemo(() => {
+        //         const transactions = breakdownData?.daily_transaction || [];
 
-                if (!transactions.length) {
-                        return { labels: [], data: [] };
+        //         if (!transactions.length) {
+        //                 return { labels: [], data: [] };
+        //         }
+        //         const sorted = [...transactions].sort(
+        //                 (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
+        //         );
+
+        //         const labels = sorted.map((item) =>
+        //                 new Date(item.day).toLocaleDateString('en-GB', {
+        //                         day: '2-digit',
+        //                         month: 'short',
+        //                 })
+        //         );
+
+        //         const data = sorted.map((item) => Number(item.total || 0));
+
+        //         return { labels, data };
+        // }, [breakdownData]);
+
+        const regions = [
+                { id: 1, name: "North" },
+                { id: 2, name: "South" },
+                { id: 3, name: "East" },
+                { id: 4, name: "West" },
+        ];
+
+        const categories = [
+                { id: 1, name: "Residential" },
+                { id: 2, name: "Commercial" },
+                { id: 3, name: "Industrial" },
+                { id: 4, name: "Government" },
+        ];
+
+        // const chartData = useMemo(() => {
+        //         const transactions = breakdownData?.daily_transaction ?? [];
+
+        //         const sorted = [...transactions].sort(
+        //                 (a, b) =>
+        //                         new Date(a.day).getTime() -
+        //                         new Date(b.day).getTime()
+        //         );
+
+        //         return {
+        //                 labels: sorted.map(item =>
+        //                         new Date(item.day).toLocaleDateString("en-GB", {
+        //                                 day: "numeric",
+        //                                 month: "short",
+        //                         })
+        //                 ),
+
+        //                 collections:
+        //                         transactionType === "collections"
+        //                                 ? sorted.map(i => Number(i.total || 0))
+        //                                 : [],
+
+        //                 debts:
+        //                         transactionType === "debts"
+        //                                 ? sorted.map(i => Number(i.total || 0))
+        //                                 : [],
+        //         };
+        // }, [breakdownData, transactionType]);
+        const chartData = useMemo(() => {
+                const labels = Array.from({ length: 30 }, (_, i) => `D${i + 1}`);
+
+                return {
+                        labels,
+
+                        // Collections (green graph)
+                        collections: [
+                                68, 62, 50, 38, 27,
+                                20, 19, 22, 25, 24,
+                                20, 20, 20, 20, 20,
+                                22, 25, 24, 20, 20,
+                                20, 20, 20, 20, 23,
+                                25, 24, 20, 20, 20,
+                        ],
+
+                        // Debts (orange graph)
+                        debts: [
+                                52, 45, 38, 42, 47,
+                                50, 61, 62, 55, 50,
+                                40, 40, 41, 43, 55,
+                                61, 60, 60, 52, 40,
+                                37, 35, 45, 54, 58,
+                                64, 61, 50, 45, 40,
+                        ],
+                };
+        }, []);
+        const filteredChartData = useMemo(() => {
+                let collections = [...chartData.collections];
+                let debts = [...chartData.debts];
+
+                if (selectedRegion === "2") {
+                        collections = collections.map(v => Math.round(v * 0.85));
+                        debts = debts.map(v => Math.round(v * 1.1));
                 }
 
-                // Sort by date ASC (important for chart)
-                const sorted = [...transactions].sort(
-                        (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
-                );
+                if (selectedCategory === "3") {
+                        collections = collections.map(v => Math.round(v * 1.2));
+                        debts = debts.map(v => Math.round(v * 0.8));
+                }
 
-                const labels = sorted.map((item) =>
-                        new Date(item.day).toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: 'short',
-                        })
-                );
-
-                const data = sorted.map((item) => Number(item.total || 0));
-
-                return { labels, data };
-        }, [breakdownData]);
+                return {
+                        labels: chartData.labels,
+                        collections,
+                        debts,
+                };
+        }, [chartData, selectedRegion, selectedCategory]);
 
         const customerSummary: CustomerSummary =
                 analyticfetchData?.customer_summary || {};
@@ -134,12 +235,74 @@ const TenantAdmin: React.FC = () => {
                         ? customerSummary.active_customers
                         : customerSummary.total_customers;
 
-        const vendorValue =
-                vendorFilter === 'active'
-                        ? vendorSummary.active
-                        : vendorFilter === 'inactive'
-                                ? vendorSummary.inactive
-                                        : vendorSummary.all;
+        // const vendorValue =
+        //         vendorFilter === 'active'
+        //                 ? vendorSummary.active
+        //                 : vendorFilter === 'inactive'
+        //                         ? vendorSummary.inactive
+        //                                 : vendorSummary.all;
+
+        // const vendorDebtValue =
+        //         vendorDebtFilter === 'external_wallet_amount'
+        //                 ? analyticfetchData?.vendor_debt_summary?.external_wallet_amount
+        //                 : vendorDebtFilter === 'internal_wallet_amount'
+        //                         ? analyticfetchData?.vendor_debt_summary?.internal_wallet_amount
+        //                         : analyticfetchData?.vendor_debt_summary?.total_vendor_debt;
+
+
+        const breakdownConfig = {
+                category: {
+                        title: "Collection Breakdown",
+                        subtitle: "BY CATEGORY",
+                        data:
+                                breakdownData?.customer_category?.map(item => ({
+                                        name: item.category_name,
+                                        count: item.count,
+                                })) ?? [],
+                },
+
+                branch: {
+                        title: "Branch Breakdown",
+                        subtitle: "BY BRANCH",
+                        data:
+                                breakdownData?.branch_breakdown?.map(item => ({
+                                        name: item.branch_name,
+                                        count: item.count,
+                                })) ?? [],
+                },
+
+                tariff: {
+                        title: "Tariff Breakdown",
+                        subtitle: "BY TARIFF",
+                        data:
+                                breakdownData?.tariff_breakdown?.map(item => ({
+                                        name: item.tariff_name,
+                                        count: item.count,
+                                })) ?? [],
+                },
+
+                feeder: {
+                        title: "Feeder Breakdown",
+                        subtitle: "BY FEEDER",
+                        data:
+                                breakdownData?.feeder_breakdown?.map(item => ({
+                                        name: item.feeder_name,
+                                        count: item.count,
+                                })) ?? [],
+                },
+
+                transformer: {
+                        title: "Transformer Breakdown",
+                        subtitle: "BY TRANSFORMER",
+                        data:
+                                breakdownData?.transformer_breakdown?.map(item => ({
+                                        name: item.transformer_name,
+                                        count: item.count,
+                                })) ?? [],
+                },
+        };
+
+        const current = breakdownConfig[collectionFilter];
 
         const loadAnalytics = async (start?: string, end?: string) => {
                 setAnalyticsLoading(true);
@@ -338,22 +501,22 @@ const TenantAdmin: React.FC = () => {
                                                                 <Grid item xs={12} md={4}>
                                                                         <Card>
                                                                                 <CardContent>
-                                                                                        {/* <CardHeader
+                                                                                        <CardHeader
                                                                                                 title={
                                                                                                         <Box display="flex" justifyContent="space-between" alignItems="center">
                                                                                                                 <Typography variant="body2" color="text.secondary">
-                                                                                                                        {customerFilter === 'all'
-                                                                                                                                ? 'Total Customers'
-                                                                                                                                : customerFilter === 'active'
-                                                                                                                                        ? 'Active Customers'
-                                                                                                                                        : 'Inactive Customers'}
+                                                                                                                        {transactionFilter === 'all'
+                                                                                                                                ? 'Total Transactions Today'
+                                                                                                                                : transactionFilter === 'energy_payments'
+                                                                                                                                        ? 'Energy Payments'
+                                                                                                                                        : 'Debt Payments'}
                                                                                                                 </Typography>
 
                                                                                                                 <TextField
                                                                                                                         select
                                                                                                                         size="small"
-                                                                                                                        value={customerFilter}
-                                                                                                                        onChange={(e) => setCustomerFilter(e.target.value as any)}
+                                                                                                                        value={transactionFilter}
+                                                                                                                        onChange={(e) => setTransactionFilter(e.target.value as any)}
                                                                                                                         variant="standard"
                                                                                                                         InputProps={{ disableUnderline: true }}
                                                                                                                         sx={{
@@ -368,7 +531,8 @@ const TenantAdmin: React.FC = () => {
                                                                                                                         }}
                                                                                                                 >
                                                                                                                         <MenuItem value="all">All</MenuItem>
-                                                                                                                        <MenuItem value="active">Active</MenuItem>
+                                                                                                                        <MenuItem value="energy_payments">Energy Payments</MenuItem>
+                                                                                                                        <MenuItem value="debt_payments">Debt Payments</MenuItem>
                                                                                                                 </TextField>
                                                                                                         </Box>
                                                                                                 }
@@ -383,11 +547,11 @@ const TenantAdmin: React.FC = () => {
                                                                                                                 padding: '0px 0px',
                                                                                                         },
                                                                                                 }}
-                                                                                        /> */}
-                                                                                        <Typography color="text.secondary" variant="body2">
-                                                                                                Total Transactions Today
-                                                                                        </Typography>
-                                                                                        <Typography variant="h5">{analyticfetchData?.transactions_today}</Typography>
+                                                                                        />
+
+                                                                                        <CardContent>
+                                                                                                <Typography variant="h5">{analyticfetchData?.transactions_today}</Typography>
+                                                                                        </CardContent>
                                                                                 </CardContent>
                                                                         </Card>
                                                                 </Grid>
@@ -493,18 +657,18 @@ const TenantAdmin: React.FC = () => {
                                                                                                 title={
                                                                                                         <Box display="flex" justifyContent="space-between" alignItems="center">
                                                                                                                 <Typography variant="body2" color="text.secondary">
-                                                                                                                        {vendorFilter === 'all'
-                                                                                                                                ? 'Total Vendors'
-                                                                                                                                : vendorFilter === 'active'
-                                                                                                                                        ? 'Active Vendors'
-                                                                                                                                        : 'Inactive Vendors'}
+                                                                                                                        {vendorDebtFilter === 'all'
+                                                                                                                                ? 'Total Vendor Wallet Amount'
+                                                                                                                                : vendorDebtFilter === 'external_wallet_amount'
+                                                                                                                                        ? 'External Vendor Wallet Amount'
+                                                                                                                                        : 'Internal Vendor Wallet Amount'}
                                                                                                                 </Typography>
 
                                                                                                                 <TextField
                                                                                                                         select
                                                                                                                         size="small"
-                                                                                                                        value={vendorFilter}
-                                                                                                                        onChange={(e) => setVendorFilter(e.target.value as any)}
+                                                                                                                        value={vendorDebtFilter}
+                                                                                                                        onChange={(e) => setVendorDebtFilter(e.target.value as any)}
                                                                                                                         variant="standard"
                                                                                                                         InputProps={{ disableUnderline: true }}
                                                                                                                         sx={{
@@ -519,9 +683,9 @@ const TenantAdmin: React.FC = () => {
                                                                                                                         }}
                                                                                                                 >
                                                                                                                         <MenuItem value="all">All</MenuItem>
-                                                                                                                        <MenuItem value="active">Active</MenuItem>
-                                                                                                                        <MenuItem value="inactive">Inactive</MenuItem>
-                                                                                                                        
+                                                                                                                        <MenuItem value="external_wallet_amount">External Vendor Wallet Amount</MenuItem>
+                                                                                                                        <MenuItem value="internal_wallet_amount">Internal Vendor Wallet Amount</MenuItem>
+
                                                                                                                 </TextField>
                                                                                                         </Box>
                                                                                                 }
@@ -539,7 +703,8 @@ const TenantAdmin: React.FC = () => {
                                                                                         />
                                                                                         <CardContent>
                                                                                                 <Typography variant="h5">
-                                                                                                        {Number(vendorValue || 0).toLocaleString()}
+                                                                                                        {/* {Number(vendorValue || 0).toLocaleString()} */}
+                                                                                                        {Number(0).toLocaleString()}
                                                                                                 </Typography>
                                                                                         </CardContent>
                                                                                 </CardContent>
@@ -561,14 +726,80 @@ const TenantAdmin: React.FC = () => {
                                                         </Grid>
                                                 )}
                                                 <Grid container spacing={3}>
-                                                        <Grid item xs={12} md={4}>
+                                                        {/* <Grid item xs={12} md={4}>
                                                                 <Card>
                                                                         <CardHeader
+                                                                                title={
+                                                                                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                                                                <Typography variant="body2" color="text.secondary">
+                                                                                                        {collectionFilter === 'category'
+                                                                                                                ? 'Collection Breakdown'
+                                                                                                                : collectionFilter === 'branch'
+                                                                                                                        ? 'Branch/Region Breakdown'
+                                                                                                                        : collectionFilter === 'tariff'
+                                                                                                                                ? 'Tariff Breakdown'
+                                                                                                                                : collectionFilter === 'feeder'
+                                                                                                                                        ? 'Feeder Breakdown'
+                                                                                                                                        : collectionFilter === 'transformer'
+                                                                                                                                                ? 'Transformer Breakdown'
+                                                                                                                                                : 'Collection Breakdown'}
+
+                                                                                        </Typography>
+
+                                                                                        <TextField
+                                                                                                        select
+                                                                                                        size="small"
+                                                                                                        value={collectionFilter}
+                                                                                                        onChange={(e) =>
+                                                                                                                setCollectionFilter(
+                                                                                                                        e.target.value as
+                                                                                                                        | 'category'
+                                                                                                                        | 'branch'
+                                                                                                                        | 'tariff'
+                                                                                                                        | 'feeder'
+                                                                                                                        | 'transformer'
+                                                                                                                )
+                                                                                                        }
+                                                                                                        variant="standard"
+                                                                                                        InputProps={{ disableUnderline: true }}
+                                                                                                        sx={{
+                                                                                                                width: 150,
+                                                                                                                '& .MuiInputBase-root': {
+                                                                                                                        padding: 0,
+                                                                                                                        margin: 0,
+                                                                                                                },
+                                                                                                                '& .MuiSelect-select': {
+                                                                                                                        padding: '4px 8px',
+                                                                                                                },
+                                                                                                        }}
+                                                                                                >
+                                                                                                        <MenuItem value="category">Category</MenuItem>
+                                                                                                        <MenuItem value="branch">Branch / Region</MenuItem>
+                                                                                                        <MenuItem value="tariff">Tariff Class</MenuItem>
+                                                                                                        <MenuItem value="feeder">Feeder</MenuItem>
+                                                                                                        <MenuItem value="transformer">Transformer</MenuItem>
+                                                                                                </TextField>
+                                                                                        </Box>
+                                                                                }
+
                                                                                 avatar={<Assessment color="primary" />}
-                                                                                // title="Debt Exposure"
-                                                                                title="Collection Breakdown"
+
                                                                                 subheader="BY CATEGORY"
+
+                                                                                sx={{
+                                                                                        height: 0,
+                                                                                        paddingBottom: 0,
+                                                                                        '& .MuiInputBase-root': {
+                                                                                                padding: 0,
+                                                                                                margin: 0,
+                                                                                        },
+                                                                                        '& .MuiSelect-select': {
+                                                                                                padding: '0px 0px',
+                                                                                        },
+                                                                                }}
+
                                                                         />
+                                                                       
                                                                         <CardContent>
                                                                                 <Stack spacing={2}>
 
@@ -605,6 +836,112 @@ const TenantAdmin: React.FC = () => {
                                                                                 </Stack>
                                                                         </CardContent>
                                                                 </Card>
+                                                        </Grid> */}
+                                                        <Grid item xs={12} md={4}>
+                                                                <Card>
+                                                                        <CardHeader
+                                                                                avatar={<Assessment color="primary" />}
+                                                                                title={
+                                                                                        <Box
+                                                                                                display="flex"
+                                                                                                justifyContent="space-between"
+                                                                                                alignItems="center"
+                                                                                        >
+                                                                                                <Typography variant="body2" color="text.secondary">
+                                                                                                        {current.title}
+                                                                                                </Typography>
+
+                                                                                                <TextField
+                                                                                                        select
+                                                                                                        size="small"
+                                                                                                        value={collectionFilter}
+                                                                                                        onChange={(e) =>
+                                                                                                                setCollectionFilter(
+                                                                                                                        e.target.value as
+                                                                                                                        | "category"
+                                                                                                                        | "branch"
+                                                                                                                        | "tariff"
+                                                                                                                        | "feeder"
+                                                                                                                        | "transformer"
+                                                                                                                )
+                                                                                                        }
+                                                                                                        variant="standard"
+                                                                                                        InputProps={{
+                                                                                                                disableUnderline: true,
+                                                                                                        }}
+                                                                                                        sx={{
+                                                                                                                width: 150,
+                                                                                                                "& .MuiInputBase-root": {
+                                                                                                                        p: 0,
+                                                                                                                        m: 0,
+                                                                                                                },
+                                                                                                                "& .MuiSelect-select": {
+                                                                                                                        py: 0.5,
+                                                                                                                        px: 1,
+                                                                                                                },
+                                                                                                        }}
+                                                                                                >
+                                                                                                        <MenuItem value="category">Category</MenuItem>
+                                                                                                        <MenuItem value="branch">Branch / Region</MenuItem>
+                                                                                                        <MenuItem value="tariff">Tariff Class</MenuItem>
+                                                                                                        <MenuItem value="feeder">Feeder</MenuItem>
+                                                                                                        <MenuItem value="transformer">Transformer</MenuItem>
+                                                                                                </TextField>
+                                                                                        </Box>
+                                                                                }
+                                                                                subheader={current.subtitle}
+                                                                                sx={{
+                                                                                        "& .MuiCardHeader-content": {
+                                                                                                overflow: "hidden",
+                                                                                        },
+                                                                                }}
+                                                                        />
+
+                                                                        <CardContent>
+                                                                                <Stack spacing={2}>
+                                                                                        {current.data.length === 0 ? (
+                                                                                                <Typography
+                                                                                                        variant="body2"
+                                                                                                        color="text.secondary"
+                                                                                                        textAlign="center"
+                                                                                                >
+                                                                                                        No data available
+                                                                                                </Typography>
+                                                                                        ) : (
+                                                                                                current.data.map((item, index) => (
+                                                                                                        <Box key={index}>
+                                                                                                                <Box
+                                                                                                                        display="flex"
+                                                                                                                        justifyContent="space-between"
+                                                                                                                        mb={0.5}
+                                                                                                                >
+                                                                                                                        <Typography variant="body2">
+                                                                                                                                {item.name}
+                                                                                                                        </Typography>
+
+                                                                                                                        <Typography
+                                                                                                                                variant="body2"
+                                                                                                                                fontWeight={600}
+                                                                                                                        >
+                                                                                                                                {item.count.toLocaleString()}
+                                                                                                                        </Typography>
+                                                                                                                </Box>
+
+                                                                                                                <LinearProgress
+                                                                                                                        variant="determinate"
+                                                                                                                        value={Math.min(item.count, 100)}
+                                                                                                                        sx={{
+                                                                                                                                mt: 0.5,
+                                                                                                                                height: 8,
+                                                                                                                                borderRadius: 10,
+                                                                                                                        }}
+                                                                                                                />
+                                                                                                        </Box>
+                                                                                                ))
+                                                                                        )}
+                                                                                </Stack>
+                                                                        </CardContent>
+                                                                </Card>
                                                         </Grid>
 
                                                         <Grid item xs={12} md={8}>
@@ -615,7 +952,7 @@ const TenantAdmin: React.FC = () => {
                                                                                 <CardHeader avatar={<Security color="primary" />} title="Overview" />
                                                                                 <CardContent>
                                                                                         <Stack direction="row" spacing={2} mb={2} flexWrap="wrap">
-                                                                                                <Chip label={`Inactive Users: ${(analyticfetchData?.user_summary.inactive_users || 0).toLocaleString()}`} size="small" />
+                                                                                                {/* <Chip label={`Inactive Users: ${(analyticfetchData?.user_summary.inactive_users || 0).toLocaleString()}`} size="small" /> */}
                                                                                                 <Chip label={`Total Postpaid Customer: ${(postpaid).toLocaleString()}`} size="small" />
                                                                                                 <Chip label={`Total Prepaid Customer: ${(prepaid).toLocaleString()}`} size="small" />
                                                                                                 {/* <Chip label={`Total Unmetered Customers: ${(889540).toLocaleString()}`} size="small" /> */}
@@ -626,8 +963,8 @@ const TenantAdmin: React.FC = () => {
 
                                                                         <Grid container spacing={2}>
                                                                                 <Grid item xs={12}>
-                                                                                        <Card>
-                                                                                                <CardHeader
+                                                                                        {/* <Card> */}
+                                                                                        {/* <CardHeader
                                                                                                         avatar={<Analytics color="primary" />}
                                                                                                         title="Daily Transactions"
                                                                                                         subheader="Last 30 Days"
@@ -640,20 +977,67 @@ const TenantAdmin: React.FC = () => {
                                                                                                                         >
                                                                                                                                 Chart	View
                                                                                                                         </Button>
-                                                                                                                        {/* <Button
+                                                                                                                        <Button
                                                                                                                 size="small"
                                                                                                                 variant={analyticsView === 'detailed' ? 'contained' : 'outlined'}
                                                                                                                 onClick={() => setAnalyticsView('detailed')}
                                                                                                         >
                                                                                                                 Table View
-                                                                                                        </Button> */}
+                                                                                                        </Button>
 
                                                                                                                 </Stack>
                                                                                                         }
-                                                                                                />
+                                                                                                /> */}
+                                                                                        <Card sx={{ borderRadius: 4 }}>
+                                                                                                <Box
+                                                                                                        display="flex"
+                                                                                                        justifyContent="space-between"
+                                                                                                        alignItems="flex-start"
+                                                                                                        p={3}
+                                                                                                >
+                                                                                                        <Stack direction="row" spacing={2}>
+                                                                                                                <Avatar
+                                                                                                                        sx={{
+                                                                                                                                bgcolor: "#EEF4FF",
+                                                                                                                                color: "#1D4ED8",
+                                                                                                                        }}
+                                                                                                                >
+                                                                                                                        <Analytics />
+                                                                                                                </Avatar>
+
+                                                                                                                <Box>
+                                                                                                                        <Typography
+                                                                                                                                fontWeight={700}
+                                                                                                                                fontSize={24}
+                                                                                                                        >
+                                                                                                                                Daily Transactions
+                                                                                                                        </Typography>
+
+                                                                                                                        <Typography color="text.secondary">
+                                                                                                                                LAST 30 DAYS
+                                                                                                                        </Typography>
+                                                                                                                </Box>
+                                                                                                        </Stack>
+
+                                                                                                        <ToggleButtonGroup
+                                                                                                                exclusive
+                                                                                                                value={transactionType}
+                                                                                                                onChange={(_, value) =>
+                                                                                                                        value && setTransactionType(value)
+                                                                                                                }
+                                                                                                                size="small"
+                                                                                                        >
+                                                                                                                <ToggleButton value="collections">
+                                                                                                                        Collections
+                                                                                                                </ToggleButton>
+
+                                                                                                                <ToggleButton value="debts">
+                                                                                                                        Debts
+                                                                                                                </ToggleButton>
+                                                                                                        </ToggleButtonGroup>
+                                                                                                </Box>
                                                                                                 <CardContent>
-                                                                                                        {/* {analyticsView === 'summary' ? ( */}
-                                                                                                        <LineChart
+                                                                                                        {/* <LineChart
                                                                                                                 xAxis={[
                                                                                                                         {
                                                                                                                                 scaleType: 'point',
@@ -668,8 +1052,110 @@ const TenantAdmin: React.FC = () => {
                                                                                                                 ]}
                                                                                                                 height={260}
                                                                                                                 margin={{ top: 20, bottom: 30 }}
-                                                                                                        />
+                                                                                                        /> */}
+                                                                                                        <Box
+                                                                                                                display="flex"
+                                                                                                                justifyContent="space-between"
+                                                                                                                alignItems="center"
+                                                                                                                px={3}
+                                                                                                                mb={2}
+                                                                                                        >
+                                                                                                                <Stack direction="row" spacing={2}>
+                                                                                                                        <FormControl size="small" sx={{ minWidth: 180 }}>
+                                                                                                                                <InputLabel>Region</InputLabel>
 
+                                                                                                                                <Select
+                                                                                                                                        value={selectedRegion}
+                                                                                                                                        label="Region"
+                                                                                                                                        onChange={(e) =>
+                                                                                                                                                setSelectedRegion(e.target.value)
+                                                                                                                                        }
+                                                                                                                                >
+                                                                                                                                        <MenuItem value="">
+                                                                                                                                                All regions
+                                                                                                                                        </MenuItem>
+
+                                                                                                                                        {regions.map(region => (
+                                                                                                                                                <MenuItem
+                                                                                                                                                        key={region.id}
+                                                                                                                                                        value={region.id}
+                                                                                                                                                >
+                                                                                                                                                        {region.name}
+                                                                                                                                                </MenuItem>
+                                                                                                                                        ))}
+                                                                                                                                </Select>
+                                                                                                                        </FormControl>
+
+                                                                                                                        <FormControl size="small" sx={{ minWidth: 220 }}>
+                                                                                                                                <InputLabel>
+                                                                                                                                        Customer Category
+                                                                                                                                </InputLabel>
+
+                                                                                                                                <Select
+                                                                                                                                        value={selectedCategory}
+                                                                                                                                        label="Customer Category"
+                                                                                                                                        onChange={(e) =>
+                                                                                                                                                setSelectedCategory(e.target.value)
+                                                                                                                                        }
+                                                                                                                                >
+                                                                                                                                        <MenuItem value="">
+                                                                                                                                                All categories
+                                                                                                                                        </MenuItem>
+
+                                                                                                                                        {categories.map(category => (
+                                                                                                                                                <MenuItem
+                                                                                                                                                        key={category.id}
+                                                                                                                                                        value={category.id}
+                                                                                                                                                >
+                                                                                                                                                        {category.name}
+                                                                                                                                                </MenuItem>
+                                                                                                                                        ))}
+                                                                                                                                </Select>
+                                                                                                                        </FormControl>
+                                                                                                                </Stack>
+
+                                                                                                                <Button
+                                                                                                                        variant="contained"
+                                                                                                                        onClick={() =>
+                                                                                                                                setAnalyticsView("summary")
+                                                                                                                        }
+                                                                                                                >
+                                                                                                                        Chart View
+                                                                                                                </Button>
+                                                                                                        </Box>
+                                                                                                        <LineChart
+                                                                                                                height={320}
+                                                                                                                xAxis={[
+                                                                                                                        {
+                                                                                                                                scaleType: "point",
+                                                                                                                                data: chartData.labels,
+                                                                                                                        },
+                                                                                                                ]}
+                                                                                                                series={[
+                                                                                                                        {
+                                                                                                                                data:
+                                                                                                                                        // transactionType === "collections"
+                                                                                                                                        //         ? chartData.collections
+                                                                                                                                        //         : chartData.debts,
+                                                                                                                                        transactionType === "collections"
+                                                                                                                                                ? filteredChartData.collections
+                                                                                                                                                : filteredChartData.debts,
+
+                                                                                                                                label:
+                                                                                                                                        transactionType === "collections"
+                                                                                                                                                ? "Daily Collections"
+                                                                                                                                                : "Daily Debts",
+
+                                                                                                                                area: true,
+                                                                                                                                showMark: false,
+                                                                                                                                curve: "natural",
+                                                                                                                                color:
+                                                                                                                                        transactionType === "collections"
+                                                                                                                                                ? "#14B8A6"
+                                                                                                                                                : "#D97706",
+                                                                                                                        },
+                                                                                                                ]}
+                                                                                                        />
                                                                                                 </CardContent>
                                                                                         </Card>
                                                                                 </Grid>

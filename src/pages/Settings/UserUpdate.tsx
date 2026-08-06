@@ -11,13 +11,20 @@ import {
     FormControl,
     FormControlLabel,
     Switch,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    CircularProgress,
+    Alert,
 } from "@mui/material";
 import { Save } from '@mui/icons-material';
-import { useAppSelector } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { genderOptions } from './CreateNewAdmin';
 import { toast } from 'react-toastify';
-import { updateUser } from '../../services/settingService';
+import { confirmTotp, disableTotp, setupTotp, TotpSetupResponse, updateUser } from '../../services/settingService';
 import { getErrorMessage } from '../../utils/getErrorMessage';
+import { extractAuthPayload, setAuth } from '../../store/slices/authSlice';
 export default function UserUpdate() {
     const { user } = useAppSelector((state) => state.auth);
 
@@ -33,6 +40,20 @@ export default function UserUpdate() {
         phone_number: "",
         two_factor_enabled: false,
     });
+
+    // Authenticator app
+    const [totpDialogOpen, setTotpDialogOpen] = useState(false);
+    const [totpLoading, setTotpLoading] = useState(false);
+    const [confirmingTotp, setConfirmingTotp] = useState(false);
+
+    const [totpData, setTotpData] = useState<TotpSetupResponse | null>(null);
+
+    const [otp, setOtp] = useState("");
+    const [totpError, setTotpError] = useState("");
+
+    const [disableDialogOpen, setDisableDialogOpen] = useState(false);
+    const [disablingTotp, setDisablingTotp] = useState(false);
+    const dispatch = useAppDispatch();
 
     useEffect(() => {
         if (!user) return;
@@ -79,14 +100,25 @@ export default function UserUpdate() {
 
         try {
             setLoading(true);
-            await updateUser({
+            const update = await updateUser({
                 name: `${accountForm.first_name} ${accountForm.last_name}`,
                 gender: accountForm.gender,
                 phone_number: accountForm.phone_number,
                 is_2fa_enabled: accountForm.two_factor_enabled,
             })
             toast.success("User profile updated successfully")
+
+            const { user, token } =
+                extractAuthPayload(update);
+
+            dispatch(
+                setAuth({
+                    token,
+                    user,
+                })
+            );
             setErrors({});
+
         } catch (error) {
             console.error(error);
             toast.error(getErrorMessage(error));
@@ -94,6 +126,95 @@ export default function UserUpdate() {
             setLoading(false);
         }
     };
+
+    const handleSetupTotp = async (enabled: boolean) => {
+        if (!enabled) return;
+
+        try {
+            setTotpLoading(true);
+
+            const response = await setupTotp();
+
+            setTotpData(response);
+            setOtp("");
+            setTotpDialogOpen(true);
+        } catch (err) {
+            toast.error(getErrorMessage(err));
+        } finally {
+            setTotpLoading(false);
+        }
+    };
+    const handleConfirmTotp = async () => {
+        if (otp.length !== 6) {
+            setTotpError("Enter the 6 digit code.");
+            return;
+        }
+
+        try {
+            setConfirmingTotp(true);
+
+            const totp =await confirmTotp({
+                otp,
+            });
+
+            toast.success("Authenticator enabled successfully.");
+
+            setTotpDialogOpen(false);
+
+            setAccountForm({
+                ...accountForm,
+                two_factor_enabled: true,
+            });
+             const { user, token } =
+                extractAuthPayload(totp);
+
+            dispatch(
+                setAuth({
+                    token,
+                    user,
+                })
+            );
+            setOtp("");
+        } catch (err) {
+            toast.error(getErrorMessage(err));
+        } finally {
+            setConfirmingTotp(false);
+        }
+    };
+
+    const handleDisableTotp = async () => {
+        try {
+            setDisablingTotp(true);
+
+            const updatedUser = await disableTotp();
+
+            toast.success("Authenticator disabled successfully.");
+
+            setAccountForm((prev) => ({
+                ...prev,
+                two_factor_enabled: updatedUser.is_2fa_enabled,
+            }));
+
+            setDisableDialogOpen(false);
+
+            const { user, token } =
+                extractAuthPayload(updatedUser);
+
+            dispatch(
+                setAuth({
+                    token,
+                    user,
+                })
+            );
+        } catch (err) {
+            toast.error(getErrorMessage(err));
+        } finally {
+            setDisablingTotp(false);
+        }
+    };
+    const authenticatorEnabled =
+        user?.two_fa_method === "authenticator" &&
+        user?.totp_confirmed;
 
     return (
         <div>
@@ -209,25 +330,69 @@ export default function UserUpdate() {
                         />
                     </Grid>
 
+
                     <Grid item xs={12}>
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                            Two-Factor Authentication must be enabled before you can use an
+                            Authenticator App.
+                        </Alert>
+
                         <FormControlLabel
                             control={
                                 <Switch
-                                    checked={
-                                        accountForm.two_factor_enabled
-                                    }
-                                    onChange={(e) =>
-                                        setAccountForm({
-                                            ...accountForm,
-                                            two_factor_enabled:
-                                                e.target.checked,
-                                        })
-                                    }
+                                    checked={accountForm.two_factor_enabled}
+                                    onChange={async (e) => {
+                                        const checked = e.target.checked;
+
+                                        setAccountForm(prev => ({
+                                            ...prev,
+                                            two_factor_enabled: checked,
+                                        }));
+
+                                        try {
+                                            const updated = await updateUser({
+                                                name: `${accountForm.first_name} ${accountForm.last_name}`,
+                                                gender: accountForm.gender,
+                                                phone_number: accountForm.phone_number,
+                                                is_2fa_enabled: checked,
+                                            });
+
+                                            const { user, token } =
+                                                extractAuthPayload(updated);
+
+                                            dispatch(
+                                                setAuth({
+                                                    token,
+                                                    user,
+                                                })
+                                            );
+                                        } catch (err) {
+                                            toast.error(getErrorMessage(err));
+                                        }
+                                    }}
                                 />
                             }
                             label="Enable Two-Factor Authentication"
                         />
+
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={authenticatorEnabled}
+                                    disabled={!accountForm.two_factor_enabled}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            handleSetupTotp(true);
+                                        } else {
+                                            setDisableDialogOpen(true);
+                                        }
+                                    }}
+                                />
+                            }
+                            label="Use Authenticator App instead of Email OTP"
+                        />
                     </Grid>
+
                 </Grid>
 
                 <Box mt={4}>
@@ -246,7 +411,134 @@ export default function UserUpdate() {
                         Update User
                     </Button>
                 </Box>
+                <Dialog
+                    open={totpDialogOpen}
+                    onClose={() => setTotpDialogOpen(false)}
+                    maxWidth="xs"
+                    fullWidth
+                >
+                    <DialogTitle>
+                        Setup Authenticator App
+                    </DialogTitle>
+
+                    <DialogContent>
+
+                        {totpLoading ? (
+                            <Box textAlign="center" py={4}>
+                                <CircularProgress />
+                            </Box>
+                        ) : (
+                            <>
+                                <Typography mb={2}>
+                                    Scan this QR Code using
+                                    Google Authenticator or
+                                    Microsoft Authenticator.
+                                </Typography>
+
+                                {totpData?.qr_code && (
+                                    <Box textAlign="center" mb={2}>
+                                        <img
+                                            src={totpData.qr_code}
+                                            alt="QR Code"
+                                            width={220}
+                                        />
+                                    </Box>
+                                )}
+
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    mb={2}
+                                >
+                                    Secret:
+                                </Typography>
+
+                                <Typography
+                                    fontWeight={700}
+                                    mb={3}
+                                >
+                                    {totpData?.secret}
+                                </Typography>
+
+                                <TextField
+                                    fullWidth
+                                    label="6 Digit Code"
+                                    value={otp}
+                                    onChange={(e) => {
+                                        setOtp(e.target.value);
+                                        setTotpError("");
+                                    }}
+                                    error={!!totpError}
+                                    helperText={totpError}
+                                />
+                            </>
+                        )}
+
+                    </DialogContent>
+
+                    <DialogActions>
+
+                        <Button
+                            onClick={() => setTotpDialogOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+
+                        <Button
+                            variant="contained"
+                            onClick={handleConfirmTotp}
+                            disabled={confirmingTotp}
+                        >
+                            {confirmingTotp
+                                ? "Verifying..."
+                                : "Verify"}
+                        </Button>
+
+                    </DialogActions>
+                </Dialog>
+                <Dialog
+                    open={disableDialogOpen}
+                    onClose={() => setDisableDialogOpen(false)}
+                >
+                    <DialogTitle className='bg-blue-800 text-white'>
+                        Disable Authenticator
+                    </DialogTitle>
+
+                    <DialogContent>
+                        <Typography>
+                            Are you sure you want to remove your authenticator app?
+                        </Typography>
+
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            mt={2}
+                        >
+                            Login verification will revert back to Email OTP.
+                        </Typography>
+                    </DialogContent>
+
+                    <DialogActions>
+                        <Button
+                            onClick={() => setDisableDialogOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+
+                        <Button
+                            color="error"
+                            variant="contained"
+                            onClick={handleDisableTotp}
+                            disabled={disablingTotp}
+                        >
+                            {disablingTotp
+                                ? "Disabling..."
+                                : "Disable"}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </CardContent>
         </div>
     )
 }
+

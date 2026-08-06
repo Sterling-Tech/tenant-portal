@@ -33,6 +33,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  FormHelperText,
 } from "@mui/material";
 import {
   ResponsiveContainer,
@@ -51,7 +52,7 @@ import { Search, MoreVert, Refresh } from "@mui/icons-material";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
-import { fetchCustomers, fetchCustomer, fetchCustomerTransactions, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers, type CustomerForm } from "../../services/vendorService";
+import { fetchCustomers, fetchCustomer, fetchCustomerTransactions, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers, type CustomerForm, EditCustomer } from "../../services/vendorService";
 import {
   issueEngineeringToken,
   getSavedEngineeringTokens,
@@ -68,6 +69,31 @@ import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
 
 
+const initialCustomerForm: CustomerForm = {
+  name: "",
+  email: "",
+  phone_number: "",
+  address: "",
+
+  customer_category: 0,
+  customer_class: 0,
+  metering_type: 0,
+
+  district: "",
+  feeder: "",
+  transformer: "",
+  service_center: "",
+
+  band: "",
+  tariff: "",
+
+  krn: "",
+  ti: "",
+  sgc: "",
+  kct1: "",
+  kct2: "",
+};
+
 const CustomerManagement = () => {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -82,7 +108,9 @@ const CustomerManagement = () => {
   const [meteringTypes, setMeteringTypes] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [customerForm, setCustomerForm] = useState<Partial<CustomerForm>>({});
+  // const [customerForm, setCustomerForm] = useState<Partial<CustomerForm>>({});
+  const [customerForm, setCustomerForm] =
+    useState<Partial<CustomerForm>>(initialCustomerForm);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [openModal, setOpenModal] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string; } | null>(null);
@@ -127,6 +155,21 @@ const CustomerManagement = () => {
     message: string;
     data?: EngineeringTokenResponse;
   } | null>(null);
+
+  const [errors, setErrors] = useState({
+    name: false,
+    email: false,
+    phone_number: false,
+    address:false,
+    customer_category: false,
+    customer_class: false,
+    metering_type: false,
+    krn: false,
+    ti: false,
+    sgc: false,
+    kct1: false,
+    kct2: false,
+  });
 
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -288,59 +331,33 @@ const CustomerManagement = () => {
     });
   };
 
-
-  // const load = async (params?: any) => {
-  //   setLoading(true);
-
-  //   try {
-  //     const res = await fetchCustomers({
-  //       ...filters,
-  //       page,
-  //       ...params,
-  //     });
-
-  //     setCustomers(res.results);
-  //     setCount(res.count);
-  //   } catch (err) {
-  //     console.error(err);
-
-  //     // toast.error(getErrorMessage(err));
-
-  //     setCustomers([]);
-  //     setCount(0);
-  //     toast.error(getErrorMessage(err));
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const load = async (params?: any) => {
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    const res = await fetchCustomers({
-      ...filters,
-      page,
-      ...params,
-    });
+    try {
+      const res = await fetchCustomers({
+        ...filters,
+        page,
+        ...params,
+      });
 
-    setCustomers(res.results);
-    setCount(res.count);
-    setNext(res.next);
-    setPrevious(res.previous);
-  } catch (err) {
-    console.error(err);
+      setCustomers(res.results);
+      setCount(res.count);
+      setNext(res.next);
+      setPrevious(res.previous);
+    } catch (err) {
+      console.error(err);
 
-    setCustomers([]);
-    setCount(0);
-    setNext(null);
-    setPrevious(null);
+      setCustomers([]);
+      setCount(0);
+      setNext(null);
+      setPrevious(null);
 
-    toast.error(getErrorMessage(err));
-  } finally {
-    setLoading(false);
-  }
-};
+      toast.error(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     load();
   }, [filters, page]);
@@ -511,72 +528,231 @@ const CustomerManagement = () => {
     setOpenModal(true);
   };
 
-  const handleSaveVendor = async () => {
-    if (
-      !customerForm.name ||
-      !customerForm.email ||
-      !customerForm.phone_number ||
-      !customerForm.customer_category ||
-      !customerForm.customer_class ||
-      !customerForm.metering_type
-    ) {
-      setNotification({
-        type: "error",
-        message: "All fields are required",
-      });
-      return;
+  const buildCustomerPayload = (): CustomerForm => ({
+    name: customerForm.name || "",
+    email: customerForm.email || "",
+    phone_number: customerForm.phone_number || "",
+    address: customerForm.address || "",
+
+    customer_category: Number(customerForm.customer_category),
+    customer_class: Number(customerForm.customer_class),
+    metering_type: Number(customerForm.metering_type),
+
+    district: customerForm.district || "",
+    feeder: customerForm.feeder || "",
+    transformer: customerForm.transformer || "",
+    service_center: customerForm.service_center || "",
+
+    band: customerForm.band || "",
+    tariff: customerForm.tariff || "",
+
+    krn: customerForm.krn || "",
+    ti: customerForm.ti || "",
+    sgc: customerForm.sgc || "",
+    kct1: customerForm.kct1 || "",
+    kct2: customerForm.kct2 || "",
+  });
+
+  const validateCustomer = () => {
+    const newErrors = {
+      name: !customerForm.name,
+      email: !customerForm.email,
+      phone_number: !customerForm.phone_number,
+      address: !customerForm.address,
+      customer_category: !customerForm.customer_category,
+      customer_class: !customerForm.customer_class,
+      metering_type: !customerForm.metering_type,
+      krn: !customerForm.krn,
+      ti: !customerForm.ti,
+      sgc: !customerForm.sgc,
+      kct1: !customerForm.kct1,
+      kct2: !customerForm.kct2,
+    };
+
+    setErrors(newErrors);
+
+    const valid = !Object.values(newErrors).some(Boolean);
+
+    if (!valid) {
+      toast.error("Please fill all required fields.");
     }
 
-    setSaving(true);
+    return valid;
+  };
+
+  // const handleCreateCustomer = async () => {
+  //   if (!validateCustomer()) return;
+  //   setSaving(true);
+  //   try {
+  //     const payload: CustomerForm = {
+  //       name: customerForm.name || "",
+  //       email: customerForm.email || "",
+  //       phone_number: customerForm.phone_number || "",
+  //       address: customerForm.address || "",
+
+  //       customer_category: Number(customerForm.customer_category),
+  //       customer_class: Number(customerForm.customer_class),
+  //       metering_type: Number(customerForm.metering_type),
+
+  //       district: customerForm.district || "",
+  //       feeder: customerForm.feeder || "",
+  //       transformer: customerForm.transformer || "",
+  //       service_center: customerForm.service_center || "",
+
+  //       band: customerForm.band || "",
+  //       tariff: customerForm.tariff || "",
+
+  //       krn: customerForm.krn || "",
+  //       ti: customerForm.ti || "",
+  //       sgc: customerForm.sgc || "",
+  //       kct1: customerForm.kct1 || "",
+  //       kct2: customerForm.kct2 || "",
+  //     };
+
+  //     await createCustomer(payload);
+
+  //     // ✅ SUCCESS FLOW
+  //     setNotification({
+  //       type: "success",
+  //       message: "Customer created successfully",
+  //     });
+
+  //     setOpenModal(false);       // 🔥 CLOSE MODAL
+
+  //     setCustomerForm(initialCustomerForm);
+  //     setSelectedCustomer(null);       // 🔥 RESET FORM
+
+  //     load();                    // 🔥 REFRESH TABLE
+
+  //   } catch (err: any) {
+  //     console.error(err); // 🔥 SEE REAL ERROR
+  //     //toast.error(getErrorMessage(err))
+  //     setNotification({
+  //       type: "error",
+  //       message: err?.response?.data?.message || "Failed to create customer",
+  //     });
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // };
+
+  const populateCustomerForm = (customer: Customer): CustomerForm => ({
+    name: customer.name || "",
+    email: customer.email || "",
+    phone_number: customer.phone_number || "",
+    address: customer.extra_info?.address || "",
+
+    customer_category:
+      customer.customer_category?.id || 0,
+
+    customer_class:
+      customer.customer_class?.id || 0,
+
+    metering_type:
+      customer.metering_type?.id || 0,
+
+    district: customer.extra_info?.district || "",
+    feeder: customer.extra_info?.feeder || "",
+    transformer:
+      customer.extra_info?.transformer || "",
+    service_center:
+      customer.extra_info?.service_center || "",
+
+    band: customer.extra_info?.band || "",
+    tariff: customer.extra_info?.tariff || "",
+
+    krn: customer.extra_info?.krn || "",
+    ti: customer.extra_info?.ti || "",
+    sgc: customer.extra_info?.sgc || "",
+    kct1: customer.extra_info?.kct1 || "",
+    kct2: customer.extra_info?.kct2 || "",
+  });
+
+  const handleEditCustomer = async (customerId: string) => {
     try {
-      const payload: CustomerForm = {
-        name: customerForm.name || "",
-        email: customerForm.email || "",
-        phone_number: customerForm.phone_number || "",
-        address: customerForm.address || "",
+      setSaving(true);
 
-        customer_category: Number(customerForm.customer_category),
-        customer_class: Number(customerForm.customer_class),
-        metering_type: Number(customerForm.metering_type),
-
-        district: customerForm.district || "",
-        feeder: customerForm.feeder || "",
-        transformer: customerForm.transformer || "",
-        service_center: customerForm.service_center || "",
-
-        band: customerForm.band || "",
-        tariff: customerForm.tariff || "",
-
-        krn: customerForm.krn || "",
-        ti: customerForm.ti || "",
-        sgc: customerForm.sgc || "",
-        kct1: customerForm.kct1 || "",
-        kct2: customerForm.kct2 || "",
-      };
-
-      await createCustomer(payload);
-
-      // ✅ SUCCESS FLOW
-      setNotification({
-        type: "success",
-        message: "Customer created successfully",
+      const customer = await fetchCustomer({
+        customer_id: customerId,
       });
 
-      setOpenModal(false);       // 🔥 CLOSE MODAL
-      setCustomerForm({});       // 🔥 RESET FORM
-      load();                    // 🔥 REFRESH TABLE
-
-    } catch (err: any) {
-      console.error(err); // 🔥 SEE REAL ERROR
-      //toast.error(getErrorMessage(err))
-      setNotification({
-        type: "error",
-        message: err?.response?.data?.message || "Failed to create customer",
-      });
+      setSelectedCustomer(customer);
+      setCustomerForm(populateCustomerForm(customer));
+      setFormMode("edit");
+      setOpenModal(true);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
   };
+
+  // const handleUpdateCustomer = async () => {
+  //   if (!selectedCustomer) return;
+  //   if (!validateCustomer()) return;
+
+  //   try {
+  //     setSaving(true);
+
+  //     await EditCustomer(
+  //       selectedCustomer.id,
+  //       customerForm as CustomerForm
+  //     );
+
+  //     toast.success("Customer updated successfully");
+
+  //     setCustomerForm(initialCustomerForm);
+  //     setSelectedCustomer(null);
+
+  //     setOpenModal(false);
+
+  //     load(); // reload customers
+  //   } catch (err) {
+  //     toast.error(getErrorMessage(err));
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // };
+
+  const handleSaveCustomer = async () => {
+    if (!validateCustomer()) return;
+
+    setSaving(true);
+
+    try {
+      const payload = buildCustomerPayload();
+
+      if (formMode === "edit" && selectedCustomer) {
+        await EditCustomer(selectedCustomer.id, payload);
+
+        toast.success("Customer updated successfully");
+      } else {
+        await createCustomer(payload);
+
+        toast.success("Customer created successfully");
+      }
+
+      // Reset everything
+      setCustomerForm(initialCustomerForm);
+      setSelectedCustomer(null);
+      setFormMode("create");
+      setOpenModal(false);
+
+      load();
+    } catch (err: any) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+  //open modal for creating a new customer
+  const handleNewCustomer = () => {
+    setSelectedCustomer(null);
+    setCustomerForm(initialCustomerForm);
+    setFormMode("create");
+    setOpenModal(true);
+  };
+
   const handleFilterChange = (key: string, value: string) => {
     setLoading(true); // ✅ START SPINNER
 
@@ -621,7 +797,7 @@ const CustomerManagement = () => {
   //   transactionCount
   // );
 
-const totalPages = Math.ceil(count / PAGE_SIZE);
+  const totalPages = Math.ceil(count / PAGE_SIZE);
   return (
     <Box sx={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* HEADER */}
@@ -976,48 +1152,28 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                 )))}
             </TableBody>
           </Table>
-          {/* <Stack direction="row" justifyContent="space-between" p={2}>
+
+          <Stack direction="row" justifyContent="space-between" p={2}>
             <Typography fontSize={13}>
-              Showing {customers.length} of {count}
+              Page {page} of {count}
             </Typography>
 
             <Stack direction="row" spacing={1}>
               <Button
-                disabled={page === 1}
+                disabled={!previous}
                 onClick={() => setPage((p) => p - 1)}
               >
                 Prev
               </Button>
 
               <Button
-                disabled={customers.length === 0}
+                disabled={!next}
                 onClick={() => setPage((p) => p + 1)}
               >
                 Next
               </Button>
             </Stack>
-          </Stack> */}
-          <Stack direction="row" justifyContent="space-between" p={2}>
-  <Typography fontSize={13}>
-    Page {page} of {count}
-  </Typography>
-
-  <Stack direction="row" spacing={1}>
-    <Button
-      disabled={!previous}
-      onClick={() => setPage((p) => p - 1)}
-    >
-      Prev
-    </Button>
-
-    <Button
-      disabled={!next}
-      onClick={() => setPage((p) => p + 1)}
-    >
-      Next
-    </Button>
-  </Stack>
-</Stack>
+          </Stack>
         </TableContainer>
       </Card>
 
@@ -1040,18 +1196,8 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
 
         <MenuItem
           onClick={async () => {
-            const full = await fetchCustomer({ customer_id: menuRow!.id });
 
-            setFormMode("edit");
-            setCustomerForm({
-              name: full.name,
-              // email: full.email,
-              phone_number: full.phone_number,
-              address: (full as any).address,
-              customer_category: full.customer_category?.id,
-              customer_class: full.customer_class?.id,
-              metering_type: full.metering_type?.id,
-            });
+            handleEditCustomer(menuRow!.id);
 
             setOpenModal(true);
             setAnchorEl(null);
@@ -1891,12 +2037,21 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                     label="Customer Name"
                     size="small"
                     value={customerForm.name || ""}
-                    onChange={(e) =>
+                    error={errors.name}
+                    helperText={errors.name ? "Customer name is required" : ""}
+                    onChange={(e) => {
                       setCustomerForm({
                         ...customerForm,
                         name: e.target.value,
-                      })
-                    }
+                      });
+
+                      if (errors.name) {
+                        setErrors({
+                          ...errors,
+                          name: false,
+                        });
+                      }
+                    }}
                   />
                 </Grid>
 
@@ -1906,12 +2061,21 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                     label="Email Address"
                     size="small"
                     value={customerForm.email || ""}
-                    onChange={(e) =>
+                    error={errors.email}
+                    helperText={errors.email ? "Email is required" : ""}
+                    onChange={(e) => {
                       setCustomerForm({
                         ...customerForm,
                         email: e.target.value,
-                      })
-                    }
+                      });
+
+                      if (errors.email) {
+                        setErrors({
+                          ...errors,
+                          email: false,
+                        });
+                      }
+                    }}
                   />
                 </Grid>
 
@@ -1921,12 +2085,20 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                     label="Phone Number"
                     size="small"
                     value={customerForm.phone_number || ""}
-                    onChange={(e) =>
+                    error={errors.phone_number}
+                    helperText={errors.phone_number ? "Phone number is required" : ""}
+                    onChange={(e) =>{
                       setCustomerForm({
                         ...customerForm,
                         phone_number: e.target.value,
                       })
-                    }
+                      if (errors.phone_number) {
+                        setErrors({
+                          ...errors,
+                          phone_number: false,
+                        });
+                      }
+                    }}
                   />
                 </Grid>
 
@@ -1936,7 +2108,7 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                     label="Band"
                     size="small"
                     placeholder="Band A"
-                    value={customerForm.band || ""}
+                    value={customerForm?.band || ""}
                     onChange={(e) =>
                       setCustomerForm({
                         ...customerForm,
@@ -1954,12 +2126,21 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                     rows={2}
                     size="small"
                     value={customerForm.address || ""}
-                    onChange={(e) =>
+                    error={errors.address}
+                    helperText={errors.address ? "Address is required" : ""}
+                    
+                    onChange={(e) =>{
                       setCustomerForm({
                         ...customerForm,
                         address: e.target.value,
-                      })
-                    }
+                      });
+                      if (errors.address) {
+                        setErrors({
+                          ...errors,
+                          address: false,
+                        });
+                      }
+                    }}
                   />
                 </Grid>
               </Grid>
@@ -1978,19 +2159,30 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
 
                 {/* CATEGORY */}
                 <Grid item xs={12} md={4}>
-                  <FormControl fullWidth size="small">
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    error={errors.customer_category}
+                  >
                     <Select
                       value={customerForm.customer_category || ""}
                       displayEmpty
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setCustomerForm({
                           ...customerForm,
                           customer_category: Number(e.target.value),
-                        })
-                      }
+                        });
+
+                        if (errors.customer_category) {
+                          setErrors({
+                            ...errors,
+                            customer_category: false,
+                          });
+                        }
+                      }}
                     >
                       <MenuItem value="">
-                        Select Category
+                        <em>Select Category</em>
                       </MenuItem>
 
                       {categories.map((cat) => (
@@ -1999,21 +2191,37 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                         </MenuItem>
                       ))}
                     </Select>
+
+                    {errors.customer_category && (
+                      <FormHelperText>
+                        Customer category is required
+                      </FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
                 {/* CLASS */}
                 <Grid item xs={12} md={4}>
-                  <FormControl fullWidth size="small">
+                  <FormControl 
+                    fullWidth size="small"
+                    error={errors.customer_class}
+                    >
                     <Select
                       value={customerForm.customer_class || ""}
                       displayEmpty
-                      onChange={(e) =>
+                      onChange={(e) =>{
                         setCustomerForm({
                           ...customerForm,
                           customer_class: Number(e.target.value),
-                        })
-                      }
+                        });
+                        
+                        if (errors.customer_class) {
+                          setErrors({
+                            ...errors,
+                            customer_class: false,
+                          });
+                        }
+                      }}
                     >
                       <MenuItem value="">
                         Select Class
@@ -2025,21 +2233,34 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                         </MenuItem>
                       ))}
                     </Select>
+                   
+                    {errors.customer_class && (
+                      <FormHelperText>
+                        Customer class is required
+                      </FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
                 {/* METERING */}
                 <Grid item xs={12} md={4}>
-                  <FormControl fullWidth size="small">
+                  <FormControl fullWidth size="small" error={errors.metering_type}>
                     <Select
                       value={customerForm.metering_type || ""}
                       displayEmpty
-                      onChange={(e) =>
+                      onChange={(e) =>{
                         setCustomerForm({
                           ...customerForm,
                           metering_type: Number(e.target.value),
-                        })
-                      }
+                        });
+                        
+                        if (errors.metering_type) {
+                          setErrors({
+                            ...errors,
+                            metering_type: false,
+                          });
+                        }
+                      }}
                     >
                       <MenuItem value="">
                         Select Metering Type
@@ -2051,6 +2272,11 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                         </MenuItem>
                       ))}
                     </Select>
+                    {errors.metering_type && (
+                      <FormHelperText>
+                        Metering type is required
+                      </FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
@@ -2163,12 +2389,20 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                     label="KRN"
                     size="small"
                     value={customerForm.krn || ""}
-                    onChange={(e) =>
+                    error={errors.krn}
+                    helperText={errors.krn ? "KRN is required" : ""}
+                    onChange={(e) =>{
                       setCustomerForm({
                         ...customerForm,
                         krn: e.target.value,
-                      })
-                    }
+                      });
+                      if (errors.krn) {
+                        setErrors({
+                          ...errors,
+                          krn: false,
+                        });
+                      }
+                    }}
                   />
                 </Grid>
 
@@ -2178,12 +2412,20 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                     label="TI"
                     size="small"
                     value={customerForm.ti || ""}
-                    onChange={(e) =>
+                    error={errors.ti}
+                    helperText={errors.ti ? "TI is required" : ""}
+                    onChange={(e) =>{
                       setCustomerForm({
                         ...customerForm,
                         ti: e.target.value,
-                      })
-                    }
+                      });
+                      if (errors.ti) {
+                        setErrors({
+                          ...errors,
+                          ti: false,
+                        });
+                      }
+                    }}
                   />
                 </Grid>
 
@@ -2193,12 +2435,20 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                     label="SGC"
                     size="small"
                     value={customerForm.sgc || ""}
-                    onChange={(e) =>
+                    error={errors.sgc}
+                    helperText={errors.sgc ? "SGC is required" : ""}
+                    onChange={(e) =>{
                       setCustomerForm({
                         ...customerForm,
                         sgc: e.target.value,
-                      })
-                    }
+                      });
+                      if (errors.sgc) {
+                        setErrors({
+                          ...errors,
+                          sgc: false,
+                        });
+                      }
+                    }}
                   />
                 </Grid>
 
@@ -2208,12 +2458,20 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                     label="KCT1"
                     size="small"
                     value={customerForm.kct1 || ""}
-                    onChange={(e) =>
+                    error={errors.kct1}
+                    helperText={errors.kct1 ? "KCT1 is required" : ""}
+                    onChange={(e) =>{
                       setCustomerForm({
                         ...customerForm,
                         kct1: e.target.value,
-                      })
-                    }
+                      });
+                      if (errors.kct1) {
+                        setErrors({
+                          ...errors,
+                          kct1: false,
+                        });
+                      }
+                    }}
                   />
                 </Grid>
 
@@ -2223,12 +2481,20 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                     label="KCT2"
                     size="small"
                     value={customerForm.kct2 || ""}
-                    onChange={(e) =>
+                    error={errors.kct2}
+                    helperText={errors.kct2 ? "KCT2 is required" : ""}
+                    onChange={(e) =>{
                       setCustomerForm({
                         ...customerForm,
                         kct2: e.target.value,
-                      })
-                    }
+                      });
+                      if (errors.kct2) {
+                        setErrors({
+                          ...errors,
+                          kct2: false,
+                        });
+                      }
+                    }}
                   />
                 </Grid>
 
@@ -2257,7 +2523,7 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
 
               <Button
                 variant="contained"
-                onClick={handleSaveVendor}
+                onClick={handleSaveCustomer}
                 disabled={saving}
                 sx={{
                   bgcolor: "#1e3a8a",
@@ -2267,8 +2533,12 @@ const totalPages = Math.ceil(count / PAGE_SIZE);
                 }}
               >
                 {saving
-                  ? "Creating..."
-                  : "Create Customer"}
+                  ? formMode === "edit"
+                    ? "Updating..."
+                    : "Creating..."
+                  : formMode === "edit"
+                    ? "Update Customer"
+                    : "Create Customer"}
               </Button>
             </Box>
           </Card>
