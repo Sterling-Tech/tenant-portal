@@ -52,7 +52,7 @@ import { Search, MoreVert, Refresh } from "@mui/icons-material";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
-import { fetchCustomers, fetchCustomer, fetchCustomerTransactions, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers, type CustomerForm, EditCustomer } from "../../services/vendorService";
+import { fetchCustomers, fetchCustomer, fetchCustomerTransactions, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers, type CustomerForm, EditCustomer, fetchDebt, fetchCustomerDebtAnalytic } from "../../services/vendorService";
 import {
   issueEngineeringToken,
   getSavedEngineeringTokens,
@@ -67,6 +67,7 @@ import CustomerHistoryModal from "../Settings/CustomerHistoryModal";
 import { borderBottom } from "@mui/system";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
+import DebtBalanceModal from "./DebtBalanceModal";
 
 
 const initialCustomerForm: CustomerForm = {
@@ -156,11 +157,16 @@ const CustomerManagement = () => {
     data?: EngineeringTokenResponse;
   } | null>(null);
 
+  // debtBalance
+  const [debtBalanceOpen, setDebtBalanceOpen] = useState(false);
+  const [debts, setDebts] = useState<any[]>([]);
+  const [customerAnalytic, setCustomerAnalytic] = useState<any>(null);
+
   const [errors, setErrors] = useState({
     name: false,
     email: false,
     phone_number: false,
-    address:false,
+    address: false,
     customer_category: false,
     customer_class: false,
     metering_type: false,
@@ -580,62 +586,6 @@ const CustomerManagement = () => {
     return valid;
   };
 
-  // const handleCreateCustomer = async () => {
-  //   if (!validateCustomer()) return;
-  //   setSaving(true);
-  //   try {
-  //     const payload: CustomerForm = {
-  //       name: customerForm.name || "",
-  //       email: customerForm.email || "",
-  //       phone_number: customerForm.phone_number || "",
-  //       address: customerForm.address || "",
-
-  //       customer_category: Number(customerForm.customer_category),
-  //       customer_class: Number(customerForm.customer_class),
-  //       metering_type: Number(customerForm.metering_type),
-
-  //       district: customerForm.district || "",
-  //       feeder: customerForm.feeder || "",
-  //       transformer: customerForm.transformer || "",
-  //       service_center: customerForm.service_center || "",
-
-  //       band: customerForm.band || "",
-  //       tariff: customerForm.tariff || "",
-
-  //       krn: customerForm.krn || "",
-  //       ti: customerForm.ti || "",
-  //       sgc: customerForm.sgc || "",
-  //       kct1: customerForm.kct1 || "",
-  //       kct2: customerForm.kct2 || "",
-  //     };
-
-  //     await createCustomer(payload);
-
-  //     // ✅ SUCCESS FLOW
-  //     setNotification({
-  //       type: "success",
-  //       message: "Customer created successfully",
-  //     });
-
-  //     setOpenModal(false);       // 🔥 CLOSE MODAL
-
-  //     setCustomerForm(initialCustomerForm);
-  //     setSelectedCustomer(null);       // 🔥 RESET FORM
-
-  //     load();                    // 🔥 REFRESH TABLE
-
-  //   } catch (err: any) {
-  //     console.error(err); // 🔥 SEE REAL ERROR
-  //     //toast.error(getErrorMessage(err))
-  //     setNotification({
-  //       type: "error",
-  //       message: err?.response?.data?.message || "Failed to create customer",
-  //     });
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
-
   const populateCustomerForm = (customer: Customer): CustomerForm => ({
     name: customer.name || "",
     email: customer.email || "",
@@ -686,33 +636,6 @@ const CustomerManagement = () => {
       setSaving(false);
     }
   };
-
-  // const handleUpdateCustomer = async () => {
-  //   if (!selectedCustomer) return;
-  //   if (!validateCustomer()) return;
-
-  //   try {
-  //     setSaving(true);
-
-  //     await EditCustomer(
-  //       selectedCustomer.id,
-  //       customerForm as CustomerForm
-  //     );
-
-  //     toast.success("Customer updated successfully");
-
-  //     setCustomerForm(initialCustomerForm);
-  //     setSelectedCustomer(null);
-
-  //     setOpenModal(false);
-
-  //     load(); // reload customers
-  //   } catch (err) {
-  //     toast.error(getErrorMessage(err));
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
 
   const handleSaveCustomer = async () => {
     if (!validateCustomer()) return;
@@ -790,14 +713,27 @@ const CustomerManagement = () => {
       }));
   }, [transactions]);
 
-  const PAGE_SIZE = 5;
 
-  // const showing = Math.min(
-  //   ((transactionPage - 1) * PAGE_SIZE) + transactions.length,
-  //   transactionCount
-  // );
 
-  const totalPages = Math.ceil(count / PAGE_SIZE);
+  const handleDebtBalance = async (customer: Customer) => {
+    try {
+      const debtRes = await fetchDebt(customer.id);
+      setDebts(debtRes || []);
+
+      const analyticRes =
+        await fetchCustomerDebtAnalytic(customer.id);
+
+      setCustomerAnalytic(analyticRes);
+
+      setDebtBalanceOpen(true);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
+
+const fmt = (n: Number) =>
+  "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2 });
+
   return (
     <Box sx={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* HEADER */}
@@ -920,7 +856,6 @@ const CustomerManagement = () => {
 
               {/* FILTERS */}
               <Stack direction="row" spacing={2}>
-                {loading && <CircularProgress size={18} />}
                 {/* STATUS */}
                 <FormControl size="small">
                   <Select
@@ -1040,8 +975,6 @@ const CustomerManagement = () => {
                   <TableRow
                     key={c.id}
                     hover
-                    sx={{ cursor: "pointer" }}
-                  // onClick={() => handleRowClick(c)}
                   >
 
                     <TableCell sx={{ color: "#94A3B8", fontWeight: 600, fontSize: 12 }}>
@@ -1072,7 +1005,7 @@ const CustomerManagement = () => {
                     >
                       {c.account_number}
                     </TableCell>
-                    <TableCell onClick={() => handleRowClick(c)}>{c.meter_number}</TableCell>
+                    <TableCell >{c.meter_number}</TableCell>
 
                     <TableCell>
                       <Chip
@@ -1116,22 +1049,17 @@ const CustomerManagement = () => {
                             Number(c.wallet?.balance) > 0
                               ? "#991B1B"
                               : "#166534",
+
+                          cursor: "pointer",
+                          borderBottom: "2px solid transparent",
+                          transition: "all 0.2s ease",
+                          "&:hover": {
+                            borderBottom: "2px solid #1976d2", // MUI primary blue
+                            color: "#1976d2",
+                          },
                         }}
                         size="small"
-
-                        onClick={(e) => {
-                          e.stopPropagation();
-
-                          navigate(
-                            `customer/subaccount/${c.account_number}`,
-                            {
-                              state: {
-                                customer: c,
-                                account_number: c.account_number,
-                              },
-                            }
-                          );
-                        }}
+                        onClick={() => handleDebtBalance(c)}
                       >
                         ₦{c.wallet?.balance}
                       </Button>
@@ -2087,7 +2015,7 @@ const CustomerManagement = () => {
                     value={customerForm.phone_number || ""}
                     error={errors.phone_number}
                     helperText={errors.phone_number ? "Phone number is required" : ""}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setCustomerForm({
                         ...customerForm,
                         phone_number: e.target.value,
@@ -2128,8 +2056,8 @@ const CustomerManagement = () => {
                     value={customerForm.address || ""}
                     error={errors.address}
                     helperText={errors.address ? "Address is required" : ""}
-                    
-                    onChange={(e) =>{
+
+                    onChange={(e) => {
                       setCustomerForm({
                         ...customerForm,
                         address: e.target.value,
@@ -2202,19 +2130,19 @@ const CustomerManagement = () => {
 
                 {/* CLASS */}
                 <Grid item xs={12} md={4}>
-                  <FormControl 
+                  <FormControl
                     fullWidth size="small"
                     error={errors.customer_class}
-                    >
+                  >
                     <Select
                       value={customerForm.customer_class || ""}
                       displayEmpty
-                      onChange={(e) =>{
+                      onChange={(e) => {
                         setCustomerForm({
                           ...customerForm,
                           customer_class: Number(e.target.value),
                         });
-                        
+
                         if (errors.customer_class) {
                           setErrors({
                             ...errors,
@@ -2233,7 +2161,7 @@ const CustomerManagement = () => {
                         </MenuItem>
                       ))}
                     </Select>
-                   
+
                     {errors.customer_class && (
                       <FormHelperText>
                         Customer class is required
@@ -2248,12 +2176,12 @@ const CustomerManagement = () => {
                     <Select
                       value={customerForm.metering_type || ""}
                       displayEmpty
-                      onChange={(e) =>{
+                      onChange={(e) => {
                         setCustomerForm({
                           ...customerForm,
                           metering_type: Number(e.target.value),
                         });
-                        
+
                         if (errors.metering_type) {
                           setErrors({
                             ...errors,
@@ -2391,7 +2319,7 @@ const CustomerManagement = () => {
                     value={customerForm.krn || ""}
                     error={errors.krn}
                     helperText={errors.krn ? "KRN is required" : ""}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setCustomerForm({
                         ...customerForm,
                         krn: e.target.value,
@@ -2414,7 +2342,7 @@ const CustomerManagement = () => {
                     value={customerForm.ti || ""}
                     error={errors.ti}
                     helperText={errors.ti ? "TI is required" : ""}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setCustomerForm({
                         ...customerForm,
                         ti: e.target.value,
@@ -2437,7 +2365,7 @@ const CustomerManagement = () => {
                     value={customerForm.sgc || ""}
                     error={errors.sgc}
                     helperText={errors.sgc ? "SGC is required" : ""}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setCustomerForm({
                         ...customerForm,
                         sgc: e.target.value,
@@ -2460,7 +2388,7 @@ const CustomerManagement = () => {
                     value={customerForm.kct1 || ""}
                     error={errors.kct1}
                     helperText={errors.kct1 ? "KCT1 is required" : ""}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setCustomerForm({
                         ...customerForm,
                         kct1: e.target.value,
@@ -2483,7 +2411,7 @@ const CustomerManagement = () => {
                     value={customerForm.kct2 || ""}
                     error={errors.kct2}
                     helperText={errors.kct2 ? "KCT2 is required" : ""}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setCustomerForm({
                         ...customerForm,
                         kct2: e.target.value,
@@ -2677,6 +2605,16 @@ const CustomerManagement = () => {
           setHistoryOpen(false);
           setSelected(null);
         }}
+      />
+      <DebtBalanceModal
+        open={debtBalanceOpen}
+        onClose={() => setDebtBalanceOpen(false)}
+        debts={debts}
+        customerAnalytic={customerAnalytic}
+        fmt={fmt}
+        // can={can}
+        // handleEditDebt={handleEditDebt}
+        // handleSuspendActivateDebt={handleSuspendActivateDebt}
       />
     </Box>
   );

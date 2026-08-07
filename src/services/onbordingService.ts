@@ -130,6 +130,7 @@ export interface RelatedVendorResponse{
     email: string;
     business_name: string;
     account_status: string;
+    kyc_status: "pending" | "approved" | "rejected";
     // hierachy: string;
     hierachy: "vendor" | "sub_vendor" | "agent" | "cashier" | "pos";
 }
