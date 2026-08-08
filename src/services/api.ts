@@ -263,6 +263,25 @@ export async function get<T>(endpoint: string): Promise<T> {
     return makeApiCall<T>(endpoint, { method: 'GET' });
 }
 
+// blob response
+
+export async function getBlob(endpoint: string): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => null);
+
+        throw new Error(
+            error?.detail ??
+            response.statusText ??
+            "Unable to fetch proof"
+        );
+    }
+
+    return response.blob();
+}
 /**
  * POST request
  */

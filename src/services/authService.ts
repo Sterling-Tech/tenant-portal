@@ -28,7 +28,19 @@ async function parseResponse(response: Response) {
 
     return response.json();
 }
+// async function parseResponse(response: Response) {
+//   const contentType = response.headers.get("content-type");
 
+//   if (contentType?.includes("application/json")) {
+//     return response.json();
+//   }
+
+//   const text = await response.text();
+
+//   return {
+//     detail: text || "An unexpected server error occurred.",
+//   };
+// }
 export const loginUser = async (payload: LoginPayload) => {
     const response = await fetch(`${AUTH_URL}/user/login/`, {
         method: "POST",

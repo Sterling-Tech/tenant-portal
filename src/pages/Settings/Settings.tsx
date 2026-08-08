@@ -52,6 +52,7 @@ import AuditPage from "./AuditPage";
 import Roles from "../Roles/Roles";
 import { usePermission } from "../../hooks/usePermission";
 import RetrievePolicy from "./passwordpolicy/RetrievePolicy";
+import OnboardingPolicySettings from "./OnboardingPolicy";
 
 //const API_BASE_URL = "http://188.166.161.13:8001/api/v1";
 
@@ -247,6 +248,14 @@ const Settings: React.FC = () => {
               label="Password Policy"
               icon={<Policy />}
             />
+            
+            {can("manage_onboarding_policy") && (
+            <Tab
+              value="onboardingpolicy"
+              label="Onboarding Policy"
+              icon={<Policy />}
+            />
+            )}
           </Tabs>
         </Box>
 
@@ -265,6 +274,8 @@ const Settings: React.FC = () => {
         {activeTab === "roles" && <Roles />}
 
         {activeTab === "policy" && <RetrievePolicy />}
+
+        {activeTab === "onboardingpolicy" && <OnboardingPolicySettings />}
       </Card>
     </Box>
   );

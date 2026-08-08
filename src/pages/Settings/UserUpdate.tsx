@@ -127,23 +127,80 @@ export default function UserUpdate() {
         }
     };
 
-    const handleSetupTotp = async (enabled: boolean) => {
-        if (!enabled) return;
+    // const handleSetupTotp = async (enabled: boolean) => {
+    //     if (!enabled) return;
 
+    //     try {
+    //         setTotpLoading(true);
+
+    //         const response = await setupTotp();
+
+    //         setTotpData(response);
+    //         setOtp("");
+    //         setTotpDialogOpen(true);
+    //     } catch (err) {
+    //         toast.error(getErrorMessage(err));
+    //     } finally {
+    //         setTotpLoading(false);
+    //     }
+    // };
+
+    const handleSetupTotp = async () => {
         try {
             setTotpLoading(true);
+            setTotpError("");
 
             const response = await setupTotp();
 
             setTotpData(response);
             setOtp("");
             setTotpDialogOpen(true);
+
         } catch (err) {
             toast.error(getErrorMessage(err));
         } finally {
             setTotpLoading(false);
         }
     };
+    // const handleConfirmTotp = async () => {
+    //     if (otp.length !== 6) {
+    //         setTotpError("Enter the 6 digit code.");
+    //         return;
+    //     }
+
+    //     try {
+    //         setConfirmingTotp(true);
+
+    //         const totp = await confirmTotp({
+    //             otp,
+    //         });
+
+    //         toast.success("Authenticator enabled successfully.");
+
+    //         setTotpDialogOpen(false);
+
+    //         setAccountForm({
+    //             ...accountForm,
+    //             two_factor_enabled: true,
+    //         });
+    //         const { user, token, refreshToken } =
+    //             extractAuthPayload(totp);
+
+    //         dispatch(
+    //             setAuth({
+    //                 token,
+    //                 refreshToken,
+    //                 user,
+    //             })
+    //         );
+    //         setOtp("");
+    //     } catch (err) {
+    //         toast.error(getErrorMessage(err));
+    //     } finally {
+    //         setConfirmingTotp(false);
+    //     }
+    // };
+
     const handleConfirmTotp = async () => {
         if (otp.length !== 6) {
             setTotpError("Enter the 6 digit code.");
@@ -152,36 +209,49 @@ export default function UserUpdate() {
 
         try {
             setConfirmingTotp(true);
+            setTotpError("");
 
-            const totp =await confirmTotp({
+            const response = await confirmTotp({
                 otp,
             });
 
-            toast.success("Authenticator enabled successfully.");
+            if (!response.ok) {
+                setTotpError(
+                    response.data ||
+                    response.data?.detail ||
+                    response.data?.non_field_errors?.[0] ||
+                    "Invalid authenticator code."
+                );
+                return;
+            }
 
-            setTotpDialogOpen(false);
-
-            setAccountForm({
-                ...accountForm,
-                two_factor_enabled: true,
-            });
-             const { user, token } =
-                extractAuthPayload(totp);
+            const { user, token, refreshToken } =
+                extractAuthPayload(response.data);
 
             dispatch(
                 setAuth({
                     token,
+                    refreshToken,
                     user,
                 })
             );
+
+            setAccountForm(prev => ({
+                ...prev,
+                two_factor_enabled: true,
+            }));
+
+            toast.success("Authenticator enabled successfully.");
+
+            setTotpDialogOpen(false);
             setOtp("");
+
         } catch (err) {
-            toast.error(getErrorMessage(err));
+            setTotpError(getErrorMessage(err));
         } finally {
             setConfirmingTotp(false);
         }
     };
-
     const handleDisableTotp = async () => {
         try {
             setDisablingTotp(true);
@@ -198,7 +268,7 @@ export default function UserUpdate() {
             setDisableDialogOpen(false);
 
             const { user, token } =
-                extractAuthPayload(updatedUser);
+                extractAuthPayload(updatedUser.data);
 
             dispatch(
                 setAuth({
@@ -341,15 +411,41 @@ export default function UserUpdate() {
                             control={
                                 <Switch
                                     checked={accountForm.two_factor_enabled}
+                                    // onChange={async (e) => {
+                                    //     const checked = e.target.checked;
+
+                                    //     setAccountForm(prev => ({
+                                    //         ...prev,
+                                    //         two_factor_enabled: checked,
+                                    //     }));
+
+                                    //     try {
+                                    //         const updated = await updateUser({
+                                    //             name: `${accountForm.first_name} ${accountForm.last_name}`,
+                                    //             gender: accountForm.gender,
+                                    //             phone_number: accountForm.phone_number,
+                                    //             is_2fa_enabled: checked,
+                                    //         });
+
+                                    //         const { user, token } =
+                                    //             extractAuthPayload(updated);
+
+                                    //         dispatch(
+                                    //             setAuth({
+                                    //                 token,
+                                    //                 user,
+                                    //             })
+                                    //         );
+                                    //     } catch (err) {
+                                    //         toast.error(getErrorMessage(err));
+                                    //     }
+                                    // }}
                                     onChange={async (e) => {
                                         const checked = e.target.checked;
 
-                                        setAccountForm(prev => ({
-                                            ...prev,
-                                            two_factor_enabled: checked,
-                                        }));
-
                                         try {
+                                            setLoading(true);
+
                                             const updated = await updateUser({
                                                 name: `${accountForm.first_name} ${accountForm.last_name}`,
                                                 gender: accountForm.gender,
@@ -357,17 +453,32 @@ export default function UserUpdate() {
                                                 is_2fa_enabled: checked,
                                             });
 
-                                            const { user, token } =
+                                            const { user, token, refreshToken } =
                                                 extractAuthPayload(updated);
 
                                             dispatch(
                                                 setAuth({
                                                     token,
+                                                    refreshToken,
                                                     user,
                                                 })
                                             );
+
+                                            setAccountForm(prev => ({
+                                                ...prev,
+                                                two_factor_enabled: checked,
+                                            }));
+
+                                            toast.success(
+                                                checked
+                                                    ? "Two-factor authentication enabled."
+                                                    : "Two-factor authentication disabled."
+                                            );
+
                                         } catch (err) {
                                             toast.error(getErrorMessage(err));
+                                        } finally {
+                                            setLoading(false);
                                         }
                                     }}
                                 />
@@ -380,9 +491,16 @@ export default function UserUpdate() {
                                 <Switch
                                     checked={authenticatorEnabled}
                                     disabled={!accountForm.two_factor_enabled}
+                                    // onChange={(e) => {
+                                    //     if (e.target.checked) {
+                                    //         handleSetupTotp(true);
+                                    //     } else {
+                                    //         setDisableDialogOpen(true);
+                                    //     }
+                                    // }}
                                     onChange={(e) => {
                                         if (e.target.checked) {
-                                            handleSetupTotp(true);
+                                            handleSetupTotp();
                                         } else {
                                             setDisableDialogOpen(true);
                                         }
@@ -460,13 +578,32 @@ export default function UserUpdate() {
                                     {totpData?.secret}
                                 </Typography>
 
-                                <TextField
+                                {/* <TextField
                                     fullWidth
                                     label="6 Digit Code"
                                     value={otp}
                                     onChange={(e) => {
                                         setOtp(e.target.value);
                                         setTotpError("");
+                                    }}
+                                    error={!!totpError}
+                                    helperText={totpError}
+                                /> */}
+                                <TextField
+                                    fullWidth
+                                    label="6 Digit Code"
+                                    value={otp}
+                                    onChange={(e) => {
+                                        const value = e.target.value
+                                            .replace(/\D/g, "")
+                                            .slice(0, 6);
+
+                                        setOtp(value);
+                                        setTotpError("");
+                                    }}
+                                    inputProps={{
+                                        inputMode: "numeric",
+                                        maxLength: 6,
                                     }}
                                     error={!!totpError}
                                     helperText={totpError}

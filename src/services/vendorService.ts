@@ -1,4 +1,4 @@
-import { get, post, patch, del, put } from './api';
+import { get,getBlob, post, patch, del, put } from './api';
 
 
 export interface VendorQuery {
@@ -563,6 +563,7 @@ export interface FundingRequest {
     amount: string;
     status: FundingRequestStatus;
     request_time: string;
+    proof_of_payment: string;
 }
 
 export interface FundingRequestResponse {
@@ -921,6 +922,12 @@ export const fundingOperation = (
         "/vendor/funding/ops/",
         payload
     );
+};
+
+export const getFundingProof = (id: number) => {
+  return getBlob(
+    `/vendor/funding/proof/${id}/`
+  );
 };
 
 

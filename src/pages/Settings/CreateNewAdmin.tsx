@@ -20,7 +20,6 @@ import { getErrorMessage } from '../../utils/getErrorMessage';
 export const genderOptions = [
     { value: 'male', label: 'Male' },
     { value: 'female', label: 'Female' },
-    { value: 'other', label: 'Other' }
 ];
 
 export default function CreateNewAdmin() {
@@ -76,7 +75,7 @@ export default function CreateNewAdmin() {
                 type: "success",
                 message: "Admin created successfully",
             });
-
+            toast.success("Admin created successfully")
             setAdminForm({
                 name: "",
                 email: "",

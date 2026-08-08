@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react'
-import { fundingOperation, getFundingRequests } from '../../services/vendorService';
+import { fundingOperation, getFundingProof, getFundingRequests } from '../../services/vendorService';
 import type { FundingRequest, FundingRequestStatus } from '../../services/vendorService';
-import { Tabs, Tab, IconButton, TableContainer, Chip, TableHead, Paper, Table, TableBody, Menu, MenuItem, TableCell, TableRow, Box, CircularProgress, Typography } from '@mui/material';
+import { Tabs, Tab, IconButton, TableContainer, Chip, TableHead, Paper, Table, TableBody, Menu, MenuItem, TableCell, TableRow, Box, CircularProgress, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { toast } from 'react-toastify';
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ApproveFundingDialog from './ApproveFundingDialog';
 import { usePermission } from '../../hooks/usePermission';
 import { getErrorMessage } from '../../utils/getErrorMessage';
+import ProofOfPaymentImage from './ProofOfPaymentImage';
 
 
 export default function FundingRequest() {
@@ -24,6 +25,9 @@ export default function FundingRequest() {
         useState<FundingRequestStatus>("pending_review");
     const [openReview, setOpenReview] = useState(false)
 
+    const [proofUrl, setProofUrl] = useState("");
+    const [proofOpen, setProofOpen] = useState(false);
+
     const loadFundingRequests = async () => {
         try {
 
@@ -39,7 +43,7 @@ export default function FundingRequest() {
 
             setTotalCount(response.count);
 
-        } catch(err: any){
+        } catch (err: any) {
             console.log(err)
             getErrorMessage(err)
         }
@@ -77,7 +81,7 @@ export default function FundingRequest() {
         } catch (err: any) {
 
             toast.error(getErrorMessage(err || err.message)
-                 ??
+                ??
                 "Unable to review request"
             );
 
@@ -104,7 +108,7 @@ export default function FundingRequest() {
 
             await loadFundingRequests();
         } catch (err: any) {
-                toast.error(getErrorMessage(err || err.message || "Unable to approve request") 
+            toast.error(getErrorMessage(err || err.message || "Unable to approve request")
             );
         } finally {
             setProcessing(false);
@@ -159,6 +163,32 @@ export default function FundingRequest() {
         rejected:
             "No rejected funding requests.",
     }[activeTab];
+
+    const handleViewProof = async (id: number) => {
+        console.log("Clicked", id);
+
+        try {
+            const blob = await getFundingProof(id);
+
+            console.log(blob);
+
+            const url = URL.createObjectURL(blob);
+
+            console.log(url);
+
+            setProofUrl(url);
+            setProofOpen(true);
+        } catch (error) {
+            console.log(error);
+            toast.error(getErrorMessage(error));
+        }
+    };
+
+    const handleCloseProof = () => {
+        URL.revokeObjectURL(proofUrl);
+        setProofUrl("");
+        setProofOpen(false);
+    };
 
     const { can } = usePermission();
 
@@ -245,7 +275,12 @@ export default function FundingRequest() {
                             <TableCell sx={{ color: "#fff", fontWeight: 700 }}>
                                 Request Time
                             </TableCell>
-
+                            <TableCell sx={{ color: "#fff", fontWeight: 700 }}>
+                                Proof of Payment
+                            </TableCell>
+                            <TableCell sx={{ color: "#fff", fontWeight: 700 }}>
+                                Download
+                            </TableCell>
                             <TableCell
                                 align="center"
                                 sx={{ color: "#fff", fontWeight: 700 }}
@@ -325,7 +360,31 @@ export default function FundingRequest() {
                                             request.request_time
                                         ).toLocaleString()}
                                     </TableCell>
-
+                                    {/* <TableCell>
+                                        <img src={request.proof_of_payment} alt='proof of payment' />
+                                    </TableCell> */}
+                                    <TableCell>
+                                        <ProofOfPaymentImage
+                                            url={request.proof_of_payment}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        {request.proof_of_payment ? (
+                                            <Button
+                                                size="small"
+                                                onClick={() => handleViewProof(request.id)}
+                                            >
+                                                Download
+                                            </Button>
+                                        ) : (
+                                            <Chip
+                                                label="No proof attached"
+                                                // color="default"
+                                                size="small"
+                                                sx={{ color: "error.main" }}
+                                            />
+                                        )}
+                                    </TableCell>
                                     <TableCell align="center">
                                         {(request.status === "pending_review" ||
                                             request.status === "pending_approval") && (
@@ -379,28 +438,28 @@ export default function FundingRequest() {
                 )}
 
                 {/* {status === "pending_approval" && ( */}
-                    { status === "pending_approval" && can("approve_funding_requests") && (
-                        <>
-                            <MenuItem
-                                onClick={() => {
-                                    handleMenuClose();
-                                    setOpenApprove(true);
-                                }}
-                            >
-                                Approve
-                            </MenuItem>
+                {status === "pending_approval" && can("approve_funding_requests") && (
+                    <>
+                        <MenuItem
+                            onClick={() => {
+                                handleMenuClose();
+                                setOpenApprove(true);
+                            }}
+                        >
+                            Approve
+                        </MenuItem>
 
-                            <MenuItem
-                                sx={{ color: "error.main" }}
-                                onClick={() => {
-                                    handleMenuClose();
-                                    setOpenReject(true);
-                                }}
-                            >
-                                Reject
-                            </MenuItem>
-                        </>
-                    )}
+                        <MenuItem
+                            sx={{ color: "error.main" }}
+                            onClick={() => {
+                                handleMenuClose();
+                                setOpenReject(true);
+                            }}
+                        >
+                            Reject
+                        </MenuItem>
+                    </>
+                )}
 
                 {(status === "approved" ||
                     status === "rejected") && (
@@ -435,6 +494,31 @@ export default function FundingRequest() {
                 onClose={() => setOpenReject(false)}
                 onConfirm={handleReject}
             />
+
+            <Dialog
+                open={proofOpen}
+                onClose={handleCloseProof}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>Proof of Payment</DialogTitle>
+
+                <DialogContent dividers>
+                    <iframe
+                        src={proofUrl}
+                        title="Proof"
+                        width="100%"
+                        height="600px"
+                        style={{ border: 0 }}
+                    />
+                </DialogContent>
+
+                <DialogActions>
+                    <Button onClick={handleCloseProof}>
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </div >
     )
 }

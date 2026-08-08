@@ -1,21 +1,13 @@
-
 import React, { useEffect, useState } from "react";
 import {
   Box, Typography, Tabs, Tab, Card, CardContent, TextField,
   InputAdornment, Button, Chip, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Avatar, Breadcrumbs,
   Link, Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  Alert,
-  DialogActions,
 } from "@mui/material";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { ThemeProvider } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
-import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import AddIcon from "@mui/icons-material/Add";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 import OnboardingVendor from "../../components/OnboardingUser/OnboardingVendor";
@@ -23,15 +15,15 @@ import OnboardingSubVendor from "../../components/OnboardingUser/OnboardingSubVe
 import OnboardingAgent from "../../components/OnboardingUser/OnboardingAgent";
 import OnboardingCashier from "../../components/OnboardingUser/OnboardingCashier";
 import OnboardingPOS from "../../components/OnboardingUser/OnboardingPOS";
-import { TAB_CONFIG, TAB_DATA, theme } from "../../components/OnboardingUser/constants";
-import { getAllVendors, RelatedVendorResponse } from "../../services/onbordingService";
+import { TAB_CONFIG, theme } from "../../components/OnboardingUser/constants";
+import { getAllVendors, onboardVendor, OnboardVendorPayload, RelatedVendorResponse } from "../../services/onbordingService";
 import ConfigureVendor from "../../components/OnboardingUser/ConfigureVendor";
 import { usePermission } from "../../hooks/usePermission";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
-import { Stack } from "@mui/system";
-import VendorKycReview from "./VendorKycReview";
-import OnboardVendorModal, { OnboardVendorForm } from "./OnboardVendorModal";
+// import VendorKycReview from "./VendorKycReview";
+import OnboardVendorModal from "./OnboardVendorModal";
+import KycReview from "./KycReview";
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
 
@@ -44,10 +36,6 @@ interface Entity {
   email: string; breadcrumb: string; status: "active" | "inactive";
   wallet: string; parent: string;
 }
-
-
-// const TAB_COUNTS: Record<TabKey, number> = { vendors: 32, subvendors: 14, agents: 47, cashiers: 89, pos: 23 };
-
 
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -86,18 +74,17 @@ export default function OnboardingPage() {
 
   const [configOpen, setConfigOpen] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState("");
-  const [selectedVendor, setSelectedVendor] = useState<any>(null);
 
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
 
   const [creatingVendor, setCreatingVendor] = useState(false);
 
-  const [vendorForm, setVendorForm] = useState<OnboardVendorForm>({
+  const [vendorForm, setVendorForm] = useState<OnboardVendorPayload>({
     email: "",
     password: "",
+    business_name: "",
   });
 
-  const [kycOpen, setKycOpen] = useState(false);
 
   const config = TAB_CONFIG[activeTab];
   //const rows = TAB_DATA[activeTab];
@@ -150,9 +137,12 @@ export default function OnboardingPage() {
       try {
         setLoading(true);
 
-        const data = await getAllVendors();
+        const response = await getAllVendors();
 
-        setEntities(data);
+        console.log("Vendors received:", response);
+
+        setEntities(response);
+        //setEntities(Array.isArray(response) ? response : []);
       } catch (error) {
         console.error(error);
         toast.error(getErrorMessage(error))
@@ -201,18 +191,19 @@ export default function OnboardingPage() {
   };
 
   const handleCreateVendor = async () => {
-    if (!vendorForm.email || !vendorForm.password) {
-      toast.error("Email and password are required.");
+    if (!vendorForm.email || !vendorForm.password || !vendorForm.business_name) {
+      toast.error("All fields are required.");
       return;
     }
 
     try {
       setCreatingVendor(true);
 
-      // await createVendor({
-      //   email: vendorForm.email,
-      //   password: vendorForm.password,
-      // });
+      await onboardVendor({
+        email: vendorForm.email,
+        password: vendorForm.password,
+        business_name: vendorForm.business_name
+      });
 
       toast.success("Vendor created successfully.");
 
@@ -221,6 +212,7 @@ export default function OnboardingPage() {
       setVendorForm({
         email: "",
         password: "",
+        business_name: "",
       });
 
       // reload vendors
@@ -233,103 +225,8 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleApproveVendor = async () => {
-    // await approveVendor(selectedVendor.id);
-
-    toast.success("Vendor approved");
-
-    setKycOpen(false);
-
-    // reloadVendors();
-  };
-
-  const handleRejectVendor = async () => {
-    // await rejectVendor(selectedVendor.id);
-
-    toast.success("Vendor rejected");
-
-    setKycOpen(false);
-
-    // reloadVendors();
-  };
-
-interface KycChipProps {
-    status?: string | null;
-}
-
-  // const KycChip = ({
-  //   status,
-  // }: {
-  //   status: "pending" | "approved" | "rejected";
-  // }) => {
-  //   const map = {
-  //     pending: {
-  //       bg: "#FEF3C7",
-  //       color: "#92400E",
-  //       text: "Pending",
-  //     },
-  //     approved: {
-  //       bg: "#DCFCE7",
-  //       color: "#166534",
-  //       text: "Approved",
-  //     },
-  //     rejected: {
-  //       bg: "#FEE2E2",
-  //       color: "#991B1B",
-  //       text: "Rejected",
-  //     },
-  //   };
-
-  //   return (
-  //     <Chip
-  //       size="small"
-  //       label={map[status].text}
-  //       sx={{
-  //         bgcolor: map[status].bg,
-  //         color: map[status].color,
-  //         fontWeight: 600,
-  //       }}
-  //     />
-  //   );
-  // };
-
-  const KycChip = ({ status }: KycChipProps) => {
-    const map = {
-        pending: {
-            bg: "#FEF3C7",
-            color: "#92400E",
-            text: "Pending",
-        },
-        approved: {
-            bg: "#DCFCE7",
-            color: "#166534",
-            text: "Approved",
-        },
-        rejected: {
-            bg: "#FEE2E2",
-            color: "#991B1B",
-            text: "Rejected",
-        },
-    };
-
-    const config =
-        map[status?.toLowerCase() as keyof typeof map] ??
-        map.pending;
-
-    return (
-        <Chip
-            size="small"
-            label={config.text}
-            sx={{
-                bgcolor: config.bg,
-                color: config.color,
-                fontWeight: 600,
-            }}
-        />
-    );
-};
-
   const { can } = usePermission();
+
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ minHeight: "100vh" }}>
@@ -399,10 +296,6 @@ interface KycChipProps {
             InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: "#9AA4B2", fontSize: 20 }} /></InputAdornment> }}
             sx={{ "& .MuiOutlinedInput-root": { bgcolor: "#fff", "& fieldset": { borderColor: "#E0E4EA" }, "&:hover fieldset": { borderColor: "#B0BFD8" } } }}
           />
-          {/* <Button variant="outlined" startIcon={<FileDownloadOutlinedIcon />}
-            sx={{ whiteSpace: "nowrap", borderColor: "#D0D5DD", color: "text.primary", bgcolor: "#fff", "&:hover": { borderColor: "#B0B8C8", bgcolor: "#F9FAFB" }, px: 5 }}>
-            Export
-          </Button> */}
           {/* <Tooltip
             title={
               can("create_vendors")
@@ -441,24 +334,20 @@ interface KycChipProps {
             </span>
           </Tooltip>
         </Box>
+        
+        {activeTab === "vendors" && can("review_vendor_kyc") && <KycReview />}
+
+        {/* ALL VENDORS */}
 
         {/* Table */}
         <Card>
           <TableContainer>
             <Table>
-              {/* <TableHead>
-                <TableRow>
-                  <TableCell>Entity</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>{config.parentLabel}</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead> */}
               <TableHead>
                 <TableRow>
                   <TableCell>Entity</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell>KYC</TableCell>
+                  <TableCell>Vendor Type</TableCell>
                   <TableCell>{config.parentLabel}</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
@@ -507,7 +396,7 @@ interface KycChipProps {
                       />
                     </TableCell>
                     <TableCell>
-                      <KycChip status={entity.kyc_status} />
+                      <Chip label={entity.vendor_type} />
                     </TableCell>
 
                     {/* <TableCell>-</TableCell> */}
@@ -516,7 +405,7 @@ interface KycChipProps {
                       {entity.hierachy}
                     </TableCell>
 
-                    {/* <TableCell align="right">
+                    <TableCell align="right">
                       <Button
                         variant="outlined"
                         size="small"
@@ -531,36 +420,8 @@ interface KycChipProps {
                         Configure
                       </Button>
 
-                    </TableCell> */}
-                    <TableCell align="right">
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        justifyContent="flex-end"
-                      >
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => {
-                            setSelectedVendor(entity);
-                            setKycOpen(true);
-                          }}
-                        >
-                          Review KYC
-                        </Button>
-
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={() => {
-                            setSelectedVendorId(entity.id.toString());
-                            setConfigOpen(true);
-                          }}
-                        >
-                          Configure
-                        </Button>
-                      </Stack>
                     </TableCell>
+
                   </TableRow>
                 ))}
                 {filtered.length === 0 && (
@@ -581,13 +442,6 @@ interface KycChipProps {
           open={configOpen}
           onClose={() => setConfigOpen(false)}
           vendorId={selectedVendorId}
-        />
-        <VendorKycReview
-          open={kycOpen}
-          vendor={selectedVendor}
-          onClose={() => setKycOpen(false)}
-          onApprove={handleApproveVendor}
-          onReject={handleRejectVendor}
         />
         <OnboardVendorModal
           open={vendorModalOpen}

@@ -10,19 +10,20 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { OnboardVendorPayload } from "../../services/onbordingService";
 
 
-export interface OnboardVendorForm {
-  email: string;
-  password: string;
-}
+// export interface OnboardVendorForm {
+//   email: string;
+//   password: string;
+// }
 
 interface OnboardVendorModalProps {
   open: boolean;
   onClose: () => void;
   loading?: boolean;
-  form: OnboardVendorForm;
-  setForm: React.Dispatch<React.SetStateAction<OnboardVendorForm>>;
+  form: OnboardVendorPayload;
+  setForm: React.Dispatch<React.SetStateAction<OnboardVendorPayload>>;
   onSubmit: () => void;
 }
 
@@ -76,6 +77,18 @@ export default function OnboardVendorModal({
               setForm((prev) => ({
                 ...prev,
                 password: e.target.value,
+              }))
+            }
+          />
+          <TextField
+            label="Business Name"
+            fullWidth
+            required
+            value={form.business_name}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                business_name: e.target.value,
               }))
             }
           />

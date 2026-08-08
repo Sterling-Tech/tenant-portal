@@ -178,6 +178,67 @@ const Login: React.FC = () => {
         }
     };
 
+    const loadUserPermissions = async (user: any) => {
+        if (!user?.id) {
+            return [];
+        }
+
+        try {
+            const [group, userPermissions] = await Promise.all([
+                user.group?.id
+                    ? viewGroup(user.group.id)
+                    : Promise.resolve(null),
+
+                getUserPermissions(user.id),
+            ]);
+
+            // const groupCodes = Array.isArray(group?.permissions)
+            //     ? group.permissions
+            //         .filter((p) => p?.permission?.code)
+            //         .map((p) => p.permission.code)
+            //     : [];
+
+            const groupCodes =
+                group?.permissions?.map(
+                    p => p.permission.code
+                ) ?? [];
+
+            const userCodes = Array.isArray(userPermissions)
+                ? userPermissions
+                    .filter((p) => p?.permission?.code)
+                    .map((p) => p.permission.code)
+                : [];
+
+            const combinedPermissions = [
+                ...groupCodes,
+                ...userCodes,
+            ];
+            const permissions = combinedPermissions.filter(
+                (p, i) => combinedPermissions.indexOf(p) === i
+            );
+
+            dispatch(setPermissions(permissions));
+
+            localStorage.setItem(
+                "permissions",
+                JSON.stringify(permissions)
+            );
+
+            return permissions;
+        } catch (error) {
+            console.error("Failed to load permissions:", error);
+
+            // Don't make successful authentication fail
+            // simply because permissions could not be loaded.
+            dispatch(setPermissions([]));
+            localStorage.setItem(
+                "permissions",
+                JSON.stringify([])
+            );
+
+            return [];
+        }
+    };
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -193,6 +254,11 @@ const Login: React.FC = () => {
 
                 setTwoFaMethod(response.data.method); // "email" | "authenticator"
 
+                // Clear previous OTP
+                setOtp(["", "", "", "", "", ""]);
+
+                setOtpMessage("");
+
                 setOtpOpen(true);
                 if (response.data.method === "email") {
                     toast.info("A verification code has been sent to your email.");
@@ -202,7 +268,7 @@ const Login: React.FC = () => {
 
                 return;
             }
-            
+
             if (!response.ok) {
                 const error = response.data;
                 const message =
@@ -246,41 +312,49 @@ const Login: React.FC = () => {
                 })
             );
 
+            // if (user) {
+            //     const [group, userPermissions] =
+            //         await Promise.all([
+            //             user.group
+            //                 ? viewGroup(user.group.id)
+            //                 : Promise.resolve(null),
+
+            //             getUserPermissions(user.id),
+            //         ]);
+
+            //     const groupCodes =
+            //         group?.permissions?.map(
+            //             p => p.permission.code
+            //         ) ?? [];
+
+            //     // const userCodes =
+            //     //     userPermissions.map(
+            //     //         p => p.permission.code
+            //     //     );
+            //     const userCodes = Array.isArray(userPermissions)
+            //         ? userPermissions
+            //             .filter((p) => p?.permission?.code)
+            //             .map((p) => p.permission.code)
+            //         : [];
+
+            //     const combinedPermissions = [
+            //         ...groupCodes,
+            //         ...userCodes,
+            //     ];
+
+            //     const permissions = combinedPermissions.filter(
+            //         (p, i) => combinedPermissions.indexOf(p) === i
+            //     );
+
+            //     dispatch(setPermissions(permissions));
+
+            //     localStorage.setItem(
+            //         "permissions",
+            //         JSON.stringify(permissions)
+            //     );
+            // }
             if (user) {
-                const [group, userPermissions] =
-                    await Promise.all([
-                        user.group
-                            ? viewGroup(user.group.id)
-                            : Promise.resolve(null),
-
-                        getUserPermissions(user.id),
-                    ]);
-
-                const groupCodes =
-                    group?.permissions?.map(
-                        p => p.permission.code
-                    ) ?? [];
-
-                const userCodes =
-                    userPermissions.map(
-                        p => p.permission.code
-                    );
-
-                const combinedPermissions = [
-                    ...groupCodes,
-                    ...userCodes,
-                ];
-
-                const permissions = combinedPermissions.filter(
-                    (p, i) => combinedPermissions.indexOf(p) === i
-                );
-
-                dispatch(setPermissions(permissions));
-
-                localStorage.setItem(
-                    "permissions",
-                    JSON.stringify(permissions)
-                );
+                await loadUserPermissions(user);
             }
             console.log(
                 "Login successful, redirecting to /tenants/admin"
@@ -300,6 +374,15 @@ const Login: React.FC = () => {
     };
 
     const handleConfirmOtp = async () => {
+        if (otpValue.length !== 6) {
+            toast.error("Please enter the complete 6-digit OTP.");
+            return;
+        }
+
+        if (!pendingEmail) {
+            toast.error("Email is missing. Please restart login.");
+            return;
+        }
         try {
             setOtpLoading(true);
             const response = await confirmOtp({
@@ -308,10 +391,7 @@ const Login: React.FC = () => {
             });
             if (!response.ok) {
                 toast.error(
-                    response.data ||
-                    response.data.message ||
-                    response.data.detail ||
-                    "Invalid OTP"
+                    getErrorMessage(response.data || response.data.message || "Invalid OTP")
                 );
                 return;
             }
@@ -326,41 +406,50 @@ const Login: React.FC = () => {
                     user,
                 })
             );
+            // if (user) {
+            //     const [group, userPermissions] =
+            //         await Promise.all([
+            //             user.group
+            //                 ? viewGroup(user.group.id)
+            //                 : Promise.resolve(null),
+
+            //             getUserPermissions(user.id),
+            //         ]);
+
+            //     const groupCodes =
+            //         group?.permissions?.map(
+            //             p => p.permission.code
+            //         ) ?? [];
+
+            //     // const userCodes =
+            //     //     userPermissions.map(
+            //     //         p => p.permission.code
+            //     //     );
+
+            //     const userCodes = Array.isArray(userPermissions)
+            //         ? userPermissions
+            //             .filter((p) => p?.permission?.code)
+            //             .map((p) => p.permission.code)
+            //         : [];
+
+            //     const combinedPermissions = [
+            //         ...groupCodes,
+            //         ...userCodes,
+            //     ];
+
+            //     const permissions = combinedPermissions.filter(
+            //         (p, i) => combinedPermissions.indexOf(p) === i
+            //     );
+
+            //     dispatch(setPermissions(permissions));
+
+            //     localStorage.setItem(
+            //         "permissions",
+            //         JSON.stringify(permissions)
+            //     );
+            // }
             if (user) {
-                const [group, userPermissions] =
-                    await Promise.all([
-                        user.group
-                            ? viewGroup(user.group.id)
-                            : Promise.resolve(null),
-
-                        getUserPermissions(user.id),
-                    ]);
-
-                const groupCodes =
-                    group?.permissions?.map(
-                        p => p.permission.code
-                    ) ?? [];
-
-                const userCodes =
-                    userPermissions.map(
-                        p => p.permission.code
-                    );
-
-                const combinedPermissions = [
-                    ...groupCodes,
-                    ...userCodes,
-                ];
-
-                const permissions = combinedPermissions.filter(
-                    (p, i) => combinedPermissions.indexOf(p) === i
-                );
-
-                dispatch(setPermissions(permissions));
-
-                localStorage.setItem(
-                    "permissions",
-                    JSON.stringify(permissions)
-                );
+                await loadUserPermissions(user);
             }
 
             toast.success("Login successful");
@@ -369,8 +458,7 @@ const Login: React.FC = () => {
             navigate("/tenants/admin");
         } catch (error: any) {
             toast.error(
-                error.message ||
-                "Failed to verify OTP"
+                getErrorMessage(error || error.message || "Failed to verify OTP")
             );
         } finally {
             setOtpLoading(false);
@@ -790,7 +878,7 @@ const Login: React.FC = () => {
                             >
                                 {pendingEmail}
                             </Typography>
-                            {/* {otpMessage && (
+                            {otpMessage && (
                                 <Alert
                                     severity={
                                         otpMessage.includes("sent")
@@ -801,7 +889,7 @@ const Login: React.FC = () => {
                                 >
                                     {otpMessage}
                                 </Alert>
-                            )} */}
+                            )}
                         </>
                     ) : (
                         <>
