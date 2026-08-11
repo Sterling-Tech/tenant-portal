@@ -248,7 +248,7 @@ const Settings: React.FC = () => {
               label="Password Policy"
               icon={<Policy />}
             />
-            
+
             {can("manage_onboarding_policy") && (
             <Tab
               value="onboardingpolicy"

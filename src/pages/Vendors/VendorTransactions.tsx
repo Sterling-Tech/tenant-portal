@@ -84,7 +84,6 @@ type LedgerEntry = {
   closing_balance: number;
   created_at: string;
 };
-type LedgerSummary = { total_debits: number; total_credits: number };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 const formatCurrency = (value: number | string) =>
@@ -278,25 +277,48 @@ const VendorTransactions: React.FC = () => {
       return;
     }
 
-    const headers = ["Reference", "Credit", "Debit", "Date"];
+    const vendorName = selectedVendor?.business_name || "N/A";
+
+    const headers = ["Reference", "Credit", "Debit", "Balance", "Category", "Date"];
 
     const rows = transactions.map((tx) => [
       tx.transaction_ref,
       tx.credit_amount || "0",
       tx.debit_amount || "0",
+      tx.closing_balance || "0",
+      tx.category || "",
       new Date(tx.timestamp).toLocaleString(),
     ]);
 
-    const csvContent =
-      [headers, ...rows].map((row) => row.join(",")).join("\n");
+    // Vendor information at the top of the CSV
+    const csvContent = [
+      ["Vendor Name", vendorName], ["Date From", startDate], ["Date To", endDate],
+      [],
+      headers,
+      ...rows,
+    ]
+      .map((row) =>
+        row
+          .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
+          .join(",")
+      )
+      .join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+
     const url = window.URL.createObjectURL(blob);
 
     const link = document.createElement("a");
     link.href = url;
-    link.download = `transactions_${startDate}_${endDate}.csv`;
+    link.download = `transactions_${vendorName}_${startDate}_${endDate}.csv`;
+
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(url);
   };
 
   const loadTransactions = async (id: string, page: number = 1) => {
@@ -344,11 +366,42 @@ const VendorTransactions: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // const chartData = useMemo(() => {
+  //   return transactions.map((tx) => ({
+  //     date: new Date(tx.timestamp).toLocaleDateString(),
+  //     amount: Number(tx.credit_amount || tx.debit_amount || 0),
+  //     type: tx.debit_amount ? "debit" : "credit",
+  //     category: tx.category || "N/A",
+  //     balance: Number(tx.closing_balance || 0),
+  //   }));
+  // }, [transactions]);
   const chartData = useMemo(() => {
-    return transactions.map((tx) => ({
-      date: new Date(tx.timestamp).toLocaleDateString(),
-      amount: Number(tx.credit_amount || tx.debit_amount || 0),
-    }));
+    const grouped: Record<
+      string,
+      {
+        date: string;
+        credit: number;
+        debit: number;
+      }
+    > = {};
+
+    transactions.forEach((tx) => {
+      const date = new Date(tx.timestamp).toLocaleDateString();
+
+      if (!grouped[date]) {
+        grouped[date] = {
+          date,
+          credit: 0,
+          debit: 0,
+        };
+      }
+
+      grouped[date].credit += Number(tx.credit_amount || 0);
+      grouped[date].debit += Number(tx.debit_amount || 0);
+    });
+
+    return Object.values(grouped);
   }, [transactions]);
 
   useEffect(() => {
@@ -666,8 +719,6 @@ const VendorTransactions: React.FC = () => {
     setReportError(null);
   };
 
-
-
   const handleFilterChange = (action: () => void) => { action(); setTransactionPage(0); setLedgerPage(0); };
   const getStatus = (vendor: Vendor) => {
     switch (vendor.account_status?.toLowerCase()) {
@@ -757,16 +808,16 @@ const VendorTransactions: React.FC = () => {
               <Typography fontSize={22} fontWeight={700}>
                 ₦{Number(item.value || 0).toLocaleString()}
               </Typography>
-              <Typography fontSize={12} color="#16a34a">
+              {/* <Typography fontSize={12} color="#16a34a">
                 ↑ 9.2% this month
-              </Typography>
+              </Typography> */}
             </Card>
           </Grid>
         ))}
       </Grid>
       <Grid container spacing={3} >
         {/* SIDEBAR */}
-        <Grid item xs={12} md={4} >
+        <Grid item xs={12} md={4.5} >
           <Card sx={{ borderRadius: 3 }}>
             <Box p={2}>
               <Stack direction="row" justifyContent="space-between">
@@ -899,8 +950,9 @@ const VendorTransactions: React.FC = () => {
                               </Typography>
 
                               <Typography fontSize={11} color="#6b7280">
-                                Vendor
+                                {v.vendor_type} {v.hierachy}
                               </Typography>
+
                             </Box>
                           </Stack>
 
@@ -956,7 +1008,7 @@ const VendorTransactions: React.FC = () => {
         </Grid>
 
         {/* MAIN */}
-        <Grid item xs={12} md={8} >
+        <Grid item xs={12} md={7.5} >
           <Stack spacing={3}>
 
 
@@ -1016,10 +1068,6 @@ const VendorTransactions: React.FC = () => {
                   Available balance
                 </Typography>
 
-                {/* <Button size="small" variant="outlined" sx={{ mt: 1 }} onClick={() => setOpenFund(true)}>
-                  Fund
-                </Button> */}
-
               </Stack>
             </Card>
 
@@ -1057,12 +1105,26 @@ const VendorTransactions: React.FC = () => {
                         Transaction Volume — Last 14 Days
                       </Typography>
                     </Stack>
-
+                    
                     <ResponsiveContainer width="100%" height={220}>
                       <ReBarChart data={chartData}>
                         <XAxis dataKey="date" />
+
                         <RechartsTooltip />
-                        <Bar dataKey="amount" fill="#2563eb" radius={[6, 6, 0, 0]} />
+
+                        <Bar
+                          dataKey="credit"
+                          name="Credit"
+                          fill="#16A34A"
+                          radius={[6, 6, 0, 0]}
+                        />
+
+                        <Bar
+                          dataKey="debit"
+                          name="Debit"
+                          fill="#DC2626"
+                          radius={[6, 6, 0, 0]}
+                        />
                       </ReBarChart>
                     </ResponsiveContainer>
                   </Card>
@@ -1072,13 +1134,13 @@ const VendorTransactions: React.FC = () => {
                 {activeTab === "ledger" && (
                   <Card sx={{ mt: 2, borderRadius: 3 }}>
                     <Box p={2}>
-                      <Stack direction="row" spacing={1.5} mb={2} alignItems="center">
+                      <Stack direction="row" spacing={1} mb={2} alignItems="center">
 
                         <TextField
                           size="small"
                           placeholder="Search ref, description..."
+                          fullWidth
                           sx={{
-                            width: 260,
                             "& .MuiOutlinedInput-root": {
                               height: 34,
                               fontSize: 12,
@@ -1095,12 +1157,11 @@ const VendorTransactions: React.FC = () => {
                         />
 
                         <TextField
-                          size="small"
+                          fullWidth
                           select
                           value={typeFilter}
                           onChange={(e) => setTypeFilter(e.target.value as any)}
                           sx={{
-                            width: 120,
                             "& .MuiOutlinedInput-root": {
                               height: 34,
                               fontSize: 12,
@@ -1115,6 +1176,7 @@ const VendorTransactions: React.FC = () => {
 
                         <TextField
                           size="small"
+                          fullWidth
                           type="date"
                           value={startDate}
                           onChange={(e) => {
@@ -1132,6 +1194,7 @@ const VendorTransactions: React.FC = () => {
 
                         <TextField
                           size="small"
+                          fullWidth
                           type="date"
                           value={endDate}
                           onChange={(e) => {
@@ -1152,6 +1215,9 @@ const VendorTransactions: React.FC = () => {
                           variant="outlined"
                           size="small"
                           onClick={handleExport}
+                          sx={{
+                            px: 5
+                          }}
                         >
                           Export
                         </Button>
@@ -1164,11 +1230,11 @@ const VendorTransactions: React.FC = () => {
                           <TableHead>
                             <TableRow sx={{ bgcolor: "#f9fafb" }}>
                               <TableCell>REFERENCE</TableCell>
-                              <TableCell>DESCRIPTION</TableCell>
+                              {/* <TableCell>DESCRIPTION</TableCell> */}
                               <TableCell>CREDIT</TableCell>
                               <TableCell>DEBIT</TableCell>
-                              {/* <TableCell>BALANCE AFTER</TableCell> */}
-                              <TableCell>STATUS</TableCell>
+                              <TableCell>BALANCE</TableCell>
+                              <TableCell>CATEGORY</TableCell>
                               <TableCell>DATE & TIME</TableCell>
                             </TableRow>
                           </TableHead>
@@ -1178,14 +1244,14 @@ const VendorTransactions: React.FC = () => {
                               <TableRow key={tx.transaction_ref} hover>
                                 <TableCell>{tx.transaction_ref}</TableCell>
 
-                                <TableCell>
+                                {/* <TableCell>
                                   <Typography fontWeight={500}>
                                     Wallet Funding
                                   </Typography>
                                   <Typography fontSize={12} color="#6b7280">
                                     Bank Transfer via NIBSS
                                   </Typography>
-                                </TableCell>
+                                </TableCell> */}
 
                                 <TableCell sx={{ color: "#16a34a", fontWeight: 600 }}>
                                   {tx.credit_amount
@@ -1198,10 +1264,10 @@ const VendorTransactions: React.FC = () => {
                                     ? `-₦${Number(tx.debit_amount).toLocaleString()}`
                                     : "—"}
                                 </TableCell>
-                                {/* <TableCell sx={{ fontWeight: 600 }}>
-  ₦{Number(tx.balance_after || 0).toLocaleString()}
-</TableCell> */}
-                                <TableCell>
+                                <TableCell sx={{ fontWeight: 600 }}>
+                                  ₦{Number(tx.closing_balance || 0).toLocaleString()}
+                                </TableCell>
+                                {/* <TableCell>
                                   <Chip
                                     label="Success"
                                     size="small"
@@ -1212,6 +1278,9 @@ const VendorTransactions: React.FC = () => {
                                       fontSize: 11,
                                     }}
                                   />
+                                </TableCell> */}
+                                <TableCell>
+                                  {categoryLabel(tx.category)}
                                 </TableCell>
 
                                 <TableCell>

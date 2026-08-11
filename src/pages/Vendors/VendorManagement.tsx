@@ -206,7 +206,7 @@ export default function VendorHub() {
 
       <Stack direction={{ xs: "column", lg: "row" }} spacing={2}>
         <Card sx={{ flex: 2, borderRadius: 3, overflowX: "auto" }}>
-          
+
           <Stack
             direction="row"
             spacing={2}
@@ -243,7 +243,7 @@ export default function VendorHub() {
               sx={{
                 minWidth: 120,
                 whiteSpace: "nowrap",
-                px:2
+                px: 2
               }}
             >
               Search
@@ -359,7 +359,7 @@ export default function VendorHub() {
                     <TableCell>
                       {formatCurrency(v.wallet?.balance)}
                     </TableCell>
-                    
+
                     <TableCell>
                       <Chip
                         label={v.vendor_type}
@@ -455,7 +455,18 @@ export default function VendorHub() {
                         : "default"
                     }
                   />
-                  <Chip label="verified" size="small" />
+                  {/* <Chip label="verified" size="small"/> */}
+                  <Chip
+                    label="verified"
+                    size="small"
+                    sx={{
+                      backgroundColor: "#0F2D6B",
+                      color: "#fff",
+                      "& .MuiChip-label": {
+                        color: "#fff",
+                      },
+                    }}
+                  />
                 </Stack>
               </Box>
 
@@ -478,7 +489,7 @@ export default function VendorHub() {
                   />
                   <Row label="Vendor Type" value={selected.vendor_type} />
                   <Row label="Postal Code" value={selected.postal_code} />
-                  
+
 
                   <Row label="Hierarchy" value={selected.hierachy} />
 
@@ -601,7 +612,7 @@ export default function VendorHub() {
             Activate
           </MenuItem>
         )}
-       
+
       </Menu>
       <Snackbar
         open={alert.open}

@@ -43,7 +43,7 @@ import { useAppSelector } from '../../../store/hooks';
 import TenantDomainModal, { TenantDomainFormValues } from '../../../components/TenantAdmin/TenantDomainModal';
 import type { Tenant, TenantConfiguration as TenantConfigurationType, TenantUser, CreateTenantRequest } from '../../../services/tenantService';
 import { LineChart, PieChart } from '@mui/x-charts';
-import { fetchVendors, createVendor, type VendorForm, Vendor, searchVendors, toggleVendorStatus, AnalyticsBreakdown, AnalyticsCount, fetchanalytics, fetchAnalyticsBreakdown, fetchAnalyticsDashboad, AnalyticsDashboad } from '../../../services/vendorService';
+import { fetchVendors, createVendor, type VendorForm, Vendor, searchVendors, toggleVendorStatus, AnalyticsBreakdown, AnalyticsCount, fetchanalytics, fetchAnalyticsBreakdown, fetchAnalyticsDashboad, AnalyticsDashboad, DailyCollection, dailyCollection, TotalVendorWallet, totalVendorWallet } from '../../../services/vendorService';
 import { RootState } from '../../../store/store';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../../../utils/getErrorMessage';
@@ -85,8 +85,7 @@ const TenantAdmin: React.FC = () => {
         const [domainModalOpen, setDomainModalOpen] = useState(false);
         const [customerFilter, setCustomerFilter] = useState<'all' | 'active' | 'inactive'>('all');
         // const [vendorFilter, setVendorFilter] = useState<'all' | 'active' | 'inactive'>('all');
-        const [vendorDebtFilter, setVendorDebtFilter] = useState<'all' | 'external_wallet_amount' | 'internal_wallet_amount'>('all');
-        const [transactionFilter, setTransactionFilter] = useState<'all' | 'energy_payments' | 'debt_payments'>('all');
+
         const [collectionFilter, setCollectionFilter] = useState<'category' | 'branch' | 'tariff' | 'feeder' | 'transformer'>('category');
         const today = new Date().toISOString().split('T')[0];
 
@@ -103,7 +102,12 @@ const TenantAdmin: React.FC = () => {
         const [transactionType, setTransactionType] = useState<"collections" | "debts">("collections");
         const [selectedRegion, setSelectedRegion] = useState("");
         const [selectedCategory, setSelectedCategory] = useState("");
+        const [collection, setCollection] = useState<DailyCollection | null>(null);
+        const [dailyCollectionFilter, setDailyCollectionFilter] = useState<"all" | "energy_payments" | "debt_payments">("all");
 
+        const [vendorDebtFilter, setVendorDebtFilter] = useState<"all" | "external_wallet_amount" | "internal_wallet_amount">("all");
+        const [vendorWalletData, setVendorWalletData] = useState<TotalVendorWallet | null>(null);
+        const [vendorWalletLoading, setVendorWalletLoading] = useState(false);
 
         const [configDraft, setConfigDraft] = useState({
                 max_users: '',
@@ -111,28 +115,6 @@ const TenantAdmin: React.FC = () => {
                 billing_cycle: '',
                 max_storage_mb: '',
         });
-
-        // const dailyTransactionsMock = useMemo(() => {
-        //         const transactions = breakdownData?.daily_transaction || [];
-
-        //         if (!transactions.length) {
-        //                 return { labels: [], data: [] };
-        //         }
-        //         const sorted = [...transactions].sort(
-        //                 (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
-        //         );
-
-        //         const labels = sorted.map((item) =>
-        //                 new Date(item.day).toLocaleDateString('en-GB', {
-        //                         day: '2-digit',
-        //                         month: 'short',
-        //                 })
-        //         );
-
-        //         const data = sorted.map((item) => Number(item.total || 0));
-
-        //         return { labels, data };
-        // }, [breakdownData]);
 
         const regions = [
                 { id: 1, name: "North" },
@@ -234,21 +216,6 @@ const TenantAdmin: React.FC = () => {
                 customerFilter === 'active'
                         ? customerSummary.active_customers
                         : customerSummary.total_customers;
-
-        // const vendorValue =
-        //         vendorFilter === 'active'
-        //                 ? vendorSummary.active
-        //                 : vendorFilter === 'inactive'
-        //                         ? vendorSummary.inactive
-        //                                 : vendorSummary.all;
-
-        // const vendorDebtValue =
-        //         vendorDebtFilter === 'external_wallet_amount'
-        //                 ? analyticfetchData?.vendor_debt_summary?.external_wallet_amount
-        //                 : vendorDebtFilter === 'internal_wallet_amount'
-        //                         ? analyticfetchData?.vendor_debt_summary?.internal_wallet_amount
-        //                         : analyticfetchData?.vendor_debt_summary?.total_vendor_debt;
-
 
         const breakdownConfig = {
                 category: {
@@ -387,32 +354,48 @@ const TenantAdmin: React.FC = () => {
         }, [searchTerm, refreshTenants]);
 
 
-        // const last7Days = useMemo(() => {
-        //         if (!breakdownData?.daily_transaction) return [];
+        useEffect(() => {
+                const loadCollection = async () => {
+                        try {
+                                const data = await dailyCollection(today);
+                                setCollection(data);
+                        } catch (error) {
+                                console.error("Failed to fetch daily collection:", error);
+                        }
+                };
 
-        //         return [...breakdownData.daily_transaction]
-        //                 .sort((a, b) => new Date(b.day).getTime() - new Date(a.day).getTime())
-        //                 .slice(0, 7)
-        //                 .map((item, index, arr) => {
-        //                         const prev = arr[index + 1];
+                loadCollection();
+        }, []);
 
-        //                         const change = prev
-        //                                 ? ((item.total - prev.total) / prev.total) * 100
-        //                                 : 0;
+        useEffect(() => {
+                const fetchVendorWallet = async () => {
+                        try {
+                                setVendorWalletLoading(true);
 
-        //                         return {
-        //                                 date: new Date(item.day).toLocaleDateString('en-GB', {
-        //                                         day: '2-digit',
-        //                                         month: 'short',
-        //                                 }).toUpperCase(),
+                                const vendorType =
+                                        vendorDebtFilter === "external_wallet_amount"
+                                                ? "external"
+                                                : vendorDebtFilter === "internal_wallet_amount"
+                                                        ? "internal"
+                                                        : undefined;
 
-        //                                 amount: `₦${item.total.toLocaleString()}`,
-        //                                 change: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`,
-        //                                 up: change >= 0,
-        //                         };
-        //                 });
-        // }, [breakdownData]);
+                                const data = await totalVendorWallet(vendorType);
 
+                                console.log("Vendor wallet total:", data);
+
+                                setVendorWalletData(data);
+                        } catch (error) {
+                                console.error(
+                                        "Failed to fetch vendor wallet total:",
+                                        error
+                                );
+                        } finally {
+                                setVendorWalletLoading(false);
+                        }
+                };
+
+                fetchVendorWallet();
+        }, [vendorDebtFilter]);
 
         useEffect(() => {
                 if (configuration) {
@@ -457,6 +440,8 @@ const TenantAdmin: React.FC = () => {
                 analyticsLoading ||
                 vendorsLoading ||
                 searchLoading;
+
+
         return (
                 <>
                         {pageLoading ? (
@@ -499,69 +484,107 @@ const TenantAdmin: React.FC = () => {
                                                 {summary && (
                                                         <Grid container spacing={2} mb={3}>
                                                                 <Grid item xs={12} md={4}>
-                                                                        <Card>
-                                                                                <CardContent>
-                                                                                        <CardHeader
-                                                                                                title={
-                                                                                                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                                                                                <Typography variant="body2" color="text.secondary">
-                                                                                                                        {transactionFilter === 'all'
-                                                                                                                                ? 'Total Transactions Today'
-                                                                                                                                : transactionFilter === 'energy_payments'
-                                                                                                                                        ? 'Energy Payments'
-                                                                                                                                        : 'Debt Payments'}
-                                                                                                                </Typography>
 
-                                                                                                                <TextField
-                                                                                                                        select
-                                                                                                                        size="small"
-                                                                                                                        value={transactionFilter}
-                                                                                                                        onChange={(e) => setTransactionFilter(e.target.value as any)}
-                                                                                                                        variant="standard"
-                                                                                                                        InputProps={{ disableUnderline: true }}
-                                                                                                                        sx={{
-                                                                                                                                width: 90,
-                                                                                                                                '& .MuiInputBase-root': {
-                                                                                                                                        padding: 0,
-                                                                                                                                        margin: 0,
-                                                                                                                                },
-                                                                                                                                '& .MuiSelect-select': {
-                                                                                                                                        padding: '4px 8px',
-                                                                                                                                },
-                                                                                                                        }}
-                                                                                                                >
-                                                                                                                        <MenuItem value="all">All</MenuItem>
-                                                                                                                        <MenuItem value="energy_payments">Energy Payments</MenuItem>
-                                                                                                                        <MenuItem value="debt_payments">Debt Payments</MenuItem>
-                                                                                                                </TextField>
-                                                                                                        </Box>
-                                                                                                }
-                                                                                                sx={{
-                                                                                                        height: 0,
+                                                                        <Card sx={{ height: "100%" }}>
+                                                                                <CardContent
+                                                                                        sx={{
+                                                                                                pb: 0,
+                                                                                                "&:last-child": {
                                                                                                         paddingBottom: 0,
-                                                                                                        '& .MuiInputBase-root': {
-                                                                                                                padding: 0,
-                                                                                                                margin: 0,
-                                                                                                        },
-                                                                                                        '& .MuiSelect-select': {
-                                                                                                                padding: '0px 0px',
-                                                                                                        },
+                                                                                                },
+                                                                                        }}
+                                                                                >
+                                                                                        <Box
+                                                                                                sx={{
+                                                                                                        display: "flex",
+                                                                                                        justifyContent: "space-between",
+                                                                                                        alignItems: "center",
                                                                                                 }}
-                                                                                        />
+                                                                                        >
+                                                                                                <Typography variant="subtitle2" color="text.secondary">
+                                                                                                        Daily Collection
+                                                                                                </Typography>
 
-                                                                                        <CardContent>
-                                                                                                <Typography variant="h5">{analyticfetchData?.transactions_today}</Typography>
+                                                                                                <TextField
+                                                                                                        select
+                                                                                                        size="small"
+                                                                                                        value={dailyCollectionFilter}
+                                                                                                        onChange={(e) =>
+                                                                                                                setDailyCollectionFilter(
+                                                                                                                        e.target.value as
+                                                                                                                        | "all"
+                                                                                                                        | "energy_payments"
+                                                                                                                        | "debt_payments"
+                                                                                                                )
+                                                                                                        }
+                                                                                                        variant="standard"
+                                                                                                        InputProps={{
+                                                                                                                disableUnderline: true,
+                                                                                                        }}
+                                                                                                        sx={{
+                                                                                                                width: 130,
+
+                                                                                                                "& .MuiInputBase-root": {
+                                                                                                                        padding: 0,
+                                                                                                                        margin: 0,
+                                                                                                                },
+
+                                                                                                                "& .MuiSelect-select": {
+                                                                                                                        padding: "4px 8px",
+                                                                                                                },
+                                                                                                        }}
+                                                                                                >
+                                                                                                        <MenuItem value="all">
+                                                                                                                All
+                                                                                                        </MenuItem>
+
+                                                                                                        <MenuItem value="energy_payments">
+                                                                                                                Energy Payments
+                                                                                                        </MenuItem>
+
+                                                                                                        <MenuItem value="debt_payments">
+                                                                                                                Debt Payments
+                                                                                                        </MenuItem>
+                                                                                                </TextField>
+                                                                                        </Box>
+
+                                                                                        <CardContent sx={{ px: 0 }}>
+                                                                                                <Typography variant="h5">
+                                                                                                        ₦
+                                                                                                        {Number(
+                                                                                                                dailyCollectionFilter === "energy_payments"
+                                                                                                                        ? collection?.energy_payment ?? 0
+                                                                                                                        : dailyCollectionFilter === "debt_payments"
+                                                                                                                                ? collection?.debt_payment ?? 0
+                                                                                                                                : collection?.total_collection ?? 0
+                                                                                                        ).toLocaleString()}
+                                                                                                </Typography>
+
+                                                                                                <Typography
+                                                                                                        variant="caption"
+                                                                                                        color="text.secondary"
+                                                                                                >
+                                                                                                        {collection?.date
+                                                                                                                ? `Collection for ${collection.date}`
+                                                                                                                : "Today's collection"}
+                                                                                                </Typography>
                                                                                         </CardContent>
                                                                                 </CardContent>
                                                                         </Card>
                                                                 </Grid>
                                                                 <Grid item xs={12} md={4}>
-                                                                        <Card>
-                                                                                <CardContent>
-                                                                                        <Typography color="text.secondary" variant="body2">
+                                                                        <Card sx={{ height: "100%" }}>
+                                                                                <CardContent
+
+                                                                                >
+                                                                                        <Typography
+                                                                                                color="text.secondary"
+                                                                                                variant="body2"
+
+                                                                                        >
                                                                                                 Avg Daily Revenue
                                                                                         </Typography>
-                                                                                        <Typography variant="h5">
+                                                                                        <Typography variant="h5" marginTop={5}>
                                                                                                 ₦{Number(analyticsData?.analytics.average_revenue || 0).toLocaleString()}
                                                                                                 {/* ₦{(400776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
                                                                                         </Typography>
@@ -579,21 +602,20 @@ const TenantAdmin: React.FC = () => {
                                                                         </Card>
                                                                 </Grid> */}
                                                                 <Grid item xs={12} md={4}>
-                                                                        <Card>
+                                                                        <Card sx={{ height: "100%" }}>
                                                                                 <CardContent>
                                                                                         <Typography color="text.secondary" variant="body2">
                                                                                                 Current Debt Balance
                                                                                         </Typography>
-                                                                                        <Typography variant="h5">
+                                                                                        <Typography variant="h5" marginTop={5}>
                                                                                                 ₦{Number(analyticsData?.analytics?.total_debt || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                                                                         </Typography>
                                                                                 </CardContent>
                                                                         </Card>
                                                                 </Grid>
                                                                 <Grid item xs={12} md={4}>
-                                                                        <Card>
+                                                                        <Card sx={{ height: "80%" }}>
                                                                                 <CardContent sx={{
-                                                                                        height: 91,
                                                                                 }}>
                                                                                         <CardHeader
                                                                                                 title={
@@ -642,7 +664,7 @@ const TenantAdmin: React.FC = () => {
                                                                                                 }}
                                                                                         />
                                                                                         <CardContent>
-                                                                                                <Typography variant="h5">
+                                                                                                <Typography variant="h5" marginTop={5}>
                                                                                                         {Number(customerValue || 0).toLocaleString()}
                                                                                                 </Typography>
                                                                                         </CardContent>
@@ -650,8 +672,8 @@ const TenantAdmin: React.FC = () => {
                                                                         </Card>
                                                                 </Grid>
                                                                 <Grid item xs={12} md={4}>
-                                                                        <Card>
-                                                                                <CardContent sx={{ height: 91 }}>
+                                                                        <Card sx={{ height: "80%" }}>
+                                                                                <CardContent>
 
                                                                                         <CardHeader
                                                                                                 title={
@@ -701,22 +723,32 @@ const TenantAdmin: React.FC = () => {
                                                                                                         },
                                                                                                 }}
                                                                                         />
-                                                                                        <CardContent>
-                                                                                                <Typography variant="h5">
-                                                                                                        {/* {Number(vendorValue || 0).toLocaleString()} */}
-                                                                                                        {Number(0).toLocaleString()}
+
+                                                                                        <CardContent >
+                                                                                                <Typography variant="h5" marginTop={5}>
+                                                                                                        ₦
+                                                                                                        {Number(
+                                                                                                                vendorWalletData?.balance ?? 0
+                                                                                                        ).toLocaleString()}
+                                                                                                </Typography>
+
+                                                                                                <Typography
+                                                                                                        variant="caption"
+                                                                                                        color="text.secondary"
+                                                                                                >
+                                                                                                        {vendorWalletData?.vendor_count ?? 0} vendors
                                                                                                 </Typography>
                                                                                         </CardContent>
                                                                                 </CardContent>
                                                                         </Card>
                                                                 </Grid>
                                                                 <Grid item xs={12} md={4}>
-                                                                        <Card>
+                                                                        <Card sx={{ height: "80%" }}>
                                                                                 <CardContent>
                                                                                         <Typography color="text.secondary" variant="body2">
                                                                                                 Vendors Aggregated Balance
                                                                                         </Typography>
-                                                                                        <Typography variant="h5">
+                                                                                        <Typography variant="h5" marginTop={5}>
                                                                                                 ₦{Number(analyticfetchData?.vendor_summary.aggregated_wallet_balance || 0).toLocaleString()}
                                                                                                 {/* ₦{(90000776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
                                                                                         </Typography>

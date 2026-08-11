@@ -1,4 +1,4 @@
-import { get,getBlob, post, patch, del, put } from './api';
+import { get, getBlob, post, patch, del, put } from './api';
 
 
 export interface VendorQuery {
@@ -300,17 +300,17 @@ export interface PaginatedCustomerResponse {
 }
 
 export interface VendorForm {
-    tenant?: string | null;
-    business_name: string;
-    email: string;
-    phone_number?: string;
-    address?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    postal_code?: string;
-    hierachy: string;
-    related_vendor?: string;
+  tenant?: string | null;
+  business_name: string;
+  email: string;
+  phone_number?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  hierachy: string;
+  related_vendor?: string;
 }
 export interface VendorFormMvp {
   // Basic Information
@@ -386,14 +386,16 @@ export interface VendorResponse extends VendorFormMvp {
 }
 
 export interface Category {
-    id: string;
-    name: string;
-    description: string;
+  id: string;
+  name: string;
+  description: string;
 }
 export interface Ledger {
   transaction_ref: string
   debit_amount: string
   credit_amount: string
+  closing_balance: string
+  category:string;
   timestamp: string
 }
 export interface PaginatedLedgerResponse {
@@ -457,16 +459,16 @@ export interface AnalyticsBreakdown {
     category_name: string
     total_collections: string
   }[],
-    
+
 }
 export interface AnalyticsDashboad {
   vendor_summary: {
     all: string,
     inactive: string,
     active: string,
-    suspended:string,
-    internal:string,
-    external:string,
+    suspended: string,
+    internal: string,
+    external: string,
     aggregated_wallet_balance: string
   },
   user_summary: {
@@ -481,19 +483,19 @@ export interface AnalyticsDashboad {
 }
 
 export interface Class {
-    id: number;
-    category: {
-      id: string;
-      name: string;
-      description: string;
-    };
-    name: string;
-    description: string;
-}
-export interface MeteringType {
+  id: number;
+  category: {
     id: string;
     name: string;
     description: string;
+  };
+  name: string;
+  description: string;
+}
+export interface MeteringType {
+  id: string;
+  name: string;
+  description: string;
 }
 export interface CustomerForm {
   name: string;
@@ -520,27 +522,27 @@ export interface CustomerForm {
   kct2: string;
 }
 export interface VendorAdminProfile {
-    id: string;
-    vendor: string;
-    vendor_name?: string;
-    user: string;
-    user_email?: string;
-    user_name?: string;
-    organisation?: string | null;
-    title?: string | null;
-    department?: string | null;
-    can_manage_users: boolean;
-    can_manage_organisations: boolean;
-    can_manage_configurations: boolean;
-    can_view_analytics: boolean;
-    created_at: string;
-    updated_at: string;
+  id: string;
+  vendor: string;
+  vendor_name?: string;
+  user: string;
+  user_email?: string;
+  user_name?: string;
+  organisation?: string | null;
+  title?: string | null;
+  department?: string | null;
+  can_manage_users: boolean;
+  can_manage_organisations: boolean;
+  can_manage_configurations: boolean;
+  can_view_analytics: boolean;
+  created_at: string;
+  updated_at: string;
 }
 export interface VendorPermissions {
-    vendor_id: string;
-    metadata: Record<string, unknown>;
-    is_active: boolean;
-    is_verified: boolean;
+  vendor_id: string;
+  metadata: Record<string, unknown>;
+  is_active: boolean;
+  is_verified: boolean;
 }
 export interface VendorT {
   id: number;
@@ -551,19 +553,19 @@ export interface VendorT {
   vendor_type?: "all" | "internal" | "external";
 }
 export type FundingRequestStatus =
-    | "pending_review"
-    | "pending_approval"
-    | "approved"
-    | "rejected";
+  | "pending_review"
+  | "pending_approval"
+  | "approved"
+  | "rejected";
 
 export interface FundingRequest {
-    id: number;
-    transaction_ref: string;
-    vendor: VendorT;
-    amount: string;
-    status: FundingRequestStatus;
-    request_time: string;
-    proof_of_payment: string;
+  id: number;
+  transaction_ref: string;
+  vendor: VendorT;
+  amount: string;
+  status: FundingRequestStatus;
+  request_time: string;
+  proof_of_payment: string;
 }
 
 export interface FundingRequestResponse {
@@ -580,13 +582,13 @@ export interface FundingRequestParams {
   request_status?: FundingRequestStatus;
 }
 export type FundingAction =
-    | "review"
-    | "approve"
-    | "reject";
+  | "review"
+  | "approve"
+  | "reject";
 
 export interface FundingOperationPayload {
-    funding_request: number;
-    action: FundingAction;
+  funding_request: number;
+  action: FundingAction;
 }
 export interface PaymentPlan {
   name: string;
@@ -599,15 +601,16 @@ export interface UpdateDebt {
   rate: number | string;
   effective_date: string;
 }
+
 export const buildQuery = (params?: Record<string, unknown>) => {
-    if (!params || Object.keys(params).length === 0) return '';
-    const query = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== '') {
-            query.append(key, String(value));
-        }
-    });
-    return query.toString() ? `?${query.toString()}` : '';
+  if (!params || Object.keys(params).length === 0) return '';
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== null && value !== undefined && value !== '') {
+      query.append(key, String(value));
+    }
+  });
+  return query.toString() ? `?${query.toString()}` : '';
 };
 
 
@@ -630,13 +633,13 @@ export const fetchCustomers = (params?: {
   get<PaginatedCustomerResponse>(`/customer/${buildQuery(params)}`);
 
 export const Customercategory = () =>
-    get<Category[]>(`/customer/category/`);
+  get<Category[]>(`/customer/category/`);
 
 export const MeteringTypeS = () =>
-    get<MeteringType[]>(`/customer/metering-type/`);
+  get<MeteringType[]>(`/customer/metering-type/`);
 
 export const CustomerClass = () =>
-    get<Class[]>(`/customer/class/`);
+  get<Class[]>(`/customer/class/`);
 
 //paginated vendors with optional filters
 // export const fetchVendors = (params?: {
@@ -702,18 +705,18 @@ export const fetchVendors = (params?: VendorQuery) => {
   );
 };
 
-  export const fetchAllVendors = () =>
-    get<Vendor[]>(`/vendor/retrieve/all/`);
+export const fetchAllVendors = () =>
+  get<Vendor[]>(`/vendor/retrieve/all/`);
 
 export const fetchAllVendorsOnly = () =>
-    get<PaginatedResponse<Vendor>>(
-        "/vendor/retrieve/?main_vendor=true"
-    );
+  get<PaginatedResponse<Vendor>>(
+    "/vendor/retrieve/?main_vendor=true"
+  );
 export const fetchVendor = (id: string) =>
-    get<Vendor>(`/vendor/retrieve/?vendor_id=${id}`);
+  get<Vendor>(`/vendor/retrieve/?vendor_id=${id}`);
 
 export const fetchVendorchildren = (id: string) =>
-    get<Vendor[]>(`/vendor/retrieve-children/?vendor_id=${id}`);
+  get<Vendor[]>(`/vendor/retrieve-children/?vendor_id=${id}`);
 
 export const searchCustomers = (keyword: string) =>
   get<PaginatedCustomerResponse>(
@@ -734,15 +737,14 @@ export const fetchCustomerTransactions = (
   page?: number
 ) =>
   get<PaginatedCustomerTransactions>(
-    `/customer/transactions/?customer_id=${customerId}${
-      page ? `&page=${page}` : ""
+    `/customer/transactions/?customer_id=${customerId}${page ? `&page=${page}` : ""
     }`
   );
 
 export const fetchDebt = (id?: string) =>
-    get<Debt[]>(`/customer/debt/?customer_id=${id}`);
-export const updateDebt = (id:string, payload:UpdateDebt)=>{
-  return put<Debt>(`/customer/debt/?debt_id=${id}`,payload)
+  get<Debt[]>(`/customer/debt/?customer_id=${id}`);
+export const updateDebt = (id: string, payload: UpdateDebt) => {
+  return put<Debt>(`/customer/debt/?debt_id=${id}`, payload)
 }
 
 export const suspendActivateDebt = (debtId: number | string) => {
@@ -805,12 +807,12 @@ export const fetchanalytics = (params?: {
 export const fetchAnalyticsDashboad = () =>
   get<AnalyticsDashboad>(`/user/dashboard-summary/`)
 
-  
+
 export const fetchAnalyticsBreakdown = () =>
-    get<AnalyticsBreakdown>(`/user/dashboard/classification/`);
+  get<AnalyticsBreakdown>(`/user/dashboard/classification/`);
 
 export const createCustomer = (payload: CustomerForm) =>
-    post<Customer>('/customer/', payload);
+  post<Customer>('/customer/', payload);
 
 export const EditCustomer = (
   customerId: string | number,
@@ -821,17 +823,17 @@ export const EditCustomer = (
     payload
   );
 export const createVendor = (payload: VendorForm) =>
-    post<Vendor>('/vendor/create/', payload);
+  post<Vendor>('/vendor/create/', payload);
 
 export const createVendorMvp = (payload: VendorFormMvp) =>
-    post<VendorResponse>('/vendor/create/', payload);
+  post<VendorResponse>('/vendor/create/', payload);
 
 // export const searchVendors = (keyword: string) =>
 //   get<Vendor[] | PaginatedVendorResponse>(
 //     `/vendor/search/?keyword=${keyword}`,
 //     //`http://188.166.161.13:8061/vendor/search/?keyword=mama`
 //   );
-  export const searchVendors = (
+export const searchVendors = (
   keyword: string,
   page = 1
 ) =>
@@ -849,79 +851,78 @@ export const toggleVendorStatus = (vendorId: number | string) =>
     vendor: String(vendorId),
   });
 export const updateVendor = (id: string, payload: Partial<VendorForm>) =>
-    patch<Vendor>(`/vendors/vendors/${id}/`, payload);
+  patch<Vendor>(`/vendors/vendors/${id}/`, payload);
 
 export const deleteVendor = (id: string) =>
-    del<void>(`/vendors/vendors/${id}/`);
+  del<void>(`/vendors/vendors/${id}/`);
 
 export const verifyVendor = (id: string) =>
-    post<{ message: string; vendor: Vendor }>(`/vendors/vendors/${id}/verify/`, {});
+  post<{ message: string; vendor: Vendor }>(`/vendors/vendors/${id}/verify/`, {});
 
 export const fetchVendorApiKeys = (id: string) =>
-    get<any[]>(`/vendors/vendors/${id}/api_keys/`);
+  get<any[]>(`/vendors/vendors/${id}/api_keys/`);
 
 export const createVendorApiKey = (id: string, payload: { scopes?: string[]; expires_at?: string | null }) =>
-    post<any>(`/vendors/vendors/${id}/api_keys/`, payload);
+  post<any>(`/vendors/vendors/${id}/api_keys/`, payload);
 
 export const fetchVendorAdmins = (id: string) =>
-    get<VendorAdminProfile[]>(`/vendors/vendors/${id}/admins/`);
+  get<VendorAdminProfile[]>(`/vendors/vendors/${id}/admins/`);
 
 export const createVendorAdmin = (id: string, payload: Partial<VendorAdminProfile>) =>
-    post<VendorAdminProfile>(`/vendors/vendors/${id}/admins/`, payload);
+  post<VendorAdminProfile>(`/vendors/vendors/${id}/admins/`, payload);
 
 export const fetchVendorPermissions = (id: string) =>
-    get<VendorPermissions>(`/vendors/vendors/${id}/permissions/`);
+  get<VendorPermissions>(`/vendors/vendors/${id}/permissions/`);
 
 export const updateVendorPermissions = (id: string, payload: Partial<VendorPermissions>) =>
-    patch<VendorPermissions>(`/vendors/vendors/${id}/permissions/`, payload);
+  patch<VendorPermissions>(`/vendors/vendors/${id}/permissions/`, payload);
 
 export const fetchAllVendorAdmins = (params?: { vendor?: string }) =>
-    get<VendorAdminProfile[]>(`/vendors/vendor-admins/${buildQuery(params)}`);
+  get<VendorAdminProfile[]>(`/vendors/vendor-admins/${buildQuery(params)}`);
 
 export const updateVendorAdmin = (id: string, payload: Partial<VendorAdminProfile>) =>
-    patch<VendorAdminProfile>(`/vendors/vendor-admins/${id}/`, payload);
+  patch<VendorAdminProfile>(`/vendors/vendor-admins/${id}/`, payload);
 
 export const deleteVendorAdmin = (id: string) =>
-    del<void>(`/vendors/vendor-admins/${id}/`);
+  del<void>(`/vendors/vendor-admins/${id}/`);
 
 
 export const getFundingRequests = (
-    params?: FundingRequestParams
+  params?: FundingRequestParams
 ) => {
 
-    const query = new URLSearchParams();
+  const query = new URLSearchParams();
 
-    if (params?.page)
-        query.append("page", String(params.page));
+  if (params?.page)
+    query.append("page", String(params.page));
 
-    if (params?.search)
-        query.append("search", params.search);
+  if (params?.search)
+    query.append("search", params.search);
 
-    if (params?.ordering)
-        query.append("ordering", params.ordering);
+  if (params?.ordering)
+    query.append("ordering", params.ordering);
 
-    if (params?.request_status)
+  if (params?.request_status)
     query.append(
-        "request_status",
-        params.request_status
+      "request_status",
+      params.request_status
     );
 
-    return get<FundingRequestResponse>(
-        `/vendor/request-funding/${
-            query.toString()
-                ? `?${query}`
-                : ""
-        }`
-    );
+  return get<FundingRequestResponse>(
+    `/vendor/request-funding/${query.toString()
+      ? `?${query}`
+      : ""
+    }`
+  );
 };
 
 export const fundingOperation = (
-    payload: FundingOperationPayload
+  payload: FundingOperationPayload
 ) => {
-    return put(
-        "/vendor/funding/ops/",
-        payload
-    );
+  return put(
+    "/vendor/funding/ops/",
+    payload
+  );
 };
 
 export const getFundingProof = (id: number) => {
@@ -929,5 +930,36 @@ export const getFundingProof = (id: number) => {
     `/vendor/funding/proof/${id}/`
   );
 };
+export interface DailyCollection {
+  date: string;
+  total_collection: string;
+  energy_payment: string;
+  debt_payment: string;
+}
 
+export const dailyCollection = (date?: string) => {
+  const query = date
+    ? `?date=${encodeURIComponent(date)}`
+    : "";
+
+  return get<DailyCollection>(`/user/dashboard/daily-collection/${query}`);
+};
+
+export interface TotalVendorWallet {
+  vendor_type: "all" | "internal" | "external";
+  vendor_count: number;
+  balance: string;
+}
+
+export const totalVendorWallet = (
+  vendorType?: "internal" | "external"
+) => {
+  const query = vendorType
+    ? `?vendor_type=${vendorType}`
+    : "";
+
+  return get<TotalVendorWallet>(
+    `/vendor/wallets/total/${query}`
+  );
+};
 
