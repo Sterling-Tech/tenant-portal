@@ -59,6 +59,7 @@ import * as XLSX from 'xlsx';
 import { useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store/store';
 import { getErrorMessage } from "../../utils/getErrorMessage";
+import { toast } from "react-toastify";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type TransactionStatus = 'success' | 'pending' | 'failed';
@@ -157,6 +158,12 @@ const VendorTransactions: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"analytics" | "ledger">("analytics");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
+
+  const [count, setCount] = useState(0);
+  const [next, setNext] = useState<string | null>(null);
+  const [previous, setPrevious] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Vendor | null>(null);
+
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "suspended">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "credit" | "debit">("all");
   const today = new Date();
@@ -204,54 +211,53 @@ const VendorTransactions: React.FC = () => {
   });
   const [endDate, setEndDate] = useState(format(tomorrow));
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, statusFilter]);
-
 
   const load = async (pageNumber = 1) => {
     try {
       setLoading(true);
 
-      let res: PaginatedVendorResponse;
+      const keyword = search.trim();
 
-      if (debouncedSearch.trim()) {
-        res = await searchVendors(
-          debouncedSearch,
-          pageNumber
-        );
-      } else {
-        res = await fetchVendors({
-          page: pageNumber,
-          account_status:
-            statusFilter === "all"
-              ? undefined
-              : statusFilter,
-        });
+      if (keyword.length >= 3) {
+        const res = await searchVendors(keyword, pageNumber);
+
+        setVendors(res.results);
+        setCount(res.count);
+        setNext(res.next);
+        setPrevious(res.previous);
+        setSelected(res.results[0] ?? null);
+
+        return;
       }
 
-      setVendors(res.results || []);
-      setVendorCount(res.count || 0);
+      const res = await fetchVendors({
+        page: pageNumber,
+        main_vendor: true,
+        account_status:
+          statusFilter === "all"
+            ? undefined
+            : statusFilter as "active" | "inactive" | "suspended",
+        // vendor_type:
+        //   vendorTypeFilter === "all"
+        //     ? undefined
+        //     : vendorTypeFilter as "internal" | "external",
+      });
 
-    } catch (error) {
-      console.error("Vendor load error:", error);
-      setVendors([]);
-      setVendorCount(0);
+      setVendors(res.results);
+      setCount(res.count);
+      setNext(res.next);
+      setPrevious(res.previous);
+      setSelected(res.results[0] ?? null);
+    } catch (err: any) {
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     load(page);
-  }, [page, debouncedSearch, statusFilter]);
+  }, [page, statusFilter]);
 
   const selectedVendor = useMemo(
     () => vendors?.find((t) => t.id === vendorsId),
@@ -278,7 +284,6 @@ const VendorTransactions: React.FC = () => {
     }
 
     const vendorName = selectedVendor?.business_name || "N/A";
-
     const headers = ["Reference", "Credit", "Debit", "Balance", "Category", "Date"];
 
     const rows = transactions.map((tx) => [
@@ -712,7 +717,6 @@ const VendorTransactions: React.FC = () => {
     }
   };
 
-
   const resetReportForm = () => {
     setReportForm({ start_date: fmt(oneYearAgo), end_date: fmt(tomorrow), category: 'all', search: '' });
     resetReportColumns();
@@ -787,7 +791,7 @@ const VendorTransactions: React.FC = () => {
           <Button size="small" onClick={() => { setReportOpen(true); setReportError(null); }} sx={{ height: 36, textTransform: "none", borderRadius: 2 }} variant="contained">
             + Generate Report
           </Button>
-          {/* <Button variant="outlined" startIcon={<Download />} onClick={exportRows}>Export</Button> */}
+          
 
 
         </Stack>
@@ -826,30 +830,44 @@ const VendorTransactions: React.FC = () => {
                   {vendorCount} total
                 </Typography>
               </Stack>
+              <Stack direction="row" justifyContent="space-between" spacing={1}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Search vendors..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setPage(1);
+                      load(1);
+                    }
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
 
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Search by name or domain..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                sx={{
-                  mt: 2,
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
-                    fontSize: 13,
-                    height: 36,
-                    bgcolor: "#f9fafb",
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search sx={{ fontSize: 16, color: "#9ca3af" }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+                <Button
+                  variant="contained"
+                  startIcon={<Search />}
+                  onClick={() => {
+                    setPage(1);
+                    load(1);
+                  }}
+                  sx={{
+                    minWidth: 60,
+                    whiteSpace: "nowrap",
+                    px: 3,
+                  }}
+                >
+                  Search
+                </Button>
+              </Stack>
               <Stack direction="row" spacing={1} mt={2}>
                 {["all", "active", "inactive", "suspended"].map((tab) => (
                   <Box
@@ -1105,7 +1123,7 @@ const VendorTransactions: React.FC = () => {
                         Transaction Volume — Last 14 Days
                       </Typography>
                     </Stack>
-                    
+
                     <ResponsiveContainer width="100%" height={220}>
                       <ReBarChart data={chartData}>
                         <XAxis dataKey="date" />
