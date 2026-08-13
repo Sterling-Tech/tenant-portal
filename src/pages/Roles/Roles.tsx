@@ -4,6 +4,7 @@ import {
     Button,
     Card,
     CardContent,
+    Divider,
     IconButton,
     Menu,
     MenuItem,
@@ -34,6 +35,7 @@ import AssignPermissionModal from "../../components/Permissions/AssignGroupPermi
 import DeleteGroupDialog from "../../components/Permissions/DeleteGroupModal";
 import { usePermission } from "../../hooks/usePermission";
 import { getErrorMessage } from "../../utils/getErrorMessage";
+import UserPermissions from "./UserPermission";
 export default function GroupManagement() {
     const [groups, setGroups] = useState<Group[]>([]);
     const [loading, setLoading] = useState(false);
@@ -255,6 +257,7 @@ export default function GroupManagement() {
             ),
         },
     ];
+
     const refreshGroup = async (groupId: number) => {
         await viewGroup(groupId.toString());
     };
@@ -304,7 +307,11 @@ export default function GroupManagement() {
                     />
                 </CardContent>
             </Card>
-
+            
+            <Divider/>
+            <Card className="my-10 p-5">
+                <UserPermissions />
+            </Card>
             <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}

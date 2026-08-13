@@ -22,6 +22,7 @@ import {
         FormControl,
         InputLabel,
         Select,
+        Divider,
 } from '@mui/material';
 import {
         Add,
@@ -34,6 +35,7 @@ import {
         Download,
         Search,
         DateRange,
+        FactCheckOutlined,
 } from '@mui/icons-material';
 import { useTenants } from '../../../hooks/useTenants';
 import { useVendorHierarchy } from '../../../contexts/VendorContext';
@@ -47,6 +49,7 @@ import { fetchVendors, createVendor, type VendorForm, Vendor, searchVendors, tog
 import { RootState } from '../../../store/store';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../../../utils/getErrorMessage';
+import { usePermission } from '../../../hooks/usePermission';
 type CustomerSummary = {
         total_customers?: number | string;
         active_customers?: number | string;
@@ -441,157 +444,159 @@ const TenantAdmin: React.FC = () => {
                 vendorsLoading ||
                 searchLoading;
 
+        const { can } = usePermission();
 
         return (
                 <>
-                        {pageLoading ? (
-                                <Box
-                                        sx={{
-                                                minHeight: "80vh",
-                                                display: "flex",
-                                                justifyContent: "center",
-                                                alignItems: "center",
-                                        }}
-                                >
-                                        <CircularProgress />
-                                </Box>
-                        ) : (
-                                <>
+                        {can("view_vendor_analytics") ? (<>
+                                {pageLoading ? (
                                         <Box
+                                                sx={{
+                                                        minHeight: "80vh",
+                                                        display: "flex",
+                                                        justifyContent: "center",
+                                                        alignItems: "center",
+                                                }}
                                         >
-                                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                                                        <Typography variant="h4">Tenant Dashboard</Typography>
-                                                        <Stack direction="row" spacing={1}>
-                                                                <Button
-                                                                        variant="outlined"
-                                                                        startIcon={<Refresh />}
-                                                                        onClick={() => refreshTenants()}
-                                                                        disabled={loading}
-                                                                >
-                                                                        Refresh
-                                                                </Button>
+                                                <CircularProgress />
+                                        </Box>
+                                ) : (
+                                        <>
+                                                <Box
+                                                >
+                                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                                                                <Typography variant="h4">Tenant Dashboard</Typography>
+                                                                <Stack direction="row" spacing={1}>
+                                                                        <Button
+                                                                                variant="outlined"
+                                                                                startIcon={<Refresh />}
+                                                                                onClick={() => refreshTenants()}
+                                                                                disabled={loading}
+                                                                        >
+                                                                                Refresh
+                                                                        </Button>
 
-                                                        </Stack>
-                                                </Box>
+                                                                </Stack>
+                                                        </Box>
 
 
-                                                {createSuccess && (
-                                                        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setCreateSuccess(null)}>
-                                                                {createSuccess}
-                                                        </Alert>
-                                                )}
+                                                        {createSuccess && (
+                                                                <Alert severity="success" sx={{ mb: 2 }} onClose={() => setCreateSuccess(null)}>
+                                                                        {createSuccess}
+                                                                </Alert>
+                                                        )}
 
-                                                {summary && (
-                                                        <Grid container spacing={2} mb={3}>
-                                                                <Grid item xs={12} md={4}>
+                                                        {summary && (
+                                                                <Grid container spacing={2} mb={3}>
+                                                                        <Grid item xs={12} md={4}>
 
-                                                                        <Card sx={{ height: "100%" }}>
-                                                                                <CardContent
-                                                                                        sx={{
-                                                                                                pb: 0,
-                                                                                                "&:last-child": {
-                                                                                                        paddingBottom: 0,
-                                                                                                },
-                                                                                        }}
-                                                                                >
-                                                                                        <Box
+                                                                                <Card sx={{ height: "100%" }}>
+                                                                                        <CardContent
                                                                                                 sx={{
-                                                                                                        display: "flex",
-                                                                                                        justifyContent: "space-between",
-                                                                                                        alignItems: "center",
+                                                                                                        pb: 0,
+                                                                                                        "&:last-child": {
+                                                                                                                paddingBottom: 0,
+                                                                                                        },
                                                                                                 }}
                                                                                         >
-                                                                                                <Typography variant="subtitle2" color="text.secondary">
-                                                                                                        Daily Collection
-                                                                                                </Typography>
-
-                                                                                                <TextField
-                                                                                                        select
-                                                                                                        size="small"
-                                                                                                        value={dailyCollectionFilter}
-                                                                                                        onChange={(e) =>
-                                                                                                                setDailyCollectionFilter(
-                                                                                                                        e.target.value as
-                                                                                                                        | "all"
-                                                                                                                        | "energy_payments"
-                                                                                                                        | "debt_payments"
-                                                                                                                )
-                                                                                                        }
-                                                                                                        variant="standard"
-                                                                                                        InputProps={{
-                                                                                                                disableUnderline: true,
-                                                                                                        }}
+                                                                                                <Box
                                                                                                         sx={{
-                                                                                                                width: 130,
-
-                                                                                                                "& .MuiInputBase-root": {
-                                                                                                                        padding: 0,
-                                                                                                                        margin: 0,
-                                                                                                                },
-
-                                                                                                                "& .MuiSelect-select": {
-                                                                                                                        padding: "4px 8px",
-                                                                                                                },
+                                                                                                                display: "flex",
+                                                                                                                justifyContent: "space-between",
+                                                                                                                alignItems: "center",
                                                                                                         }}
                                                                                                 >
-                                                                                                        <MenuItem value="all">
-                                                                                                                All
-                                                                                                        </MenuItem>
+                                                                                                        <Typography variant="subtitle2" color="text.secondary">
+                                                                                                                Daily Collection
+                                                                                                        </Typography>
 
-                                                                                                        <MenuItem value="energy_payments">
-                                                                                                                Energy Payments
-                                                                                                        </MenuItem>
+                                                                                                        <TextField
+                                                                                                                select
+                                                                                                                size="small"
+                                                                                                                value={dailyCollectionFilter}
+                                                                                                                onChange={(e) =>
+                                                                                                                        setDailyCollectionFilter(
+                                                                                                                                e.target.value as
+                                                                                                                                | "all"
+                                                                                                                                | "energy_payments"
+                                                                                                                                | "debt_payments"
+                                                                                                                        )
+                                                                                                                }
+                                                                                                                variant="standard"
+                                                                                                                InputProps={{
+                                                                                                                        disableUnderline: true,
+                                                                                                                }}
+                                                                                                                sx={{
+                                                                                                                        width: 130,
 
-                                                                                                        <MenuItem value="debt_payments">
-                                                                                                                Debt Payments
-                                                                                                        </MenuItem>
-                                                                                                </TextField>
-                                                                                        </Box>
+                                                                                                                        "& .MuiInputBase-root": {
+                                                                                                                                padding: 0,
+                                                                                                                                margin: 0,
+                                                                                                                        },
 
-                                                                                        <CardContent sx={{ px: 0 }}>
-                                                                                                <Typography variant="h5">
-                                                                                                        ₦
-                                                                                                        {Number(
-                                                                                                                dailyCollectionFilter === "energy_payments"
-                                                                                                                        ? collection?.energy_payment ?? 0
-                                                                                                                        : dailyCollectionFilter === "debt_payments"
-                                                                                                                                ? collection?.debt_payment ?? 0
-                                                                                                                                : collection?.total_collection ?? 0
-                                                                                                        ).toLocaleString()}
-                                                                                                </Typography>
+                                                                                                                        "& .MuiSelect-select": {
+                                                                                                                                padding: "4px 8px",
+                                                                                                                        },
+                                                                                                                }}
+                                                                                                        >
+                                                                                                                <MenuItem value="all">
+                                                                                                                        All
+                                                                                                                </MenuItem>
 
-                                                                                                <Typography
-                                                                                                        variant="caption"
-                                                                                                        color="text.secondary"
-                                                                                                >
-                                                                                                        {collection?.date
-                                                                                                                ? `Collection for ${collection.date}`
-                                                                                                                : "Today's collection"}
-                                                                                                </Typography>
+                                                                                                                <MenuItem value="energy_payments">
+                                                                                                                        Energy Payments
+                                                                                                                </MenuItem>
+
+                                                                                                                <MenuItem value="debt_payments">
+                                                                                                                        Debt Payments
+                                                                                                                </MenuItem>
+                                                                                                        </TextField>
+                                                                                                </Box>
+
+                                                                                                <CardContent sx={{ px: 0 }}>
+                                                                                                        <Typography variant="h5">
+                                                                                                                ₦
+                                                                                                                {Number(
+                                                                                                                        dailyCollectionFilter === "energy_payments"
+                                                                                                                                ? collection?.energy_payment ?? 0
+                                                                                                                                : dailyCollectionFilter === "debt_payments"
+                                                                                                                                        ? collection?.debt_payment ?? 0
+                                                                                                                                        : collection?.total_collection ?? 0
+                                                                                                                ).toLocaleString()}
+                                                                                                        </Typography>
+
+                                                                                                        <Typography
+                                                                                                                variant="caption"
+                                                                                                                color="text.secondary"
+                                                                                                        >
+                                                                                                                {collection?.date
+                                                                                                                        ? `Collection for ${collection.date}`
+                                                                                                                        : "Today's collection"}
+                                                                                                        </Typography>
+                                                                                                </CardContent>
                                                                                         </CardContent>
-                                                                                </CardContent>
-                                                                        </Card>
-                                                                </Grid>
-                                                                <Grid item xs={12} md={4}>
-                                                                        <Card sx={{ height: "100%" }}>
-                                                                                <CardContent
-
-                                                                                >
-                                                                                        <Typography
-                                                                                                color="text.secondary"
-                                                                                                variant="body2"
+                                                                                </Card>
+                                                                        </Grid>
+                                                                        <Grid item xs={12} md={4}>
+                                                                                <Card sx={{ height: "100%" }}>
+                                                                                        <CardContent
 
                                                                                         >
-                                                                                                Avg Daily Revenue
-                                                                                        </Typography>
-                                                                                        <Typography variant="h5" marginTop={5}>
-                                                                                                ₦{Number(analyticsData?.analytics.average_revenue || 0).toLocaleString()}
-                                                                                                {/* ₦{(400776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
-                                                                                        </Typography>
-                                                                                </CardContent>
-                                                                        </Card>
-                                                                </Grid>
-                                                                {/* <Grid item xs={12} md={3}>
+                                                                                                <Typography
+                                                                                                        color="text.secondary"
+                                                                                                        variant="body2"
+
+                                                                                                >
+                                                                                                        Avg Daily Revenue
+                                                                                                </Typography>
+                                                                                                <Typography variant="h5" marginTop={5}>
+                                                                                                        ₦{Number(analyticsData?.analytics.average_revenue || 0).toLocaleString()}
+                                                                                                        {/* ₦{(400776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
+                                                                                                </Typography>
+                                                                                        </CardContent>
+                                                                                </Card>
+                                                                        </Grid>
+                                                                        {/* <Grid item xs={12} md={3}>
                                                                         <Card>
                                                                                 <CardContent>
                                                                                         <Typography color="text.secondary" variant="body2">
@@ -601,164 +606,164 @@ const TenantAdmin: React.FC = () => {
                                                                                 </CardContent>
                                                                         </Card>
                                                                 </Grid> */}
-                                                                <Grid item xs={12} md={4}>
-                                                                        <Card sx={{ height: "100%" }}>
-                                                                                <CardContent>
-                                                                                        <Typography color="text.secondary" variant="body2">
-                                                                                                Current Debt Balance
-                                                                                        </Typography>
-                                                                                        <Typography variant="h5" marginTop={5}>
-                                                                                                ₦{Number(analyticsData?.analytics?.total_debt || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                                                                        </Typography>
-                                                                                </CardContent>
-                                                                        </Card>
-                                                                </Grid>
-                                                                <Grid item xs={12} md={4}>
-                                                                        <Card sx={{ height: "80%" }}>
-                                                                                <CardContent sx={{
-                                                                                }}>
-                                                                                        <CardHeader
-                                                                                                title={
-                                                                                                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                                                                                <Typography variant="body2" color="text.secondary">
-                                                                                                                        {customerFilter === 'all'
-                                                                                                                                ? 'Total Customers'
-                                                                                                                                : customerFilter === 'active'
-                                                                                                                                        ? 'Active Customers'
-                                                                                                                                        : 'Inactive Customers'}
-                                                                                                                </Typography>
-
-                                                                                                                <TextField
-                                                                                                                        select
-                                                                                                                        size="small"
-                                                                                                                        value={customerFilter}
-                                                                                                                        onChange={(e) => setCustomerFilter(e.target.value as any)}
-                                                                                                                        variant="standard"
-                                                                                                                        InputProps={{ disableUnderline: true }}
-                                                                                                                        sx={{
-                                                                                                                                width: 90,
-                                                                                                                                '& .MuiInputBase-root': {
-                                                                                                                                        padding: 0,
-                                                                                                                                        margin: 0,
-                                                                                                                                },
-                                                                                                                                '& .MuiSelect-select': {
-                                                                                                                                        padding: '4px 8px',
-                                                                                                                                },
-                                                                                                                        }}
-                                                                                                                >
-                                                                                                                        <MenuItem value="all">All</MenuItem>
-                                                                                                                        <MenuItem value="active">Active</MenuItem>
-                                                                                                                </TextField>
-                                                                                                        </Box>
-                                                                                                }
-                                                                                                sx={{
-                                                                                                        height: 0,
-                                                                                                        paddingBottom: 0,
-                                                                                                        '& .MuiInputBase-root': {
-                                                                                                                padding: 0,
-                                                                                                                margin: 0,
-                                                                                                        },
-                                                                                                        '& .MuiSelect-select': {
-                                                                                                                padding: '0px 0px',
-                                                                                                        },
-                                                                                                }}
-                                                                                        />
+                                                                        <Grid item xs={12} md={4}>
+                                                                                <Card sx={{ height: "100%" }}>
                                                                                         <CardContent>
+                                                                                                <Typography color="text.secondary" variant="body2">
+                                                                                                        Current Debt Balance
+                                                                                                </Typography>
                                                                                                 <Typography variant="h5" marginTop={5}>
-                                                                                                        {Number(customerValue || 0).toLocaleString()}
+                                                                                                        ₦{Number(analyticsData?.analytics?.total_debt || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                                                                                 </Typography>
                                                                                         </CardContent>
-                                                                                </CardContent>
-                                                                        </Card>
-                                                                </Grid>
-                                                                <Grid item xs={12} md={4}>
-                                                                        <Card sx={{ height: "80%" }}>
-                                                                                <CardContent>
+                                                                                </Card>
+                                                                        </Grid>
+                                                                        <Grid item xs={12} md={4}>
+                                                                                <Card sx={{ height: "80%" }}>
+                                                                                        <CardContent sx={{
+                                                                                        }}>
+                                                                                                <CardHeader
+                                                                                                        title={
+                                                                                                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                                                                                        <Typography variant="body2" color="text.secondary">
+                                                                                                                                {customerFilter === 'all'
+                                                                                                                                        ? 'Total Customers'
+                                                                                                                                        : customerFilter === 'active'
+                                                                                                                                                ? 'Active Customers'
+                                                                                                                                                : 'Inactive Customers'}
+                                                                                                                        </Typography>
 
-                                                                                        <CardHeader
-                                                                                                title={
-                                                                                                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                                                                                <Typography variant="body2" color="text.secondary">
-                                                                                                                        {vendorDebtFilter === 'all'
-                                                                                                                                ? 'Total Vendor Wallet Amount'
-                                                                                                                                : vendorDebtFilter === 'external_wallet_amount'
-                                                                                                                                        ? 'External Vendor Wallet Amount'
-                                                                                                                                        : 'Internal Vendor Wallet Amount'}
-                                                                                                                </Typography>
+                                                                                                                        <TextField
+                                                                                                                                select
+                                                                                                                                size="small"
+                                                                                                                                value={customerFilter}
+                                                                                                                                onChange={(e) => setCustomerFilter(e.target.value as any)}
+                                                                                                                                variant="standard"
+                                                                                                                                InputProps={{ disableUnderline: true }}
+                                                                                                                                sx={{
+                                                                                                                                        width: 90,
+                                                                                                                                        '& .MuiInputBase-root': {
+                                                                                                                                                padding: 0,
+                                                                                                                                                margin: 0,
+                                                                                                                                        },
+                                                                                                                                        '& .MuiSelect-select': {
+                                                                                                                                                padding: '4px 8px',
+                                                                                                                                        },
+                                                                                                                                }}
+                                                                                                                        >
+                                                                                                                                <MenuItem value="all">All</MenuItem>
+                                                                                                                                <MenuItem value="active">Active</MenuItem>
+                                                                                                                        </TextField>
+                                                                                                                </Box>
+                                                                                                        }
+                                                                                                        sx={{
+                                                                                                                height: 0,
+                                                                                                                paddingBottom: 0,
+                                                                                                                '& .MuiInputBase-root': {
+                                                                                                                        padding: 0,
+                                                                                                                        margin: 0,
+                                                                                                                },
+                                                                                                                '& .MuiSelect-select': {
+                                                                                                                        padding: '0px 0px',
+                                                                                                                },
+                                                                                                        }}
+                                                                                                />
+                                                                                                <CardContent>
+                                                                                                        <Typography variant="h5" marginTop={5}>
+                                                                                                                {Number(customerValue || 0).toLocaleString()}
+                                                                                                        </Typography>
+                                                                                                </CardContent>
+                                                                                        </CardContent>
+                                                                                </Card>
+                                                                        </Grid>
+                                                                        <Grid item xs={12} md={4}>
+                                                                                <Card sx={{ height: "80%" }}>
+                                                                                        <CardContent>
 
-                                                                                                                <TextField
-                                                                                                                        select
-                                                                                                                        size="small"
-                                                                                                                        value={vendorDebtFilter}
-                                                                                                                        onChange={(e) => setVendorDebtFilter(e.target.value as any)}
-                                                                                                                        variant="standard"
-                                                                                                                        InputProps={{ disableUnderline: true }}
-                                                                                                                        sx={{
-                                                                                                                                width: 90,
-                                                                                                                                '& .MuiInputBase-root': {
-                                                                                                                                        padding: 0,
-                                                                                                                                        margin: 0,
-                                                                                                                                },
-                                                                                                                                '& .MuiSelect-select': {
-                                                                                                                                        padding: '4px 8px',
-                                                                                                                                },
-                                                                                                                        }}
-                                                                                                                >
-                                                                                                                        <MenuItem value="all">All</MenuItem>
-                                                                                                                        <MenuItem value="external_wallet_amount">External Vendor Wallet Amount</MenuItem>
-                                                                                                                        <MenuItem value="internal_wallet_amount">Internal Vendor Wallet Amount</MenuItem>
+                                                                                                <CardHeader
+                                                                                                        title={
+                                                                                                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                                                                                        <Typography variant="body2" color="text.secondary">
+                                                                                                                                {vendorDebtFilter === 'all'
+                                                                                                                                        ? 'Total Vendor Wallet Amount'
+                                                                                                                                        : vendorDebtFilter === 'external_wallet_amount'
+                                                                                                                                                ? 'External Vendor Wallet Amount'
+                                                                                                                                                : 'Internal Vendor Wallet Amount'}
+                                                                                                                        </Typography>
 
-                                                                                                                </TextField>
-                                                                                                        </Box>
-                                                                                                }
-                                                                                                sx={{
-                                                                                                        height: 0,
-                                                                                                        paddingBottom: 0,
-                                                                                                        '& .MuiInputBase-root': {
-                                                                                                                padding: 0,
-                                                                                                                margin: 0,
-                                                                                                        },
-                                                                                                        '& .MuiSelect-select': {
-                                                                                                                padding: '0px 0px',
-                                                                                                        },
-                                                                                                }}
-                                                                                        />
+                                                                                                                        <TextField
+                                                                                                                                select
+                                                                                                                                size="small"
+                                                                                                                                value={vendorDebtFilter}
+                                                                                                                                onChange={(e) => setVendorDebtFilter(e.target.value as any)}
+                                                                                                                                variant="standard"
+                                                                                                                                InputProps={{ disableUnderline: true }}
+                                                                                                                                sx={{
+                                                                                                                                        width: 90,
+                                                                                                                                        '& .MuiInputBase-root': {
+                                                                                                                                                padding: 0,
+                                                                                                                                                margin: 0,
+                                                                                                                                        },
+                                                                                                                                        '& .MuiSelect-select': {
+                                                                                                                                                padding: '4px 8px',
+                                                                                                                                        },
+                                                                                                                                }}
+                                                                                                                        >
+                                                                                                                                <MenuItem value="all">All</MenuItem>
+                                                                                                                                <MenuItem value="external_wallet_amount">External Vendor Wallet Amount</MenuItem>
+                                                                                                                                <MenuItem value="internal_wallet_amount">Internal Vendor Wallet Amount</MenuItem>
 
-                                                                                        <CardContent >
-                                                                                                <Typography variant="h5" marginTop={5}>
-                                                                                                        ₦
-                                                                                                        {Number(
-                                                                                                                vendorWalletData?.balance ?? 0
-                                                                                                        ).toLocaleString()}
+                                                                                                                        </TextField>
+                                                                                                                </Box>
+                                                                                                        }
+                                                                                                        sx={{
+                                                                                                                height: 0,
+                                                                                                                paddingBottom: 0,
+                                                                                                                '& .MuiInputBase-root': {
+                                                                                                                        padding: 0,
+                                                                                                                        margin: 0,
+                                                                                                                },
+                                                                                                                '& .MuiSelect-select': {
+                                                                                                                        padding: '0px 0px',
+                                                                                                                },
+                                                                                                        }}
+                                                                                                />
+
+                                                                                                <CardContent >
+                                                                                                        <Typography variant="h5" marginTop={5}>
+                                                                                                                ₦
+                                                                                                                {Number(
+                                                                                                                        vendorWalletData?.balance ?? 0
+                                                                                                                ).toLocaleString()}
+                                                                                                        </Typography>
+
+                                                                                                        <Typography
+                                                                                                                variant="caption"
+                                                                                                                color="text.secondary"
+                                                                                                        >
+                                                                                                                {vendorWalletData?.vendor_count ?? 0} vendors
+                                                                                                        </Typography>
+                                                                                                </CardContent>
+                                                                                        </CardContent>
+                                                                                </Card>
+                                                                        </Grid>
+                                                                        <Grid item xs={12} md={4}>
+                                                                                <Card sx={{ height: "80%" }}>
+                                                                                        <CardContent>
+                                                                                                <Typography color="text.secondary" variant="body2">
+                                                                                                        Vendors Aggregated Balance
                                                                                                 </Typography>
-
-                                                                                                <Typography
-                                                                                                        variant="caption"
-                                                                                                        color="text.secondary"
-                                                                                                >
-                                                                                                        {vendorWalletData?.vendor_count ?? 0} vendors
+                                                                                                <Typography variant="h5" marginTop={5}>
+                                                                                                        ₦{Number(analyticfetchData?.vendor_summary.aggregated_wallet_balance || 0).toLocaleString()}
+                                                                                                        {/* ₦{(90000776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
                                                                                                 </Typography>
                                                                                         </CardContent>
-                                                                                </CardContent>
-                                                                        </Card>
+                                                                                </Card>
+                                                                        </Grid>
                                                                 </Grid>
-                                                                <Grid item xs={12} md={4}>
-                                                                        <Card sx={{ height: "80%" }}>
-                                                                                <CardContent>
-                                                                                        <Typography color="text.secondary" variant="body2">
-                                                                                                Vendors Aggregated Balance
-                                                                                        </Typography>
-                                                                                        <Typography variant="h5" marginTop={5}>
-                                                                                                ₦{Number(analyticfetchData?.vendor_summary.aggregated_wallet_balance || 0).toLocaleString()}
-                                                                                                {/* ₦{(90000776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
-                                                                                        </Typography>
-                                                                                </CardContent>
-                                                                        </Card>
-                                                                </Grid>
-                                                        </Grid>
-                                                )}
-                                                <Grid container spacing={3}>
-                                                        {/* <Grid item xs={12} md={4}>
+                                                        )}
+                                                        <Grid container spacing={3}>
+                                                                {/* <Grid item xs={12} md={4}>
                                                                 <Card>
                                                                         <CardHeader
                                                                                 title={
@@ -869,134 +874,134 @@ const TenantAdmin: React.FC = () => {
                                                                         </CardContent>
                                                                 </Card>
                                                         </Grid> */}
-                                                        <Grid item xs={12} md={4}>
-                                                                <Card>
-                                                                        <CardHeader
-                                                                                avatar={<Assessment color="primary" />}
-                                                                                title={
-                                                                                        <Box
-                                                                                                display="flex"
-                                                                                                justifyContent="space-between"
-                                                                                                alignItems="center"
-                                                                                        >
-                                                                                                <Typography variant="body2" color="text.secondary">
-                                                                                                        {current.title}
-                                                                                                </Typography>
-
-                                                                                                <TextField
-                                                                                                        select
-                                                                                                        size="small"
-                                                                                                        value={collectionFilter}
-                                                                                                        onChange={(e) =>
-                                                                                                                setCollectionFilter(
-                                                                                                                        e.target.value as
-                                                                                                                        | "category"
-                                                                                                                        | "branch"
-                                                                                                                        | "tariff"
-                                                                                                                        | "feeder"
-                                                                                                                        | "transformer"
-                                                                                                                )
-                                                                                                        }
-                                                                                                        variant="standard"
-                                                                                                        InputProps={{
-                                                                                                                disableUnderline: true,
-                                                                                                        }}
-                                                                                                        sx={{
-                                                                                                                width: 150,
-                                                                                                                "& .MuiInputBase-root": {
-                                                                                                                        p: 0,
-                                                                                                                        m: 0,
-                                                                                                                },
-                                                                                                                "& .MuiSelect-select": {
-                                                                                                                        py: 0.5,
-                                                                                                                        px: 1,
-                                                                                                                },
-                                                                                                        }}
-                                                                                                >
-                                                                                                        <MenuItem value="category">Category</MenuItem>
-                                                                                                        <MenuItem value="branch">Branch / Region</MenuItem>
-                                                                                                        <MenuItem value="tariff">Tariff Class</MenuItem>
-                                                                                                        <MenuItem value="feeder">Feeder</MenuItem>
-                                                                                                        <MenuItem value="transformer">Transformer</MenuItem>
-                                                                                                </TextField>
-                                                                                        </Box>
-                                                                                }
-                                                                                subheader={current.subtitle}
-                                                                                sx={{
-                                                                                        "& .MuiCardHeader-content": {
-                                                                                                overflow: "hidden",
-                                                                                        },
-                                                                                }}
-                                                                        />
-
-                                                                        <CardContent>
-                                                                                <Stack spacing={2}>
-                                                                                        {current.data.length === 0 ? (
-                                                                                                <Typography
-                                                                                                        variant="body2"
-                                                                                                        color="text.secondary"
-                                                                                                        textAlign="center"
-                                                                                                >
-                                                                                                        No data available
-                                                                                                </Typography>
-                                                                                        ) : (
-                                                                                                current.data.map((item, index) => (
-                                                                                                        <Box key={index}>
-                                                                                                                <Box
-                                                                                                                        display="flex"
-                                                                                                                        justifyContent="space-between"
-                                                                                                                        mb={0.5}
-                                                                                                                >
-                                                                                                                        <Typography variant="body2">
-                                                                                                                                {item.name}
-                                                                                                                        </Typography>
-
-                                                                                                                        <Typography
-                                                                                                                                variant="body2"
-                                                                                                                                fontWeight={600}
-                                                                                                                        >
-                                                                                                                                {item.count.toLocaleString()}
-                                                                                                                        </Typography>
-                                                                                                                </Box>
-
-                                                                                                                <LinearProgress
-                                                                                                                        variant="determinate"
-                                                                                                                        value={Math.min(item.count, 100)}
-                                                                                                                        sx={{
-                                                                                                                                mt: 0.5,
-                                                                                                                                height: 8,
-                                                                                                                                borderRadius: 10,
-                                                                                                                        }}
-                                                                                                                />
-                                                                                                        </Box>
-                                                                                                ))
-                                                                                        )}
-                                                                                </Stack>
-                                                                        </CardContent>
-                                                                </Card>
-                                                        </Grid>
-
-                                                        <Grid item xs={12} md={8}>
-
-                                                                <Stack spacing={3} data-tenant-details>
-
+                                                                <Grid item xs={12} md={4}>
                                                                         <Card>
-                                                                                <CardHeader avatar={<Security color="primary" />} title="Overview" />
+                                                                                <CardHeader
+                                                                                        avatar={<Assessment color="primary" />}
+                                                                                        title={
+                                                                                                <Box
+                                                                                                        display="flex"
+                                                                                                        justifyContent="space-between"
+                                                                                                        alignItems="center"
+                                                                                                >
+                                                                                                        <Typography variant="body2" color="text.secondary">
+                                                                                                                {current.title}
+                                                                                                        </Typography>
+
+                                                                                                        <TextField
+                                                                                                                select
+                                                                                                                size="small"
+                                                                                                                value={collectionFilter}
+                                                                                                                onChange={(e) =>
+                                                                                                                        setCollectionFilter(
+                                                                                                                                e.target.value as
+                                                                                                                                | "category"
+                                                                                                                                | "branch"
+                                                                                                                                | "tariff"
+                                                                                                                                | "feeder"
+                                                                                                                                | "transformer"
+                                                                                                                        )
+                                                                                                                }
+                                                                                                                variant="standard"
+                                                                                                                InputProps={{
+                                                                                                                        disableUnderline: true,
+                                                                                                                }}
+                                                                                                                sx={{
+                                                                                                                        width: 150,
+                                                                                                                        "& .MuiInputBase-root": {
+                                                                                                                                p: 0,
+                                                                                                                                m: 0,
+                                                                                                                        },
+                                                                                                                        "& .MuiSelect-select": {
+                                                                                                                                py: 0.5,
+                                                                                                                                px: 1,
+                                                                                                                        },
+                                                                                                                }}
+                                                                                                        >
+                                                                                                                <MenuItem value="category">Category</MenuItem>
+                                                                                                                <MenuItem value="branch">Branch / Region</MenuItem>
+                                                                                                                <MenuItem value="tariff">Tariff Class</MenuItem>
+                                                                                                                <MenuItem value="feeder">Feeder</MenuItem>
+                                                                                                                <MenuItem value="transformer">Transformer</MenuItem>
+                                                                                                        </TextField>
+                                                                                                </Box>
+                                                                                        }
+                                                                                        subheader={current.subtitle}
+                                                                                        sx={{
+                                                                                                "& .MuiCardHeader-content": {
+                                                                                                        overflow: "hidden",
+                                                                                                },
+                                                                                        }}
+                                                                                />
+
                                                                                 <CardContent>
-                                                                                        <Stack direction="row" spacing={2} mb={2} flexWrap="wrap">
-                                                                                                {/* <Chip label={`Inactive Users: ${(analyticfetchData?.user_summary.inactive_users || 0).toLocaleString()}`} size="small" /> */}
-                                                                                                <Chip label={`Total Postpaid Customer: ${(postpaid).toLocaleString()}`} size="small" />
-                                                                                                <Chip label={`Total Prepaid Customer: ${(prepaid).toLocaleString()}`} size="small" />
-                                                                                                {/* <Chip label={`Total Unmetered Customers: ${(889540).toLocaleString()}`} size="small" /> */}
-                                                                                                <Chip label={`Suspended Customers: ${(analyticsData?.analytics.suspended_custommers || 0).toLocaleString()}`} size="small" />
+                                                                                        <Stack spacing={2}>
+                                                                                                {current.data.length === 0 ? (
+                                                                                                        <Typography
+                                                                                                                variant="body2"
+                                                                                                                color="text.secondary"
+                                                                                                                textAlign="center"
+                                                                                                        >
+                                                                                                                No data available
+                                                                                                        </Typography>
+                                                                                                ) : (
+                                                                                                        current.data.map((item, index) => (
+                                                                                                                <Box key={index}>
+                                                                                                                        <Box
+                                                                                                                                display="flex"
+                                                                                                                                justifyContent="space-between"
+                                                                                                                                mb={0.5}
+                                                                                                                        >
+                                                                                                                                <Typography variant="body2">
+                                                                                                                                        {item.name}
+                                                                                                                                </Typography>
+
+                                                                                                                                <Typography
+                                                                                                                                        variant="body2"
+                                                                                                                                        fontWeight={600}
+                                                                                                                                >
+                                                                                                                                        {item.count.toLocaleString()}
+                                                                                                                                </Typography>
+                                                                                                                        </Box>
+
+                                                                                                                        <LinearProgress
+                                                                                                                                variant="determinate"
+                                                                                                                                value={Math.min(item.count, 100)}
+                                                                                                                                sx={{
+                                                                                                                                        mt: 0.5,
+                                                                                                                                        height: 8,
+                                                                                                                                        borderRadius: 10,
+                                                                                                                                }}
+                                                                                                                        />
+                                                                                                                </Box>
+                                                                                                        ))
+                                                                                                )}
                                                                                         </Stack>
                                                                                 </CardContent>
                                                                         </Card>
+                                                                </Grid>
 
-                                                                        <Grid container spacing={2}>
-                                                                                <Grid item xs={12}>
-                                                                                        {/* <Card> */}
-                                                                                        {/* <CardHeader
+                                                                <Grid item xs={12} md={8}>
+
+                                                                        <Stack spacing={3} data-tenant-details>
+
+                                                                                <Card>
+                                                                                        <CardHeader avatar={<Security color="primary" />} title="Overview" />
+                                                                                        <CardContent>
+                                                                                                <Stack direction="row" spacing={2} mb={2} flexWrap="wrap">
+                                                                                                        {/* <Chip label={`Inactive Users: ${(analyticfetchData?.user_summary.inactive_users || 0).toLocaleString()}`} size="small" /> */}
+                                                                                                        <Chip label={`Total Postpaid Customer: ${(postpaid).toLocaleString()}`} size="small" />
+                                                                                                        <Chip label={`Total Prepaid Customer: ${(prepaid).toLocaleString()}`} size="small" />
+                                                                                                        {/* <Chip label={`Total Unmetered Customers: ${(889540).toLocaleString()}`} size="small" /> */}
+                                                                                                        <Chip label={`Suspended Customers: ${(analyticsData?.analytics.suspended_custommers || 0).toLocaleString()}`} size="small" />
+                                                                                                </Stack>
+                                                                                        </CardContent>
+                                                                                </Card>
+
+                                                                                <Grid container spacing={2}>
+                                                                                        <Grid item xs={12}>
+                                                                                                {/* <Card> */}
+                                                                                                {/* <CardHeader
                                                                                                         avatar={<Analytics color="primary" />}
                                                                                                         title="Daily Transactions"
                                                                                                         subheader="Last 30 Days"
@@ -1020,56 +1025,56 @@ const TenantAdmin: React.FC = () => {
                                                                                                                 </Stack>
                                                                                                         }
                                                                                                 /> */}
-                                                                                        <Card sx={{ borderRadius: 4 }}>
-                                                                                                <Box
-                                                                                                        display="flex"
-                                                                                                        justifyContent="space-between"
-                                                                                                        alignItems="flex-start"
-                                                                                                        p={3}
-                                                                                                >
-                                                                                                        <Stack direction="row" spacing={2}>
-                                                                                                                <Avatar
-                                                                                                                        sx={{
-                                                                                                                                bgcolor: "#EEF4FF",
-                                                                                                                                color: "#1D4ED8",
-                                                                                                                        }}
-                                                                                                                >
-                                                                                                                        <Analytics />
-                                                                                                                </Avatar>
-
-                                                                                                                <Box>
-                                                                                                                        <Typography
-                                                                                                                                fontWeight={700}
-                                                                                                                                fontSize={24}
-                                                                                                                        >
-                                                                                                                                Daily Transactions
-                                                                                                                        </Typography>
-
-                                                                                                                        <Typography color="text.secondary">
-                                                                                                                                LAST 30 DAYS
-                                                                                                                        </Typography>
-                                                                                                                </Box>
-                                                                                                        </Stack>
-
-                                                                                                        <ToggleButtonGroup
-                                                                                                                exclusive
-                                                                                                                value={transactionType}
-                                                                                                                onChange={(_, value) =>
-                                                                                                                        value && setTransactionType(value)
-                                                                                                                }
-                                                                                                                size="small"
+                                                                                                <Card sx={{ borderRadius: 4 }}>
+                                                                                                        <Box
+                                                                                                                display="flex"
+                                                                                                                justifyContent="space-between"
+                                                                                                                alignItems="flex-start"
+                                                                                                                p={3}
                                                                                                         >
-                                                                                                                <ToggleButton value="collections">
-                                                                                                                        Collections
-                                                                                                                </ToggleButton>
+                                                                                                                <Stack direction="row" spacing={2}>
+                                                                                                                        <Avatar
+                                                                                                                                sx={{
+                                                                                                                                        bgcolor: "#EEF4FF",
+                                                                                                                                        color: "#1D4ED8",
+                                                                                                                                }}
+                                                                                                                        >
+                                                                                                                                <Analytics />
+                                                                                                                        </Avatar>
 
-                                                                                                                <ToggleButton value="debts">
-                                                                                                                        Debts
-                                                                                                                </ToggleButton>
-                                                                                                        </ToggleButtonGroup>
-                                                                                                </Box>
-                                                                                                <CardContent>
-                                                                                                        {/* <LineChart
+                                                                                                                        <Box>
+                                                                                                                                <Typography
+                                                                                                                                        fontWeight={700}
+                                                                                                                                        fontSize={24}
+                                                                                                                                >
+                                                                                                                                        Daily Transactions
+                                                                                                                                </Typography>
+
+                                                                                                                                <Typography color="text.secondary">
+                                                                                                                                        LAST 30 DAYS
+                                                                                                                                </Typography>
+                                                                                                                        </Box>
+                                                                                                                </Stack>
+
+                                                                                                                <ToggleButtonGroup
+                                                                                                                        exclusive
+                                                                                                                        value={transactionType}
+                                                                                                                        onChange={(_, value) =>
+                                                                                                                                value && setTransactionType(value)
+                                                                                                                        }
+                                                                                                                        size="small"
+                                                                                                                >
+                                                                                                                        <ToggleButton value="collections">
+                                                                                                                                Collections
+                                                                                                                        </ToggleButton>
+
+                                                                                                                        <ToggleButton value="debts">
+                                                                                                                                Debts
+                                                                                                                        </ToggleButton>
+                                                                                                                </ToggleButtonGroup>
+                                                                                                        </Box>
+                                                                                                        <CardContent>
+                                                                                                                {/* <LineChart
                                                                                                                 xAxis={[
                                                                                                                         {
                                                                                                                                 scaleType: 'point',
@@ -1085,122 +1090,237 @@ const TenantAdmin: React.FC = () => {
                                                                                                                 height={260}
                                                                                                                 margin={{ top: 20, bottom: 30 }}
                                                                                                         /> */}
-                                                                                                        <Box
-                                                                                                                display="flex"
-                                                                                                                justifyContent="space-between"
-                                                                                                                alignItems="center"
-                                                                                                                px={3}
-                                                                                                                mb={2}
-                                                                                                        >
-                                                                                                                <Stack direction="row" spacing={2}>
-                                                                                                                        <FormControl size="small" sx={{ minWidth: 180 }}>
-                                                                                                                                <InputLabel>Region</InputLabel>
-
-                                                                                                                                <Select
-                                                                                                                                        value={selectedRegion}
-                                                                                                                                        label="Region"
-                                                                                                                                        onChange={(e) =>
-                                                                                                                                                setSelectedRegion(e.target.value)
-                                                                                                                                        }
-                                                                                                                                >
-                                                                                                                                        <MenuItem value="">
-                                                                                                                                                All regions
-                                                                                                                                        </MenuItem>
-
-                                                                                                                                        {regions.map(region => (
-                                                                                                                                                <MenuItem
-                                                                                                                                                        key={region.id}
-                                                                                                                                                        value={region.id}
-                                                                                                                                                >
-                                                                                                                                                        {region.name}
-                                                                                                                                                </MenuItem>
-                                                                                                                                        ))}
-                                                                                                                                </Select>
-                                                                                                                        </FormControl>
-
-                                                                                                                        <FormControl size="small" sx={{ minWidth: 220 }}>
-                                                                                                                                <InputLabel>
-                                                                                                                                        Customer Category
-                                                                                                                                </InputLabel>
-
-                                                                                                                                <Select
-                                                                                                                                        value={selectedCategory}
-                                                                                                                                        label="Customer Category"
-                                                                                                                                        onChange={(e) =>
-                                                                                                                                                setSelectedCategory(e.target.value)
-                                                                                                                                        }
-                                                                                                                                >
-                                                                                                                                        <MenuItem value="">
-                                                                                                                                                All categories
-                                                                                                                                        </MenuItem>
-
-                                                                                                                                        {categories.map(category => (
-                                                                                                                                                <MenuItem
-                                                                                                                                                        key={category.id}
-                                                                                                                                                        value={category.id}
-                                                                                                                                                >
-                                                                                                                                                        {category.name}
-                                                                                                                                                </MenuItem>
-                                                                                                                                        ))}
-                                                                                                                                </Select>
-                                                                                                                        </FormControl>
-                                                                                                                </Stack>
-
-                                                                                                                <Button
-                                                                                                                        variant="contained"
-                                                                                                                        onClick={() =>
-                                                                                                                                setAnalyticsView("summary")
-                                                                                                                        }
+                                                                                                                <Box
+                                                                                                                        display="flex"
+                                                                                                                        justifyContent="space-between"
+                                                                                                                        alignItems="center"
+                                                                                                                        px={3}
+                                                                                                                        mb={2}
                                                                                                                 >
-                                                                                                                        Chart View
-                                                                                                                </Button>
-                                                                                                        </Box>
-                                                                                                        <LineChart
-                                                                                                                height={320}
-                                                                                                                xAxis={[
-                                                                                                                        {
-                                                                                                                                scaleType: "point",
-                                                                                                                                data: chartData.labels,
-                                                                                                                        },
-                                                                                                                ]}
-                                                                                                                series={[
-                                                                                                                        {
-                                                                                                                                data:
-                                                                                                                                        // transactionType === "collections"
-                                                                                                                                        //         ? chartData.collections
-                                                                                                                                        //         : chartData.debts,
-                                                                                                                                        transactionType === "collections"
-                                                                                                                                                ? filteredChartData.collections
-                                                                                                                                                : filteredChartData.debts,
+                                                                                                                        <Stack direction="row" spacing={2}>
+                                                                                                                                <FormControl size="small" sx={{ minWidth: 180 }}>
+                                                                                                                                        <InputLabel>Region</InputLabel>
 
-                                                                                                                                label:
-                                                                                                                                        transactionType === "collections"
-                                                                                                                                                ? "Daily Collections"
-                                                                                                                                                : "Daily Debts",
+                                                                                                                                        <Select
+                                                                                                                                                value={selectedRegion}
+                                                                                                                                                label="Region"
+                                                                                                                                                onChange={(e) =>
+                                                                                                                                                        setSelectedRegion(e.target.value)
+                                                                                                                                                }
+                                                                                                                                        >
+                                                                                                                                                <MenuItem value="">
+                                                                                                                                                        All regions
+                                                                                                                                                </MenuItem>
 
-                                                                                                                                area: true,
-                                                                                                                                showMark: false,
-                                                                                                                                curve: "natural",
-                                                                                                                                color:
-                                                                                                                                        transactionType === "collections"
-                                                                                                                                                ? "#14B8A6"
-                                                                                                                                                : "#D97706",
-                                                                                                                        },
-                                                                                                                ]}
-                                                                                                        />
-                                                                                                </CardContent>
-                                                                                        </Card>
+                                                                                                                                                {regions.map(region => (
+                                                                                                                                                        <MenuItem
+                                                                                                                                                                key={region.id}
+                                                                                                                                                                value={region.id}
+                                                                                                                                                        >
+                                                                                                                                                                {region.name}
+                                                                                                                                                        </MenuItem>
+                                                                                                                                                ))}
+                                                                                                                                        </Select>
+                                                                                                                                </FormControl>
+
+                                                                                                                                <FormControl size="small" sx={{ minWidth: 220 }}>
+                                                                                                                                        <InputLabel>
+                                                                                                                                                Customer Category
+                                                                                                                                        </InputLabel>
+
+                                                                                                                                        <Select
+                                                                                                                                                value={selectedCategory}
+                                                                                                                                                label="Customer Category"
+                                                                                                                                                onChange={(e) =>
+                                                                                                                                                        setSelectedCategory(e.target.value)
+                                                                                                                                                }
+                                                                                                                                        >
+                                                                                                                                                <MenuItem value="">
+                                                                                                                                                        All categories
+                                                                                                                                                </MenuItem>
+
+                                                                                                                                                {categories.map(category => (
+                                                                                                                                                        <MenuItem
+                                                                                                                                                                key={category.id}
+                                                                                                                                                                value={category.id}
+                                                                                                                                                        >
+                                                                                                                                                                {category.name}
+                                                                                                                                                        </MenuItem>
+                                                                                                                                                ))}
+                                                                                                                                        </Select>
+                                                                                                                                </FormControl>
+                                                                                                                        </Stack>
+
+                                                                                                                        <Button
+                                                                                                                                variant="contained"
+                                                                                                                                onClick={() =>
+                                                                                                                                        setAnalyticsView("summary")
+                                                                                                                                }
+                                                                                                                        >
+                                                                                                                                Chart View
+                                                                                                                        </Button>
+                                                                                                                </Box>
+                                                                                                                <LineChart
+                                                                                                                        height={320}
+                                                                                                                        xAxis={[
+                                                                                                                                {
+                                                                                                                                        scaleType: "point",
+                                                                                                                                        data: chartData.labels,
+                                                                                                                                },
+                                                                                                                        ]}
+                                                                                                                        series={[
+                                                                                                                                {
+                                                                                                                                        data:
+                                                                                                                                                // transactionType === "collections"
+                                                                                                                                                //         ? chartData.collections
+                                                                                                                                                //         : chartData.debts,
+                                                                                                                                                transactionType === "collections"
+                                                                                                                                                        ? filteredChartData.collections
+                                                                                                                                                        : filteredChartData.debts,
+
+                                                                                                                                        label:
+                                                                                                                                                transactionType === "collections"
+                                                                                                                                                        ? "Daily Collections"
+                                                                                                                                                        : "Daily Debts",
+
+                                                                                                                                        area: true,
+                                                                                                                                        showMark: false,
+                                                                                                                                        curve: "natural",
+                                                                                                                                        color:
+                                                                                                                                                transactionType === "collections"
+                                                                                                                                                        ? "#14B8A6"
+                                                                                                                                                        : "#D97706",
+                                                                                                                                },
+                                                                                                                        ]}
+                                                                                                                />
+                                                                                                        </CardContent>
+                                                                                                </Card>
+                                                                                        </Grid>
+
+
                                                                                 </Grid>
 
+                                                                        </Stack>
 
-                                                                        </Grid>
-
-                                                                </Stack>
-
+                                                                </Grid>
                                                         </Grid>
-                                                </Grid>
-                                        </Box>
+                                                </Box>
 
+                                        </>
+                                )}
+
+                        </>) : (
+                                <>
+                                        <Card>
+                                                <Box
+                                                        sx={{
+                                                                px: 3,
+                                                                py: 2.5,
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "space-between",
+                                                                gap: 2,
+                                                        }}
+                                                >
+                                                        <Stack direction="row" spacing={1.5} alignItems="center">
+                                                                <Box
+                                                                        sx={{
+                                                                                width: 42,
+                                                                                height: 42,
+                                                                                borderRadius: 2,
+                                                                                bgcolor: "#FFF7E6",
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                justifyContent: "center",
+                                                                        }}
+                                                                >
+                                                                        <FactCheckOutlined
+                                                                                sx={{ color: "#B54708" }}
+                                                                        />
+                                                                </Box>
+
+                                                                <Box>
+                                                                        <Stack
+                                                                                direction="row"
+                                                                                spacing={1}
+                                                                                alignItems="center"
+                                                                        >
+                                                                                <Typography
+                                                                                        variant="h6"
+                                                                                        sx={{ fontWeight: 700 }}
+                                                                                >
+                                                                                        Tenant Admin Dashboard
+                                                                                </Typography>
+
+                                                                                <Chip
+                                                                                        size="small"
+                                                                                        label="Tenant Admin"
+                                                                                        sx={{
+                                                                                                bgcolor: "#FFF7E6",
+                                                                                                color: "#B54708",
+                                                                                                fontWeight: 700,
+                                                                                        }}
+                                                                                />
+                                                                        </Stack>
+
+                                                                        <Typography
+                                                                                variant="body2"
+                                                                                color="text.secondary"
+                                                                        >
+                                                                                Tenant dashboard analytics
+                                                                        </Typography>
+                                                                </Box>
+                                                        </Stack>
+
+                                                        <Button
+                                                                size="small"
+                                                                variant="outlined"
+                                                                startIcon={
+                                                                        loading ? (
+                                                                                <CircularProgress size={16} />
+                                                                        ) : (
+                                                                                <Refresh />
+                                                                        )
+                                                                }
+                                                                onClick={fetchAnalyticsBreakdown}
+                                                                disabled={loading}
+                                                        >
+                                                                Refresh
+                                                        </Button>
+                                                </Box>
+
+                                                <Divider />
+                                                <Box
+                                                        sx={{
+                                                                py: 6,
+                                                                px: 3,
+                                                                textAlign: "center",
+                                                        }}
+                                                >
+                                                        <FactCheckOutlined
+                                                                sx={{
+                                                                        fontSize: 45,
+                                                                        color: "#98A2B3",
+                                                                        mb: 1,
+                                                                }}
+                                                        />
+
+                                                        <Typography
+                                                                variant="subtitle1"
+                                                                fontWeight={700}
+                                                        >
+                                                                You don't have permission to view dashboard contents.
+                                                        </Typography>
+
+                                                        <Typography
+                                                                variant="body2"
+                                                                color="text.secondary"
+                                                                sx={{ mt: 0.5 }}
+                                                        >
+                                                                Ask your tenant admin to assign the permission to you.
+                                                        </Typography>
+                                                </Box>
+                                        </Card>
                                 </>
                         )}
                 </>

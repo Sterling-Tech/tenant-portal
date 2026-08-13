@@ -76,12 +76,12 @@ export const getPermissions = () => {
 export const getSystemPermissions=()=>{
     return get<Permission[]>("/user/permissions/all/")
 }
-export const getUserPermissions = (userId: string) => {
-    return get<PermissionItem[]>("/user/" + userId + "/permissions/");
-}
-export const getUserPermission = (userId: string) => {
-    return get<PermissionItem[]>("/user/permissions/" + userId );
-}
+// export const getUserPermissions = (userId: string) => {
+//     return get<PermissionItem[]>("/user/" + userId + "/permissions/");
+// }
+// export const getUserPermission = (userId: string) => {
+//     return get<PermissionItem[]>("/user/permissions/" + userId );
+// }
 export const grantPermissions = (
     data: GrantPermissionPayload
 ) => {

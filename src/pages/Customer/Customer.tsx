@@ -1194,66 +1194,150 @@ const fmt = (n: Number) =>
 
       {/* DETAIL PANEL */}
       {openViewModal && selected && (
-        <Box
-          sx={{
-            position: "fixed",
-            inset: 0,
-            bgcolor: "rgba(0,0,0,0.4)",
-            backdropFilter: "blur(6px)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1400,
-            animation: "fadeIn 0.3s ease",
-          }}
-        >
-          <Card
-            sx={{
-              width: 800,
-              borderRadius: 4,
-              overflow: "hidden",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-            }}
-          >
-            {/* HEADER */}
-            <Box sx={{ bgcolor: "#1E3A8A", color: "#fff", p: 3 }}>
-              <Stack direction="row" justifyContent="space-between">
-                <Box>
-                  <Typography fontSize={20} fontWeight={700}>
-                    {selected.name}
-                  </Typography>
-                  <Typography fontSize={13}>
-                    {selected.phone_number}
-                  </Typography>
-                </Box>
+        // <Box
+        //   sx={{
+        //     position: "fixed",
+        //     inset: 0,
+        //     bgcolor: "rgba(0,0,0,0.4)",
+        //     backdropFilter: "blur(6px)",
+        //     display: "flex",
+        //     justifyContent: "center",
+        //     alignItems: "center",
+        //     zIndex: 1400,
+        //     animation: "fadeIn 0.3s ease",
+        //   }}
+        // >
+        //   <Card
+        //     sx={{
+        //       width: 800,
+        //       borderRadius: 4,
+        //       overflow: "hidden",
+        //       boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+        //     }}
+        //   >
+        //     {/* HEADER */}
+        //     <Box sx={{ bgcolor: "#1E3A8A", color: "#fff", p: 3 }}>
+        //       <Stack direction="row" justifyContent="space-between">
+        //         <Box>
+        //           <Typography fontSize={20} fontWeight={700}>
+        //             {selected.name}
+        //           </Typography>
+        //           <Typography fontSize={13}>
+        //             {selected.phone_number}
+        //           </Typography>
+        //         </Box>
 
-                <Button
-                  onClick={() => setOpenViewModal(false)}
-                  sx={{ color: "#fff" }}
-                >
-                  Close
-                </Button>
-              </Stack>
-            </Box>
+        //         <Button
+        //           onClick={() => setOpenViewModal(false)}
+        //           sx={{ color: "#fff" }}
+        //         >
+        //           Close
+        //         </Button>
+        //       </Stack>
+        //     </Box>
 
-            {/* BODY */}
-            <Box p={0}>
+        //     {/* BODY */}
+        //     <Box p={0}>
 
-              {/* TABS */}
-              <Tabs
-                value={viewTab}
-                onChange={(e, v) => setViewTab(v)}
-                sx={{
-                  px: 3,
-                  borderBottom: "1px solid #E2E8F0",
-                }}
-              >
-                <Tab label="Overview" value="overview" />
-                <Tab label="CIS Information" value="cis" />
-                <Tab label="Transactions" value="transactions" />
-                <Tab label="Charts" value="charts" />
-                <Tab label="Engineering Tokens" value="engineering" />
-              </Tabs>
+        //       {/* TABS */}
+        //       <Tabs
+        //         value={viewTab}
+        //         onChange={(e, v) => setViewTab(v)}
+        //         sx={{
+        //           px: 3,
+        //           borderBottom: "1px solid #E2E8F0",
+        //         }}
+        //       >
+        //         <Tab label="Overview" value="overview" />
+        //         <Tab label="CIS Information" value="cis" />
+        //         <Tab label="Transactions" value="transactions" />
+        //         <Tab label="Charts" value="charts" />
+        //         <Tab label="Engineering Tokens" value="engineering" />
+        //       </Tabs>
+        <Dialog
+  open={openViewModal}
+  onClose={() => setOpenViewModal(false)}
+  fullWidth
+  maxWidth="lg"
+  PaperProps={{
+    sx: {
+      height: "90vh",
+      maxHeight: "90vh",
+      borderRadius: 4,
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+    },
+  }}
+>
+  {/* FIXED HEADER */}
+  <Box
+    sx={{
+      bgcolor: "#1E3A8A",
+      color: "#fff",
+      p: 3,
+      flexShrink: 0,
+    }}
+  >
+    <Stack direction="row" justifyContent="space-between">
+      <Box>
+        <Typography fontSize={20} fontWeight={700}>
+          {selected.name}
+        </Typography>
+
+        <Typography fontSize={13}>
+          {selected.phone_number}
+        </Typography>
+      </Box>
+
+      <Button
+        onClick={() => setOpenViewModal(false)}
+        sx={{ color: "#fff" }}
+      >
+        Close
+      </Button>
+    </Stack>
+  </Box>
+
+  {/* FIXED / HORIZONTAL SCROLLABLE TABS */}
+  <Box
+    sx={{
+      flexShrink: 0,
+      borderBottom: "1px solid #E2E8F0",
+      overflowX: "auto",
+    }}
+  >
+    <Tabs
+      value={viewTab}
+      onChange={(e, v) => setViewTab(v)}
+      variant="scrollable"
+      scrollButtons="auto"
+      allowScrollButtonsMobile
+      sx={{
+        minHeight: 48,
+
+        "& .MuiTab-root": {
+          minWidth: "auto",
+          px: 2,
+          whiteSpace: "nowrap",
+        },
+      }}
+    >
+      <Tab label="Overview" value="overview" />
+      <Tab label="CIS Information" value="cis" />
+      <Tab label="Transactions" value="transactions" />
+      <Tab label="Charts" value="charts" />
+      <Tab label="Engineering Tokens" value="engineering" />
+    </Tabs>
+  </Box>
+   <Box
+    sx={{
+      flex: 1,
+      minHeight: 0,
+      overflowY: "auto",
+      overflowX: "hidden",
+    }}
+  >
 
               {/* OVERVIEW */}
               {viewTab === "overview" && (
@@ -1876,10 +1960,13 @@ const fmt = (n: Number) =>
                 </Box>
               )}
 
-            </Box>
+            {/* </Box>
           </Card>
+        </Box> */}
         </Box>
+        </Dialog>
       )}
+
       {openModal && (
         <Box
           sx={{

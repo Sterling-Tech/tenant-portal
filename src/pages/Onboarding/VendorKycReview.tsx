@@ -151,6 +151,18 @@ export default function VendorKycReview({
     setConfirmationAction(null);
   };
 
+  const scrollToRejectionReason = () => {
+    setRejectMode(true);
+
+    // Wait for the rejection section to render
+    setTimeout(() => {
+      document.getElementById("vendor-rejection-reason")?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 100);
+  };
+
   return (
     <>
       {/* =========================================================
@@ -182,7 +194,7 @@ export default function VendorKycReview({
 
         <DialogContent dividers>
           <Stack spacing={3}>
-
+            
             {/* Business Information */}
             <Card variant="outlined" sx={{ p: 2 }}>
               <Typography fontWeight={700} mb={2}>
@@ -399,24 +411,89 @@ export default function VendorKycReview({
               </Card>
             )}
 
-            {/* Rejection reason */}
+            {/* Rejection Reason */}
             {rejectMode && (
-              <Alert severity="warning">
-                <Typography fontWeight={600} mb={1}>
-                  Rejection Reason
-                </Typography>
+              <Card
+                id="vendor-rejection-reason"
+                variant="outlined"
+                sx={{
+                  // border: "2px solid #F97316",
+                  borderRadius: 1,
+                  overflow: "hidden",
+                  bgcolor: "#FFF7ED",
+                  scrollMarginTop: "80px",
+                }}
+              >
+                {/* Header */}
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    bgcolor: "#FFEDD5",
+                    borderBottom: "1px solid #FDBA74",
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                  >
+                    <WarningAmberOutlinedIcon color="warning" />
 
-                <TextField
-                  fullWidth
-                  multiline
-                  minRows={4}
-                  placeholder="Explain why this vendor's KYC is being rejected..."
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  disabled={submitting}
-                  sx={{ mt: 1 }}
-                />
-              </Alert>
+                    <Box>
+                      <Typography
+                        fontWeight={700}
+                        color="#9A3412"
+                      >
+                        Rejection Reason
+                      </Typography>
+
+                      <Typography
+                        variant="caption"
+                        color="#C2410C"
+                      >
+                        This reason will be sent to the vendor.
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Box>
+
+                {/* Input */}
+                <Box sx={{ p: 2 }}>
+                  <TextField
+                    fullWidth
+                    multiline
+                    minRows={5}
+                    placeholder="Clearly explain why this vendor's KYC is being rejected..."
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    disabled={submitting}
+                    error={rejectMode && !reason.trim()}
+                    helperText={
+                      reason.trim()
+                        ? `${reason.trim().length} characters`
+                        : "A clear rejection reason is required."
+                    }
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        bgcolor: "#fff",
+                      },
+                    }}
+                  />
+
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      display: "block",
+                      mt: 1,
+                    }}
+                  >
+                    Be specific so the vendor understands what needs to
+                    be corrected before resubmitting.
+                  </Typography>
+                </Box>
+              </Card>
             )}
           </Stack>
         </DialogContent>
@@ -435,7 +512,7 @@ export default function VendorKycReview({
                 color="error"
                 variant="outlined"
                 startIcon={<CancelOutlinedIcon />}
-                onClick={() => setRejectMode(true)}
+                onClick={scrollToRejectionReason}
                 disabled={submitting}
               >
                 Reject
@@ -553,7 +630,7 @@ export default function VendorKycReview({
       {/* =========================================================
           REJECTION CONFIRMATION DIALOG
       ========================================================== */}
-      <Dialog
+      {/* <Dialog
         open={confirmationAction === "reject"}
         onClose={closeConfirmation}
         maxWidth="sm"
@@ -630,7 +707,172 @@ export default function VendorKycReview({
             {submitting ? "Rejecting..." : "Yes, Reject KYC"}
           </Button>
         </DialogActions>
+      </Dialog> */}
+      <Dialog
+        open={confirmationAction === "reject"}
+        onClose={closeConfirmation}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+          >
+            <Box
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: "50%",
+                bgcolor: "#FEE2E2",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <WarningAmberOutlinedIcon color="error" />
+            </Box>
+
+            <Box>
+              <Typography
+                variant="h6"
+                fontWeight={700}
+              >
+                Reject Vendor KYC?
+              </Typography>
+
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                Please review the rejection reason before continuing.
+              </Typography>
+            </Box>
+          </Stack>
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Stack spacing={3}>
+
+            {/* Vendor */}
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Vendor
+              </Typography>
+
+              <Typography
+                fontWeight={700}
+                fontSize={16}
+              >
+                {vendor.business_name}
+              </Typography>
+
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                {vendor.email}
+              </Typography>
+            </Box>
+
+            {/* Warning */}
+            <Alert severity="error">
+              <Typography fontWeight={600}>
+                This vendor's KYC will be rejected.
+              </Typography>
+
+              <Typography variant="body2" mt={0.5}>
+                The vendor will need to correct the issues below
+                and resubmit their KYC.
+              </Typography>
+            </Alert>
+
+            {/* VERY VISIBLE REJECTION REASON */}
+            <Box>
+              <Typography
+                fontWeight={700}
+                mb={1}
+                color="#991B1B"
+              >
+                Rejection Reason
+              </Typography>
+
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: "#FEF2F2",
+                  border: "2px solid #FCA5A5",
+                  borderLeft: "6px solid #DC2626",
+                }}
+              >
+                <Typography
+                  fontSize={15}
+                  fontWeight={500}
+                  color="#7F1D1D"
+                  sx={{
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {reason.trim()}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Confirmation message */}
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              Are you sure you want to reject the KYC for{" "}
+              <strong>{vendor.business_name}</strong>?
+            </Typography>
+
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setConfirmationAction(null);
+            }}
+            disabled={submitting}
+          >
+            Back & Edit Reason
+          </Button>
+
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmRejection}
+            disabled={submitting || !reason.trim()}
+            startIcon={
+              submitting ? (
+                <CircularProgress
+                  size={18}
+                  color="inherit"
+                />
+              ) : (
+                <CancelOutlinedIcon />
+              )
+            }
+          >
+            {submitting
+              ? "Rejecting..."
+              : "Yes, Reject KYC"}
+          </Button>
+
+        </DialogActions>
       </Dialog>
+
     </>
   );
 }

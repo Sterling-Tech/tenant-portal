@@ -46,7 +46,7 @@ import { useEnsureUserApiKey } from '../../hooks/useEnsureUserApiKey';
 import Onboarding from '../../pages/Onboarding/Onboarding';
 import { usePermission } from '../../hooks/usePermission';
 import { RootState } from '../../store/store';
-import {clearPermissions} from '../../store/slices/permissionSlice'
+import { clearPermissions } from '../../store/slices/permissionSlice'
 
 const drawerWidth = 240;
 
@@ -179,29 +179,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <Divider />
             <List>
                 {/* Tenant Admin */}
-                <ListItem disablePadding>
-                    <ListItemButton
-                        selected={location.pathname === '/tenants/admin'}
-                        onClick={() => handleNavigation('/tenants/admin')}
-                        sx={{
-                            '&.Mui-selected': {
-                                backgroundColor: 'primary.main',
-                                color: 'white',
-                                '&:hover': {
-                                    backgroundColor: 'primary.dark',
-                                },
-                                '& .MuiListItemIcon-root': {
+                    < ListItem disablePadding>
+                        <ListItemButton
+                            selected={location.pathname === '/tenants/admin'}
+                            onClick={() => handleNavigation('/tenants/admin')}
+                            sx={{
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
                                     color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
                                 },
-                            },
-                        }}
-                    >
-                        <ListItemIcon>
-                            <Domain />
-                        </ListItemIcon>
-                        <ListItemText primary="Tenant Admin" />
-                    </ListItemButton>
-                </ListItem>
+                            }}
+                        >
+                            <ListItemIcon>
+                                <Domain />
+                            </ListItemIcon>
+                            <ListItemText primary="Tenant Admin" />
+                        </ListItemButton>
+
+                    </ListItem>
 
                 {/* Vendor Management Section - Collapsible */}
                 <ListItem disablePadding>
@@ -616,7 +617,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </ListItem>
 
             </List>
-        </Box>
+        </Box >
     );
 
     return (
