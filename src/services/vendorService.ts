@@ -951,6 +951,18 @@ export interface TotalVendorWallet {
   balance: string;
 }
 
+export const fetchCustomerBills = (
+  customerId: string | number,
+  params?: { year?: number | string; month?: string; page?: number }
+) => {
+  const query = new URLSearchParams();
+  query.append('customer_id', String(customerId));
+  if (params?.year) query.append('year', String(params.year));
+  if (params?.month) query.append('month', params.month);
+  if (params?.page) query.append('page', String(params.page));
+  return get<any>(`/customer/bills/?${query.toString()}`);
+};
+
 export const totalVendorWallet = (
   vendorType?: "internal" | "external"
 ) => {
