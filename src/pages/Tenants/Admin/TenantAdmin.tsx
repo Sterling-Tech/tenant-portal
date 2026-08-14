@@ -161,6 +161,7 @@ const TenantAdmin: React.FC = () => {
         //                                 : [],
         //         };
         // }, [breakdownData, transactionType]);
+
         const chartData = useMemo(() => {
                 const labels = Array.from({ length: 30 }, (_, i) => `D${i + 1}`);
 
@@ -400,44 +401,8 @@ const TenantAdmin: React.FC = () => {
                 fetchVendorWallet();
         }, [vendorDebtFilter]);
 
-        useEffect(() => {
-                if (configuration) {
-                        setConfigDraft({
-                                max_users: String(configuration.max_users ?? ''),
-                                api_rate_limit: String(configuration.api_rate_limit ?? ''),
-                                billing_cycle: configuration.billing_cycle ?? '',
-                                max_storage_mb: String(configuration.limits?.max_storage_mb ?? ''),
-                        });
-                } else {
-                        setConfigDraft({
-                                max_users: '',
-                                api_rate_limit: '',
-                                billing_cycle: '',
-                                max_storage_mb: '',
-                        });
-                }
-        }, [configuration]);
+       
 
-        // Use backend search results directly when search is active
-        // Only use local filtering as fallback if backend search hasn't completed
-
-        const closeDomainModal = () => setDomainModalOpen(false);
-
-
-
-        // Bulk operations state
-        const [selectedTenants, setSelectedTenants] = useState<Set<string>>(new Set());
-        const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
-        const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate' | 'delete' | null>(null);
-
-        // Analytics state
-        const [analyticsView, setAnalyticsView] = useState<'summary' | 'detailed'>('summary');
-
-        // Bulk operation handlers
-        const closeBulkActionDialog = () => {
-                setBulkActionDialogOpen(false);
-                setBulkAction(null);
-        };
         const pageLoading =
                 loading ||
                 analyticsLoading ||
@@ -449,7 +414,7 @@ const TenantAdmin: React.FC = () => {
         return (
                 <>
                         {can("view_vendor_analytics") ? (<>
-                                {pageLoading ? (
+                                {loading ? (
                                         <Box
                                                 sx={{
                                                         minHeight: "80vh",
@@ -763,117 +728,7 @@ const TenantAdmin: React.FC = () => {
                                                                 </Grid>
                                                         )}
                                                         <Grid container spacing={3}>
-                                                                {/* <Grid item xs={12} md={4}>
-                                                                <Card>
-                                                                        <CardHeader
-                                                                                title={
-                                                                                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                                                                <Typography variant="body2" color="text.secondary">
-                                                                                                        {collectionFilter === 'category'
-                                                                                                                ? 'Collection Breakdown'
-                                                                                                                : collectionFilter === 'branch'
-                                                                                                                        ? 'Branch/Region Breakdown'
-                                                                                                                        : collectionFilter === 'tariff'
-                                                                                                                                ? 'Tariff Breakdown'
-                                                                                                                                : collectionFilter === 'feeder'
-                                                                                                                                        ? 'Feeder Breakdown'
-                                                                                                                                        : collectionFilter === 'transformer'
-                                                                                                                                                ? 'Transformer Breakdown'
-                                                                                                                                                : 'Collection Breakdown'}
 
-                                                                                        </Typography>
-
-                                                                                        <TextField
-                                                                                                        select
-                                                                                                        size="small"
-                                                                                                        value={collectionFilter}
-                                                                                                        onChange={(e) =>
-                                                                                                                setCollectionFilter(
-                                                                                                                        e.target.value as
-                                                                                                                        | 'category'
-                                                                                                                        | 'branch'
-                                                                                                                        | 'tariff'
-                                                                                                                        | 'feeder'
-                                                                                                                        | 'transformer'
-                                                                                                                )
-                                                                                                        }
-                                                                                                        variant="standard"
-                                                                                                        InputProps={{ disableUnderline: true }}
-                                                                                                        sx={{
-                                                                                                                width: 150,
-                                                                                                                '& .MuiInputBase-root': {
-                                                                                                                        padding: 0,
-                                                                                                                        margin: 0,
-                                                                                                                },
-                                                                                                                '& .MuiSelect-select': {
-                                                                                                                        padding: '4px 8px',
-                                                                                                                },
-                                                                                                        }}
-                                                                                                >
-                                                                                                        <MenuItem value="category">Category</MenuItem>
-                                                                                                        <MenuItem value="branch">Branch / Region</MenuItem>
-                                                                                                        <MenuItem value="tariff">Tariff Class</MenuItem>
-                                                                                                        <MenuItem value="feeder">Feeder</MenuItem>
-                                                                                                        <MenuItem value="transformer">Transformer</MenuItem>
-                                                                                                </TextField>
-                                                                                        </Box>
-                                                                                }
-
-                                                                                avatar={<Assessment color="primary" />}
-
-                                                                                subheader="BY CATEGORY"
-
-                                                                                sx={{
-                                                                                        height: 0,
-                                                                                        paddingBottom: 0,
-                                                                                        '& .MuiInputBase-root': {
-                                                                                                padding: 0,
-                                                                                                margin: 0,
-                                                                                        },
-                                                                                        '& .MuiSelect-select': {
-                                                                                                padding: '0px 0px',
-                                                                                        },
-                                                                                }}
-
-                                                                        />
-                                                                       
-                                                                        <CardContent>
-                                                                                <Stack spacing={2}>
-
-                                                                                        {(breakdownData?.debt_exposure || []).map((item, i) => {
-                                                                                                const value = Number(item.total_collections || 0);
-                                                                                                return (
-                                                                                                        <Box key={i}>
-                                                                                                                <Box display="flex" justifyContent="space-between">
-                                                                                                                        <Typography variant="body2">{item.category_name}</Typography>
-                                                                                                                        <Typography fontWeight={500}>₦{value.toLocaleString()}</Typography>
-                                                                                                                </Box>
-                                                                                                                <Box
-                                                                                                                        sx={{
-                                                                                                                                height: 6,
-                                                                                                                                bgcolor: '#eee',
-                                                                                                                                borderRadius: 5,
-                                                                                                                                mt: 0.5,
-                                                                                                                        }}
-                                                                                                                >
-                                                                                                                        <Box
-                                                                                                                                sx={{
-                                                                                                                                        width: `${value > 0 ? Math.min(value / 1000, 100) : 0}%`,
-                                                                                                                                        height: '100%',
-                                                                                                                                        bgcolor: 'primary.main',
-                                                                                                                                        borderRadius: 5,
-                                                                                                                                }}
-                                                                                                                        />
-                                                                                                                </Box>
-                                                                                                        </Box>
-                                                                                                );
-                                                                                        })}
-
-
-                                                                                </Stack>
-                                                                        </CardContent>
-                                                                </Card>
-                                                        </Grid> */}
                                                                 <Grid item xs={12} md={4}>
                                                                         <Card>
                                                                                 <CardHeader
@@ -1150,15 +1005,6 @@ const TenantAdmin: React.FC = () => {
                                                                                                                                         </Select>
                                                                                                                                 </FormControl>
                                                                                                                         </Stack>
-
-                                                                                                                        <Button
-                                                                                                                                variant="contained"
-                                                                                                                                onClick={() =>
-                                                                                                                                        setAnalyticsView("summary")
-                                                                                                                                }
-                                                                                                                        >
-                                                                                                                                Chart View
-                                                                                                                        </Button>
                                                                                                                 </Box>
                                                                                                                 <LineChart
                                                                                                                         height={320}
@@ -1171,9 +1017,6 @@ const TenantAdmin: React.FC = () => {
                                                                                                                         series={[
                                                                                                                                 {
                                                                                                                                         data:
-                                                                                                                                                // transactionType === "collections"
-                                                                                                                                                //         ? chartData.collections
-                                                                                                                                                //         : chartData.debts,
                                                                                                                                                 transactionType === "collections"
                                                                                                                                                         ? filteredChartData.collections
                                                                                                                                                         : filteredChartData.debts,
