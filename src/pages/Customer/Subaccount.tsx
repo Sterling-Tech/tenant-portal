@@ -407,7 +407,7 @@ export default function DebtManager() {
           <Grid item xs={12} md={8}>
             <TextField
               fullWidth
-              placeholder="Enter meter number or account number"
+              placeholder=" Enter meter number or account number to find customer"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
@@ -444,9 +444,9 @@ export default function DebtManager() {
                 color: "#fff"
               }}
             >
-              Find Customer
+              <Search /> Search
             </Button>
-            <div style={{ marginTop: 15, fontSize: "10.5px", color: "var(--text-light)" }}> Press <kbd>Enter</kbd> to search</div>
+            {/* <div style={{ marginTop: 15, fontSize: "10.5px", color: "var(--text-light)" }}> Press <kbd>Enter</kbd> to search</div> */}
           </Grid>
 
 

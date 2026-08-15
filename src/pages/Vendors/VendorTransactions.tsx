@@ -799,8 +799,8 @@ const VendorTransactions: React.FC = () => {
       {/* SUMMARY */}
       <Grid pb={2} container spacing={2}>
         {[
-          // { title: "Total Wallet Balance", value: selectedVendor?.wallet?.balance, color: "#2563eb" },
-          { title: "Total Wallet Balance", value: displayBalance, color: "#2563eb" },
+          { title: "Total Wallet Balance", value: selectedVendor?.wallet?.balance, color: "#2563eb" },
+          //{ title: "Total Wallet Balance", value: displayBalance, color: "#2563eb" },
           { title: "Total Credits", value: totalCredits, color: "#16a34a" },
           { title: "Total Debits", value: totalDebits, color: "#dc2626" },
         ].map((item, i) => (
@@ -1077,9 +1077,9 @@ const VendorTransactions: React.FC = () => {
                   <AccountBalanceWallet fontSize="small" />
                   <Typography fontSize={12}>VENDING WALLET</Typography>
                 </Stack>
-
+                  
                 <Typography fontSize={22} fontWeight={700} color="#16a34a">
-                  ₦{displayBalance.toLocaleString()}
+                  ₦{Number(selectedVendor?.wallet?.balance || 0).toLocaleString()}
                 </Typography>
 
                 <Typography fontSize={12} color="#6b7280">
