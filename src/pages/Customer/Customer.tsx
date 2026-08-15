@@ -662,21 +662,28 @@ const CustomerManagement = () => {
   };
 
   useEffect(() => {
-    if (
-      (viewTab === "transactions" || viewTab === "charts") &&
-      selected?.id &&
-      transactions.length === 0
-    ) {
+    if (!selected?.id) return;
+
+    if (viewTab === "transactions" || viewTab === "charts") {
       loadCustomerTransactions(selected.id);
     }
     if (viewTab === "engineering" && selected?.id) {
       loadEngineeringTokens(selected.id);
     }
-    if (viewTab === "bills" && selected?.id && bills.length === 0) {
+    if (viewTab === "bills") {
       loadCustomerBills(selected.id);
     }
-  }, [viewTab, selected]);
-
+  }, [viewTab, selected?.id]);
+  // ── Clear customer-specific state when selected customer changes ────────────
+  useEffect(() => {
+    setTransactions([]);
+    setTransactionCount(0);
+    setTransactionPage(1);
+    setBills([]);
+    setBillsCount(0);
+    setBillsPage(1);
+    setEngineeringTokens([]);
+  }, [selected?.id]);
   const chartData = useMemo(() => {
     return transactions
       .slice()
