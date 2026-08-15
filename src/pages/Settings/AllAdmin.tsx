@@ -126,7 +126,7 @@ export default function AllAdmin() {
 
 
             </Table>
-            <Menu
+            {/* <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={() => {
@@ -142,7 +142,7 @@ export default function AllAdmin() {
                 >
                     View History
                 </MenuItem>
-            </Menu>
+            </Menu> */}
 
             <UserHistoryModal
                 open={historyOpen}

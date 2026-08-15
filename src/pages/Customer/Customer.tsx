@@ -1823,10 +1823,10 @@ const CustomerManagement = () => {
                               <Typography variant="body2" fontWeight={800} color="warning.dark">TOTAL DUE</Typography>
                               <Typography variant="body2" fontWeight={800} color="warning.dark">{formatCurrency(selectedBill.charge?.total_due)}</Typography>
                             </Stack>
-                            <Stack direction="row" justifyContent="space-between" sx={{ py: 0.6, bgcolor: "#f0fdf4", px: 1, borderRadius: 1 }}>
+                            {/* <Stack direction="row" justifyContent="space-between" sx={{ py: 0.6, bgcolor: "#f0fdf4", px: 1, borderRadius: 1 }}>
                               <Typography variant="body2" fontWeight={800} color="success.dark">TOTAL BILL</Typography>
                               <Typography variant="body2" fontWeight={800} color="success.dark">{formatCurrency(selectedBill.charge?.total_bill)}</Typography>
-                            </Stack>
+                            </Stack> */}
                           </Stack>
                         </Grid>
                       </Grid>
