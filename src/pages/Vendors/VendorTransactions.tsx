@@ -791,7 +791,7 @@ const VendorTransactions: React.FC = () => {
           <Button size="small" onClick={() => { setReportOpen(true); setReportError(null); }} sx={{ height: 36, textTransform: "none", borderRadius: 2 }} variant="contained">
             + Generate Report
           </Button>
-          
+
 
 
         </Stack>
@@ -827,7 +827,7 @@ const VendorTransactions: React.FC = () => {
               <Stack direction="row" justifyContent="space-between">
                 <Typography fontWeight={600}>Select Vendor</Typography>
                 <Typography fontSize={12} color="gray">
-                  {vendorCount} total
+                  {count} total
                 </Typography>
               </Stack>
               <Stack direction="row" justifyContent="space-between" spacing={1}>
@@ -890,13 +890,7 @@ const VendorTransactions: React.FC = () => {
                 ))}
               </Stack>
               <Stack mt={2} spacing={1.2}>
-
-                {loading ? (
-                  <Box py={3} textAlign="center">
-                    <CircularProgress size={24} />
-                  </Box>
-                ) : (
-                  vendors?.map((v) => {
+                {vendors?.map((v) => {
                     // const isActive = v?.account_status === "active";
                     const status = getStatus(v);
                     const chip = statusConfig[status];
@@ -996,29 +990,147 @@ const VendorTransactions: React.FC = () => {
                         </Stack>
                       </Box>
                     );
+                  })}
+                {/* {loading ? (
+                  <Box py={3} textAlign="center">
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : (
+                  vendors?.map((v) => {
+                   
+                    const status = getStatus(v);
+                    const chip = statusConfig[status];
+                    const selected = vendorsId === v.id;
+                    return (
+                      <Box
+                        key={v.id}
+                        onClick={() => {
+                          setVendorId(v.id);
+                          selectVendor(v.id);
+                        }}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 2,
+                          cursor: "pointer",
+                          transition: "all .25s",
+
+                          bgcolor: selected ? "#DBEAFE" : "#fff",
+
+                          border: selected
+                            ? "2px solid #2563EB"
+                            : "1px solid #E5E7EB",
+
+                          boxShadow: selected
+                            ? "0 4px 14px rgba(37,99,235,.18)"
+                            : "0 1px 2px rgba(0,0,0,.05)",
+
+                          "&:hover": {
+                            bgcolor: selected ? "#DBEAFE" : "#F9FAFB",
+                            transform: "translateY(-1px)",
+                            boxShadow: "0 4px 10px rgba(0,0,0,.08)",
+                          },
+                        }}
+                      >
+
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+
+                          
+                          <Stack direction="row" spacing={1.2} alignItems="center">
+                            <Box
+                              sx={{
+                                width: 46,
+                                height: 36,
+                                borderRadius: 2,
+                                bgcolor: getColor(v.business_name),
+                                color: "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 13,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {v.business_name?.slice(0, 2)}
+                            </Box>
+
+                            <Box>
+                              <Typography
+                                fontSize={13}
+                                fontWeight={600}
+                                sx={{
+                                  maxWidth: 120,
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                {v.business_name}
+                              </Typography>
+
+                              <Typography fontSize={11} color="#6b7280">
+                                {v.vendor_type} {v.hierachy}
+                              </Typography>
+
+                            </Box>
+                          </Stack>
+
+                          
+                          <Box textAlign="right">
+                            <Typography fontSize={13} fontWeight={600} color="#111827">
+                              ₦{Number(v.wallet?.balance || 0).toLocaleString()}
+                            </Typography>
+
+                            <Chip
+                              label={chip.label}
+                              size="small"
+                              sx={{
+                                mt: 0.5,
+                                height: 20,
+                                fontSize: 10,
+                                fontWeight: 600,
+                                bgcolor: chip.bg,
+                                color: chip.color,
+                              }}
+                            />
+                          </Box>
+                        </Stack>
+                      </Box>
+                    );
                   })
-                )}
+                )} */}
 
               </Stack>
               {/* Pagination */}
-              <Stack
-                direction="row"
-                justifyContent="center"
-                mt={2}
-              >
 
-                <Pagination
-                  count={totalPages}
-                  page={page}
-                  onChange={(_, value) => {
-                    setPage(value);
-                    load(value);
-                  }}
-                  color="primary"
-                  size="small"
-                  shape="rounded"
-                />
-              </Stack>
+              <div className="flex items-center justify-between px-4 py-4 border-t">
+                <div className="text-sm text-gray-500">
+                  Showing page {page} • {count} total vendors
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    disabled={!previous}
+                    onClick={() => previous && setPage((p) => p - 1)}
+                    className={`px-4 py-2 rounded-lg border ${previous
+                      ? "bg-white hover:bg-gray-100"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      }`}
+                  >
+                    Previous
+                  </button>
+
+                  <button
+                    disabled={!next}
+                    onClick={() => next && setPage((p) => p + 1)}
+                    className={`px-4 py-2 rounded-lg border ${next
+                      ? "bg-blue-900 text-white hover:bg-blue-800"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
 
             </Box>
           </Card>
@@ -1077,7 +1189,7 @@ const VendorTransactions: React.FC = () => {
                   <AccountBalanceWallet fontSize="small" />
                   <Typography fontSize={12}>VENDING WALLET</Typography>
                 </Stack>
-                  
+
                 <Typography fontSize={22} fontWeight={700} color="#16a34a">
                   ₦{Number(selectedVendor?.wallet?.balance || 0).toLocaleString()}
                 </Typography>

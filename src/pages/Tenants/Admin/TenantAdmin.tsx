@@ -50,6 +50,7 @@ import { RootState } from '../../../store/store';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../../../utils/getErrorMessage';
 import { usePermission } from '../../../hooks/usePermission';
+import { height } from '@mui/system';
 type CustomerSummary = {
         total_customers?: number | string;
         active_customers?: number | string;
@@ -108,8 +109,8 @@ const TenantAdmin: React.FC = () => {
         const [collection, setCollection] = useState<DailyCollection | null>(null);
         const [dailyCollectionFilter, setDailyCollectionFilter] = useState<"all" | "energy_payments" | "debt_payments">("all");
 
-        const [vendorDebtFilter, setVendorDebtFilter] = useState<"all" | "external_wallet_amount" | "internal_wallet_amount">("all");
-        const [vendorWalletData, setVendorWalletData] = useState<TotalVendorWallet | null>(null);
+        const [internalWalletData, setInternalWalletData] = useState<TotalVendorWallet | null>(null);
+        const [externalWalletData, setExternalWalletData] = useState<TotalVendorWallet | null>(null);
         const [vendorWalletLoading, setVendorWalletLoading] = useState(false);
 
         const [configDraft, setConfigDraft] = useState({
@@ -372,25 +373,23 @@ const TenantAdmin: React.FC = () => {
         }, []);
 
         useEffect(() => {
-                const fetchVendorWallet = async () => {
+                const fetchVendorWallets = async () => {
                         try {
                                 setVendorWalletLoading(true);
 
-                                const vendorType =
-                                        vendorDebtFilter === "external_wallet_amount"
-                                                ? "external"
-                                                : vendorDebtFilter === "internal_wallet_amount"
-                                                        ? "internal"
-                                                        : undefined;
+                                const [internalData, externalData] = await Promise.all([
+                                        totalVendorWallet("internal"),
+                                        totalVendorWallet("external"),
+                                ]);
 
-                                const data = await totalVendorWallet(vendorType);
+                                console.log("Internal wallet:", internalData);
+                                console.log("External wallet:", externalData);
 
-                                console.log("Vendor wallet total:", data);
-
-                                setVendorWalletData(data);
+                                setInternalWalletData(internalData);
+                                setExternalWalletData(externalData);
                         } catch (error) {
                                 console.error(
-                                        "Failed to fetch vendor wallet total:",
+                                        "Failed to fetch vendor wallet totals:",
                                         error
                                 );
                         } finally {
@@ -398,10 +397,10 @@ const TenantAdmin: React.FC = () => {
                         }
                 };
 
-                fetchVendorWallet();
-        }, [vendorDebtFilter]);
+                fetchVendorWallets();
+        }, []);
 
-       
+
 
         const pageLoading =
                 loading ||
@@ -472,9 +471,11 @@ const TenantAdmin: React.FC = () => {
                                                                                                         }}
                                                                                                 >
                                                                                                         <Typography variant="subtitle2" color="text.secondary">
-                                                                                                                Daily Collection
+                                                                                                                {/* Daily Collection */}
+                                                                                                                {/* Collection Breakdown */}
+                                                                                                                Today's Collection
                                                                                                         </Typography>
-
+                                                                                                        {/* 
                                                                                                         <TextField
                                                                                                                 select
                                                                                                                 size="small"
@@ -515,11 +516,12 @@ const TenantAdmin: React.FC = () => {
                                                                                                                 <MenuItem value="debt_payments">
                                                                                                                         Debt Payments
                                                                                                                 </MenuItem>
-                                                                                                        </TextField>
+                                                                                                        </TextField> */}
+
                                                                                                 </Box>
 
                                                                                                 <CardContent sx={{ px: 0 }}>
-                                                                                                        <Typography variant="h5">
+                                                                                                        {/* <Typography variant="h5">
                                                                                                                 ₦
                                                                                                                 {Number(
                                                                                                                         dailyCollectionFilter === "energy_payments"
@@ -527,6 +529,12 @@ const TenantAdmin: React.FC = () => {
                                                                                                                                 : dailyCollectionFilter === "debt_payments"
                                                                                                                                         ? collection?.debt_payment ?? 0
                                                                                                                                         : collection?.total_collection ?? 0
+                                                                                                                ).toLocaleString()}
+                                                                                                        </Typography> */}
+                                                                                                        <Typography variant="h5">
+                                                                                                                ₦
+                                                                                                                {Number(
+                                                                                                                        collection?.total_collection ?? 0
                                                                                                                 ).toLocaleString()}
                                                                                                         </Typography>
 
@@ -542,7 +550,7 @@ const TenantAdmin: React.FC = () => {
                                                                                         </CardContent>
                                                                                 </Card>
                                                                         </Grid>
-                                                                        <Grid item xs={12} md={4}>
+                                                                        {/* <Grid item xs={12} md={4}>
                                                                                 <Card sx={{ height: "100%" }}>
                                                                                         <CardContent
 
@@ -556,11 +564,51 @@ const TenantAdmin: React.FC = () => {
                                                                                                 </Typography>
                                                                                                 <Typography variant="h5" marginTop={5}>
                                                                                                         ₦{Number(analyticsData?.analytics.average_revenue || 0).toLocaleString()}
-                                                                                                        {/* ₦{(400776).toLocaleString(undefined, { maximumFractionDigits: 2 })} */}
+                                                                                                        
+                                                                                                </Typography>
+                                                                                        </CardContent>
+                                                                                </Card>
+                                                                        </Grid> */}
+                                                                        <Grid item xs={12} md={4}>
+                                                                                <Card sx={{ height: "100%" }}>
+                                                                                        <CardContent
+
+                                                                                        >
+                                                                                                <Typography
+                                                                                                        color="text.secondary"
+                                                                                                        variant="body2"
+                                                                                                        
+
+                                                                                                >
+                                                                                                        Energy Payments
+                                                                                                </Typography>
+                                                                                                <Typography variant="h5" color="#1D4ED8">
+                                                                                                        ₦{Number(collection?.energy_payment || 0).toLocaleString()}
+                                                                                                </Typography>
+                                                                                                <Divider/>
+                                                                                                <Typography
+                                                                                                        color="text.secondary"
+                                                                                                        variant="body2"
+
+                                                                                                >
+                                                                                                        Debt Payments
+                                                                                                </Typography>
+                                                                                                <Typography variant="h5" color="#166534">
+                                                                                                        ₦{Number(collection?.debt_payment || 0).toLocaleString()}
+                                                                                                </Typography>
+                                                                                                <Divider/>
+                                                                                                <Typography
+                                                                                                        variant="caption"
+                                                                                                        color="text.secondary"
+                                                                                                >
+                                                                                                        {collection?.date
+                                                                                                                ? `Collection for ${collection.date}`
+                                                                                                                : "Today's collection"}
                                                                                                 </Typography>
                                                                                         </CardContent>
                                                                                 </Card>
                                                                         </Grid>
+
                                                                         {/* <Grid item xs={12} md={3}>
                                                                         <Card>
                                                                                 <CardContent>
@@ -584,7 +632,7 @@ const TenantAdmin: React.FC = () => {
                                                                                 </Card>
                                                                         </Grid>
                                                                         <Grid item xs={12} md={4}>
-                                                                                <Card sx={{ height: "80%" }}>
+                                                                                <Card sx={{ height: "95%" }}>
                                                                                         <CardContent sx={{
                                                                                         }}>
                                                                                                 <CardHeader
@@ -642,78 +690,104 @@ const TenantAdmin: React.FC = () => {
                                                                                 </Card>
                                                                         </Grid>
                                                                         <Grid item xs={12} md={4}>
-                                                                                <Card sx={{ height: "80%" }}>
+                                                                                {/* <Card
+                                                                                        sx={{
+                                                                                                borderRadius: 5,
+                                                                                        }}
+                                                                                > */}
+                                                                                        <Card sx={{ height: "95%" }}>
                                                                                         <CardContent>
-
-                                                                                                <CardHeader
-                                                                                                        title={
-                                                                                                                <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                                                                                        <Typography variant="body2" color="text.secondary">
-                                                                                                                                {vendorDebtFilter === 'all'
-                                                                                                                                        ? 'Total Vendor Wallet Amount'
-                                                                                                                                        : vendorDebtFilter === 'external_wallet_amount'
-                                                                                                                                                ? 'External Vendor Wallet Amount'
-                                                                                                                                                : 'Internal Vendor Wallet Amount'}
+                                                                                                {vendorWalletLoading ? (
+                                                                                                        <Box
+                                                                                                                display="flex"
+                                                                                                                justifyContent="center"
+                                                                                                                alignItems="center"
+                                                                                                        //   minHeight={150}
+                                                                                                        >
+                                                                                                                <CircularProgress size={28} />
+                                                                                                        </Box>
+                                                                                                ) : (
+                                                                                                        <Stack spacing={1}>
+                                                                                                                {/* INTERNAL WALLET */}
+                                                                                                                <Box
+                                                                                                                        sx={{
+                                                                                                                                borderRadius: 2,
+                                                                                                                                // bgcolor: "#F0FDF4",
+                                                                                                                                // border: "1px solid #BBF7D0",
+                                                                                                                                px: 1,
+                                                                                                                        }}
+                                                                                                                >
+                                                                                                                        <Typography
+                                                                                                                                variant="body2"
+                                                                                                                                color="text.secondary"
+                                                                                                                                fontWeight={500}
+                                                                                                                        >
+                                                                                                                                Internal Vendor Wallet
                                                                                                                         </Typography>
 
-                                                                                                                        <TextField
-                                                                                                                                select
-                                                                                                                                size="small"
-                                                                                                                                value={vendorDebtFilter}
-                                                                                                                                onChange={(e) => setVendorDebtFilter(e.target.value as any)}
-                                                                                                                                variant="standard"
-                                                                                                                                InputProps={{ disableUnderline: true }}
-                                                                                                                                sx={{
-                                                                                                                                        width: 90,
-                                                                                                                                        '& .MuiInputBase-root': {
-                                                                                                                                                padding: 0,
-                                                                                                                                                margin: 0,
-                                                                                                                                        },
-                                                                                                                                        '& .MuiSelect-select': {
-                                                                                                                                                padding: '4px 8px',
-                                                                                                                                        },
-                                                                                                                                }}
+                                                                                                                        <Typography
+                                                                                                                                variant="h6"
+                                                                                                                                fontWeight={500}
+                                                                                                                                color="#166534"
+
                                                                                                                         >
-                                                                                                                                <MenuItem value="all">All</MenuItem>
-                                                                                                                                <MenuItem value="external_wallet_amount">External Vendor Wallet Amount</MenuItem>
-                                                                                                                                <MenuItem value="internal_wallet_amount">Internal Vendor Wallet Amount</MenuItem>
+                                                                                                                                ₦
+                                                                                                                                {Number(
+                                                                                                                                        internalWalletData?.balance ?? 0
+                                                                                                                                ).toLocaleString()}
+                                                                                                                        </Typography>
 
-                                                                                                                        </TextField>
+                                                                                                                        <Typography
+                                                                                                                                variant="caption"
+                                                                                                                                color="text.secondary"
+                                                                                                                        >
+                                                                                                                                {internalWalletData?.vendor_count ?? 0} vendors
+                                                                                                                        </Typography>
                                                                                                                 </Box>
-                                                                                                        }
-                                                                                                        sx={{
-                                                                                                                height: 0,
-                                                                                                                paddingBottom: 0,
-                                                                                                                '& .MuiInputBase-root': {
-                                                                                                                        padding: 0,
-                                                                                                                        margin: 0,
-                                                                                                                },
-                                                                                                                '& .MuiSelect-select': {
-                                                                                                                        padding: '0px 0px',
-                                                                                                                },
-                                                                                                        }}
-                                                                                                />
+                                                                                                                <Divider/>
+                                                                                                                {/* EXTERNAL WALLET */}
+                                                                                                                <Box
+                                                                                                                        sx={{
+                                                                                                                                borderRadius: 2,
+                                                                                                                                // bgcolor: "#EFF6FF",
+                                                                                                                                // border: "1px solid #BFDBFE",
+                                                                                                                                px: 1,
+                                                                                                                        }}
+                                                                                                                >
+                                                                                                                        <Typography
+                                                                                                                                variant="body2"
+                                                                                                                                color="text.secondary"
+                                                                                                                                fontWeight={500}
+                                                                                                                        >
+                                                                                                                                External Vendor Wallet
+                                                                                                                        </Typography>
 
-                                                                                                <CardContent >
-                                                                                                        <Typography variant="h5" marginTop={5}>
-                                                                                                                ₦
-                                                                                                                {Number(
-                                                                                                                        vendorWalletData?.balance ?? 0
-                                                                                                                ).toLocaleString()}
-                                                                                                        </Typography>
+                                                                                                                        <Typography
+                                                                                                                                variant="h6"
+                                                                                                                                fontWeight={500}
+                                                                                                                                color="#1D4ED8"
 
-                                                                                                        <Typography
-                                                                                                                variant="caption"
-                                                                                                                color="text.secondary"
-                                                                                                        >
-                                                                                                                {vendorWalletData?.vendor_count ?? 0} vendors
-                                                                                                        </Typography>
-                                                                                                </CardContent>
+                                                                                                                        >
+                                                                                                                                ₦
+                                                                                                                                {Number(
+                                                                                                                                        externalWalletData?.balance ?? 0
+                                                                                                                                ).toLocaleString()}
+                                                                                                                        </Typography>
+
+                                                                                                                        <Typography
+                                                                                                                                variant="caption"
+                                                                                                                                color="text.secondary"
+                                                                                                                        >
+                                                                                                                                {externalWalletData?.vendor_count ?? 0} vendors
+                                                                                                                        </Typography>
+                                                                                                                </Box>
+                                                                                                        </Stack>
+                                                                                                )}
                                                                                         </CardContent>
                                                                                 </Card>
                                                                         </Grid>
                                                                         <Grid item xs={12} md={4}>
-                                                                                <Card sx={{ height: "80%" }}>
+                                                                                <Card sx={{ height: "95%" }}>
                                                                                         <CardContent>
                                                                                                 <Typography color="text.secondary" variant="body2">
                                                                                                         Vendors Aggregated Balance
@@ -840,15 +914,15 @@ const TenantAdmin: React.FC = () => {
 
                                                                         <Stack spacing={3} data-tenant-details>
 
-                                                                                <Card>
+                                                                                <Card sx={{height:"100%"}}>
                                                                                         <CardHeader avatar={<Security color="primary" />} title="Overview" />
                                                                                         <CardContent>
-                                                                                                <Stack direction="row" spacing={2} mb={2} flexWrap="wrap">
+                                                                                                <Stack direction="column" spacing={2} mb={2} flexWrap="wrap">
                                                                                                         {/* <Chip label={`Inactive Users: ${(analyticfetchData?.user_summary.inactive_users || 0).toLocaleString()}`} size="small" /> */}
-                                                                                                        <Chip label={`Total Postpaid Customer: ${(postpaid).toLocaleString()}`} size="small" />
-                                                                                                        <Chip label={`Total Prepaid Customer: ${(prepaid).toLocaleString()}`} size="small" />
+                                                                                                        <Chip label={`Total Postpaid Customer: ${(postpaid).toLocaleString()}`} size="small" sx={{py:2, fontSize:20}} />
+                                                                                                        <Chip label={`Total Prepaid Customer: ${(prepaid).toLocaleString()}`} size="small" sx={{py:2,fontSize:20}} />
                                                                                                         {/* <Chip label={`Total Unmetered Customers: ${(889540).toLocaleString()}`} size="small" /> */}
-                                                                                                        <Chip label={`Suspended Customers: ${(analyticsData?.analytics.suspended_custommers || 0).toLocaleString()}`} size="small" />
+                                                                                                        <Chip label={`Suspended Customers: ${(analyticsData?.analytics.suspended_custommers || 0).toLocaleString()}`} size="small" sx={{py:2,fontSize:20}} />
                                                                                                 </Stack>
                                                                                         </CardContent>
                                                                                 </Card>
