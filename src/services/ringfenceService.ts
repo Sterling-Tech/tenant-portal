@@ -132,3 +132,26 @@ export const unassignVendor = (
     );
 };
 
+export interface Investor {
+  id: number;
+  name: string;
+  code: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+  is_active: boolean;
+}
+export type InvestorProp = Omit<Investor, "id">;
+export const retrieveInvestors = () => {
+  return get<{
+    count: number;
+    results: Investor[];
+  }>("/ringfence/investors/");
+};
+
+export const createInvestor = (data: InvestorProp) => {
+  return post<Investor>(
+    "/ringfence/investors/",
+    data
+  );
+};

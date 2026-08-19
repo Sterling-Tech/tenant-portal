@@ -2,6 +2,7 @@ import { Box, Tabs, Tab, Paper } from "@mui/material";
 import { useState } from "react";
 import RingfenceDashboard from "../../components/Ringfencemgmt/RingfenceDashboard";
 import SupplierDashboard from "../../components/Ringfencemgmt/SupplierDashboard";
+import InvestorDashboard from "../../components/Ringfencemgmt/InvestorDashboard";
 
 
 export default function ReferenceManagement() {
@@ -25,12 +26,14 @@ export default function ReferenceManagement() {
         >
           <Tab label="Schemes" />
           <Tab label="Suppliers" />
+          <Tab label="Investors" />
         </Tabs>
       </Paper>
 
       {tab === 0 && <RingfenceDashboard />}
 
       {tab === 1 && <SupplierDashboard />}
+      {tab === 2 && (<InvestorDashboard />)}
     </Box>
   );
 }

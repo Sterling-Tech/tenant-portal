@@ -12,11 +12,8 @@ import {
         Grid,
         Stack,
         MenuItem,
-        Switch,
         TextField,
-        Tooltip,
         Typography,
-        LinearProgress,
         ToggleButtonGroup,
         ToggleButton,
         FormControl,
@@ -25,70 +22,41 @@ import {
         Divider,
 } from '@mui/material';
 import {
-        Add,
         Assessment,
-        People,
         Refresh,
-        Settings,
         Security,
         Analytics,
-        Download,
-        Search,
-        DateRange,
         FactCheckOutlined,
 } from '@mui/icons-material';
 import { useTenants } from '../../../hooks/useTenants';
-import { useVendorHierarchy } from '../../../contexts/VendorContext';
-import { useTenantAdminProfile } from '../../../hooks/useTenantAdminProfile';
-import { useApiKeys } from '../../../hooks/useApiKeys';
-import { useAppSelector } from '../../../store/hooks';
-import TenantDomainModal, { TenantDomainFormValues } from '../../../components/TenantAdmin/TenantDomainModal';
-import type { Tenant, TenantConfiguration as TenantConfigurationType, TenantUser, CreateTenantRequest } from '../../../services/tenantService';
+
 import { LineChart, PieChart } from '@mui/x-charts';
-import { fetchVendors, createVendor, type VendorForm, Vendor, searchVendors, toggleVendorStatus, AnalyticsBreakdown, AnalyticsCount, fetchanalytics, fetchAnalyticsBreakdown, fetchAnalyticsDashboad, AnalyticsDashboad, DailyCollection, dailyCollection, TotalVendorWallet, totalVendorWallet } from '../../../services/vendorService';
-import { RootState } from '../../../store/store';
+import { fetchVendors, Vendor, AnalyticsBreakdown, AnalyticsCount, fetchanalytics, fetchAnalyticsBreakdown, fetchAnalyticsDashboad, AnalyticsDashboad, DailyCollection, dailyCollection, TotalVendorWallet, totalVendorWallet, CollectionByCategoryResponse, fetchCollectionByCategory, DailyTransactionsResponse, fetchDailyTransactions, CustomerCategory, fetchCustomerCategories } from '../../../services/vendorService';
+
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../../../utils/getErrorMessage';
 import { usePermission } from '../../../hooks/usePermission';
-import { height } from '@mui/system';
+
 type CustomerSummary = {
         total_customers?: number | string;
         active_customers?: number | string;
         inactive_customers?: number | string;
 };
 
-type VendorSummary = {
-        all?: number | string;
-        active?: number | string;
-        inactive?: number | string;
-
-};
 const TenantAdmin: React.FC = () => {
         const {
                 summary,
-                configuration,
                 loading,
                 refreshTenants,
         } = useTenants();
 
-
-        const user = useAppSelector((state: RootState) => state.auth.user);
-
-
         const [selectedTenant, setVendors] = useState<Vendor[]>([]);
         const [count, setCount] = useState(0);
 
-        const [searchTerm, setSearchTerm] = useState('');
         const [searchLoading, setSearchLoading] = useState(false);
-        const searchInitializedRef = useRef(false);
-        const [tenantModalState, setTenantModalState] = useState<{ open: boolean; mode: 'create' | 'edit'; tenant?: Tenant | null }>({
-                open: false,
-                mode: 'create',
-        });
         const [createSuccess, setCreateSuccess] = useState<string | null>(null);
-        const [domainModalOpen, setDomainModalOpen] = useState(false);
+
         const [customerFilter, setCustomerFilter] = useState<'all' | 'active' | 'inactive'>('all');
-        // const [vendorFilter, setVendorFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
         const [collectionFilter, setCollectionFilter] = useState<'category' | 'branch' | 'tariff' | 'feeder' | 'transformer'>('category');
         const today = new Date().toISOString().split('T')[0];
@@ -98,12 +66,15 @@ const TenantAdmin: React.FC = () => {
 
         const [analyticsData, setAnalyticsData] = useState<AnalyticsCount | null>(null);
         const [breakdownData, setBreakdownData] = useState<AnalyticsBreakdown | null>(null);
+
+        const [collectionByCategory, setCollectionByCategory] = useState<CollectionByCategoryResponse | null>(null);
+
         const [analyticfetchData, setAnalyticfetchData] = useState<AnalyticsDashboad | null>(null);
         const [vendorsLoading, setVendorsLoading] = useState(true);
 
         const [analyticsLoading, setAnalyticsLoading] = useState(false);
         //daily transaction graph state
-        const [transactionType, setTransactionType] = useState<"collections" | "debts">("collections");
+        // const [transactionType, setTransactionType] = useState<"collections" | "debts">("collections");
         const [selectedRegion, setSelectedRegion] = useState("");
         const [selectedCategory, setSelectedCategory] = useState("");
         const [collection, setCollection] = useState<DailyCollection | null>(null);
@@ -113,185 +84,198 @@ const TenantAdmin: React.FC = () => {
         const [externalWalletData, setExternalWalletData] = useState<TotalVendorWallet | null>(null);
         const [vendorWalletLoading, setVendorWalletLoading] = useState(false);
 
-        const [configDraft, setConfigDraft] = useState({
-                max_users: '',
-                api_rate_limit: '',
-                billing_cycle: '',
-                max_storage_mb: '',
-        });
-
-        const regions = [
-                { id: 1, name: "North" },
-                { id: 2, name: "South" },
-                { id: 3, name: "East" },
-                { id: 4, name: "West" },
-        ];
-
-        const categories = [
-                { id: 1, name: "Residential" },
-                { id: 2, name: "Commercial" },
-                { id: 3, name: "Industrial" },
-                { id: 4, name: "Government" },
-        ];
-
-        // const chartData = useMemo(() => {
-        //         const transactions = breakdownData?.daily_transaction ?? [];
-
-        //         const sorted = [...transactions].sort(
-        //                 (a, b) =>
-        //                         new Date(a.day).getTime() -
-        //                         new Date(b.day).getTime()
-        //         );
-
-        //         return {
-        //                 labels: sorted.map(item =>
-        //                         new Date(item.day).toLocaleDateString("en-GB", {
-        //                                 day: "numeric",
-        //                                 month: "short",
-        //                         })
-        //                 ),
-
-        //                 collections:
-        //                         transactionType === "collections"
-        //                                 ? sorted.map(i => Number(i.total || 0))
-        //                                 : [],
-
-        //                 debts:
-        //                         transactionType === "debts"
-        //                                 ? sorted.map(i => Number(i.total || 0))
-        //                                 : [],
-        //         };
-        // }, [breakdownData, transactionType]);
-
-        const chartData = useMemo(() => {
-                const labels = Array.from({ length: 30 }, (_, i) => `D${i + 1}`);
-
-                return {
-                        labels,
-
-                        // Collections (green graph)
-                        collections: [
-                                68, 62, 50, 38, 27,
-                                20, 19, 22, 25, 24,
-                                20, 20, 20, 20, 20,
-                                22, 25, 24, 20, 20,
-                                20, 20, 20, 20, 23,
-                                25, 24, 20, 20, 20,
-                        ],
-
-                        // Debts (orange graph)
-                        debts: [
-                                52, 45, 38, 42, 47,
-                                50, 61, 62, 55, 50,
-                                40, 40, 41, 43, 55,
-                                61, 60, 60, 52, 40,
-                                37, 35, 45, 54, 58,
-                                64, 61, 50, 45, 40,
-                        ],
-                };
-        }, []);
-        const filteredChartData = useMemo(() => {
-                let collections = [...chartData.collections];
-                let debts = [...chartData.debts];
-
-                if (selectedRegion === "2") {
-                        collections = collections.map(v => Math.round(v * 0.85));
-                        debts = debts.map(v => Math.round(v * 1.1));
-                }
-
-                if (selectedCategory === "3") {
-                        collections = collections.map(v => Math.round(v * 1.2));
-                        debts = debts.map(v => Math.round(v * 0.8));
-                }
-
-                return {
-                        labels: chartData.labels,
-                        collections,
-                        debts,
-                };
-        }, [chartData, selectedRegion, selectedCategory]);
+        const [dailyTransactions, setDailyTransactions] = useState<DailyTransactionsResponse | null>(null);
+        const [dailyTransactionsLoading, setDailyTransactionsLoading] = useState(false);
+        const [transactionType, setTransactionType] = useState<"collections" | "paymentType" | "debts">("collections");
+        const [categories, setCategories] = useState<CustomerCategory[]>([]);
 
         const customerSummary: CustomerSummary =
                 analyticfetchData?.customer_summary || {};
 
-        const vendorSummary: VendorSummary =
-                analyticfetchData?.vendor_summary || {};
 
         const customerValue =
                 customerFilter === 'active'
                         ? customerSummary.active_customers
                         : customerSummary.total_customers;
 
-        const breakdownConfig = {
-                category: {
-                        title: "Collection Breakdown",
-                        subtitle: "BY CATEGORY",
-                        data:
-                                breakdownData?.customer_category?.map(item => ({
-                                        name: item.category_name,
-                                        count: item.count,
-                                })) ?? [],
-                },
+        const loadDailyTransactions = async (
+                start?: string,
+                end?: string,
+                category?: string
+        ) => {
+                try {
+                        setDailyTransactionsLoading(true);
 
-                branch: {
-                        title: "Branch Breakdown",
-                        subtitle: "BY BRANCH",
-                        data:
-                                breakdownData?.branch_breakdown?.map(item => ({
-                                        name: item.branch_name,
-                                        count: item.count,
-                                })) ?? [],
-                },
+                        const response = await fetchDailyTransactions({
+                                start_date: start,
+                                end_date: end,
+                                category: category || undefined,
+                        });
 
-                tariff: {
-                        title: "Tariff Breakdown",
-                        subtitle: "BY TARIFF",
-                        data:
-                                breakdownData?.tariff_breakdown?.map(item => ({
-                                        name: item.tariff_name,
-                                        count: item.count,
-                                })) ?? [],
-                },
-
-                feeder: {
-                        title: "Feeder Breakdown",
-                        subtitle: "BY FEEDER",
-                        data:
-                                breakdownData?.feeder_breakdown?.map(item => ({
-                                        name: item.feeder_name,
-                                        count: item.count,
-                                })) ?? [],
-                },
-
-                transformer: {
-                        title: "Transformer Breakdown",
-                        subtitle: "BY TRANSFORMER",
-                        data:
-                                breakdownData?.transformer_breakdown?.map(item => ({
-                                        name: item.transformer_name,
-                                        count: item.count,
-                                })) ?? [],
-                },
+                        setDailyTransactions(response);
+                } catch (error) {
+                        console.error("Failed to fetch daily transactions:", error);
+                        toast.error(getErrorMessage(error));
+                        setDailyTransactions(null);
+                } finally {
+                        setDailyTransactionsLoading(false);
+                }
         };
+        useEffect(() => {
+                loadDailyTransactions(
+                        startDate,
+                        endDate,
+                        selectedCategory
+                );
+        }, [startDate, endDate, selectedCategory]);
 
-        const current = breakdownConfig[collectionFilter];
+        const chartData = useMemo(() => {
+                const days = dailyTransactions?.days ?? [];
+
+                return {
+                        labels: days.map((item) =>
+                                new Date(item.date).toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric",
+                                })
+                        ),
+
+                        collections: days.map((item) =>
+                                Number(item.total_collection) || 0
+                        ),
+
+                        debts: days.map((item) =>
+                                Number(item.debt_payment) || 0
+                        ),
+
+                        prepaid: days.map((item) =>
+                                Number(item.prepaid_collection) || 0
+                        ),
+
+                        postpaid: days.map((item) =>
+                                Number(item.postpaid_collection) || 0
+                        ),
+
+                        unclassified: days.map((item) =>
+                                Number(item.unclassified_collection) || 0
+                        ),
+
+                        transactionCount: days.map(
+                                (item) => item.transaction_count || 0
+                        ),
+                };
+        }, [dailyTransactions]);
+
+        const chartSeries = useMemo(() => {
+                if (transactionType === "debts") {
+                        return [
+                                {
+                                        data: chartData.debts,
+                                        label: "Debt Payment",
+                                        area: true,
+                                        showMark: false,
+                                        curve: "natural" as const,
+                                        color: "#D97706",
+                                },
+                        ];
+                }
+
+                if (transactionType === "paymentType") {
+                        return [
+                                {
+                                        data: chartData.prepaid,
+                                        label: "Prepaid",
+                                        showMark: false,
+                                        curve: "natural" as const,
+                                        color: "#14B8A6",
+                                },
+                                {
+                                        data: chartData.postpaid,
+                                        label: "Postpaid",
+                                        showMark: false,
+                                        curve: "natural" as const,
+                                        color: "#2563EB",
+                                },
+                        ];
+                }
+
+                return [
+                        {
+                                data: chartData.collections,
+                                label: "Total Collections",
+                                area: true,
+                                showMark: false,
+                                curve: "natural" as const,
+                                color: "#14B8A6",
+                        },
+                ];
+        }, [transactionType, chartData]);
+
+        useEffect(() => {
+                const loadCategories = async () => {
+                        try {
+                                const data = await fetchCustomerCategories();
+                                setCategories(data);
+                        } catch (error) {
+                                console.error("Failed to load customer categories:", error);
+                                setCategories([]);
+                        }
+                };
+
+                loadCategories();
+        }, []);
+        // const loadAnalytics = async (start?: string, end?: string) => {
+        //         setAnalyticsLoading(true);
+        //         try {
+        //                 const [analyticsRes, breakdownRes, analyticfetchRes] = await Promise.all([
+        //                         fetchanalytics({
+        //                                 start_date: start,
+        //                                 end_date: end,
+        //                         }),
+        //                         fetchAnalyticsBreakdown(),
+        //                         fetchAnalyticsDashboad(),
+        //                 ]);
+        //                 console.log(analyticfetchRes || null, "this th works", breakdownRes || null, "this th works", analyticsRes || null)
+        //                 // API returns array → take first item
+        //                 setAnalyticsData(analyticsRes || null);
+        //                 setBreakdownData(breakdownRes || null);
+        //                 setAnalyticfetchData(analyticfetchRes || null);
+        //         } catch (err) {
+        //                 console.error("Analytics error:", err);
+        //                 toast.error(getErrorMessage(err));
+        //         } finally {
+        //                 setAnalyticsLoading(false);
+        //         }
+        // };
 
         const loadAnalytics = async (start?: string, end?: string) => {
+                if (!start || !end) return;
+
                 setAnalyticsLoading(true);
+
                 try {
-                        const [analyticsRes, breakdownRes, analyticfetchRes] = await Promise.all([
+                        const [
+                                analyticsRes,
+                                breakdownRes,
+                                analyticfetchRes,
+                                collectionRes,
+                        ] = await Promise.all([
                                 fetchanalytics({
                                         start_date: start,
                                         end_date: end,
                                 }),
+
                                 fetchAnalyticsBreakdown(),
+
                                 fetchAnalyticsDashboad(),
+
+                                fetchCollectionByCategory(start, end),
                         ]);
-                        console.log(analyticfetchRes || null, "this th works", breakdownRes || null, "this th works", analyticsRes || null)
-                        // API returns array → take first item
+
                         setAnalyticsData(analyticsRes || null);
                         setBreakdownData(breakdownRes || null);
                         setAnalyticfetchData(analyticfetchRes || null);
+                        setCollectionByCategory(collectionRes || null);
                 } catch (err) {
                         console.error("Analytics error:", err);
                         toast.error(getErrorMessage(err));
@@ -299,12 +283,47 @@ const TenantAdmin: React.FC = () => {
                         setAnalyticsLoading(false);
                 }
         };
+        useEffect(() => {
+                loadAnalytics(startDate, endDate);
+        }, []);
+
+        // const loadAnalytics = async (start?: string, end?: string) => {
+        //         setAnalyticsLoading(true);
+
+        //         try {
+        //                 const [analyticsRes, breakdownRes, analyticfetchRes, collectionRes] =
+        //                         await Promise.all([
+        //                                 fetchanalytics({
+        //                                         start_date: start,
+        //                                         end_date: end,
+        //                                 }),
+
+        //                                 fetchAnalyticsBreakdown(),
+
+        //                                 fetchAnalyticsDashboad(),
+
+        //                                 fetchCollectionByCategory(
+        //                                         start!,
+        //                                         end!
+        //                                 ),
+        //                         ]);
+
+        //                 setAnalyticsData(analyticsRes || null);
+        //                 setBreakdownData(breakdownRes || null);
+        //                 setAnalyticfetchData(analyticfetchRes || null);
+
+        //                 setCollectionByCategory(collectionRes || null);
+        //         } catch (err) {
+        //                 console.error("Analytics error:", err);
+        //                 toast.error(getErrorMessage(err));
+        //         } finally {
+        //                 setAnalyticsLoading(false);
+        //         }
+        // };
 
         const prepaid = breakdownData?.metering_type.find((m) => m.name === "prepaid")?.count || 0;
         const postpaid = breakdownData?.metering_type.find((m) => m.name === "postpaid")?.count || 0;
-        const totalCustomers = prepaid + postpaid;
-        const prepaidPercent = totalCustomers > 0 ? (prepaid / totalCustomers) * 100 : 0;
-        const postpaidPercent = totalCustomers > 0 ? (postpaid / totalCustomers) * 100 : 0;
+        // const totalCustomers = prepaid + postpaid;
 
 
         const load = async (pageNumber = 1) => {
@@ -330,34 +349,6 @@ const TenantAdmin: React.FC = () => {
         useEffect(() => {
                 load();
         }, []);
-
-        useEffect(() => {
-                loadAnalytics(startDate, endDate);
-        }, []);
-        useEffect(() => {
-                if (!searchInitializedRef.current) {
-                        searchInitializedRef.current = true;
-                        return;
-                }
-                const handler = setTimeout(async () => {
-                        const trimmed = searchTerm.trim();
-                        setSearchLoading(true);
-                        try {
-                                if (trimmed) {
-                                        await refreshTenants({ search: trimmed });
-                                } else {
-                                        await refreshTenants();
-                                }
-                        } catch (err) {
-                                console.error('Search failed:', err);
-                                getErrorMessage(err);
-                        } finally {
-                                setSearchLoading(false);
-                        }
-                }, 400);
-                return () => clearTimeout(handler);
-        }, [searchTerm, refreshTenants]);
-
 
         useEffect(() => {
                 const loadCollection = async () => {
@@ -400,13 +391,6 @@ const TenantAdmin: React.FC = () => {
                 fetchVendorWallets();
         }, []);
 
-
-
-        const pageLoading =
-                loading ||
-                analyticsLoading ||
-                vendorsLoading ||
-                searchLoading;
 
         const { can } = usePermission();
 
@@ -521,16 +505,7 @@ const TenantAdmin: React.FC = () => {
                                                                                                 </Box>
 
                                                                                                 <CardContent sx={{ px: 0 }}>
-                                                                                                        {/* <Typography variant="h5">
-                                                                                                                ₦
-                                                                                                                {Number(
-                                                                                                                        dailyCollectionFilter === "energy_payments"
-                                                                                                                                ? collection?.energy_payment ?? 0
-                                                                                                                                : dailyCollectionFilter === "debt_payments"
-                                                                                                                                        ? collection?.debt_payment ?? 0
-                                                                                                                                        : collection?.total_collection ?? 0
-                                                                                                                ).toLocaleString()}
-                                                                                                        </Typography> */}
+
                                                                                                         <Typography variant="h5">
                                                                                                                 ₦
                                                                                                                 {Number(
@@ -577,7 +552,7 @@ const TenantAdmin: React.FC = () => {
                                                                                                 <Typography
                                                                                                         color="text.secondary"
                                                                                                         variant="body2"
-                                                                                                        
+
 
                                                                                                 >
                                                                                                         Energy Payments
@@ -585,7 +560,7 @@ const TenantAdmin: React.FC = () => {
                                                                                                 <Typography variant="h5" color="#1D4ED8">
                                                                                                         ₦{Number(collection?.energy_payment || 0).toLocaleString()}
                                                                                                 </Typography>
-                                                                                                <Divider/>
+                                                                                                <Divider />
                                                                                                 <Typography
                                                                                                         color="text.secondary"
                                                                                                         variant="body2"
@@ -596,7 +571,7 @@ const TenantAdmin: React.FC = () => {
                                                                                                 <Typography variant="h5" color="#166534">
                                                                                                         ₦{Number(collection?.debt_payment || 0).toLocaleString()}
                                                                                                 </Typography>
-                                                                                                <Divider/>
+                                                                                                <Divider />
                                                                                                 <Typography
                                                                                                         variant="caption"
                                                                                                         color="text.secondary"
@@ -609,16 +584,7 @@ const TenantAdmin: React.FC = () => {
                                                                                 </Card>
                                                                         </Grid>
 
-                                                                        {/* <Grid item xs={12} md={3}>
-                                                                        <Card>
-                                                                                <CardContent>
-                                                                                        <Typography color="text.secondary" variant="body2">
-                                                                                                Collection Efficiency
-                                                                                        </Typography>
-                                                                                        <Typography variant="h5">{analyticsData?.analytics.collection_efficiency || 0}%</Typography>
-                                                                                </CardContent>
-                                                                        </Card>
-                                                                </Grid> */}
+
                                                                         <Grid item xs={12} md={4}>
                                                                                 <Card sx={{ height: "100%" }}>
                                                                                         <CardContent>
@@ -695,7 +661,7 @@ const TenantAdmin: React.FC = () => {
                                                                                                 borderRadius: 5,
                                                                                         }}
                                                                                 > */}
-                                                                                        <Card sx={{ height: "95%" }}>
+                                                                                <Card sx={{ height: "95%" }}>
                                                                                         <CardContent>
                                                                                                 {vendorWalletLoading ? (
                                                                                                         <Box
@@ -744,7 +710,7 @@ const TenantAdmin: React.FC = () => {
                                                                                                                                 {internalWalletData?.vendor_count ?? 0} vendors
                                                                                                                         </Typography>
                                                                                                                 </Box>
-                                                                                                                <Divider/>
+                                                                                                                <Divider />
                                                                                                                 {/* EXTERNAL WALLET */}
                                                                                                                 <Box
                                                                                                                         sx={{
@@ -803,7 +769,7 @@ const TenantAdmin: React.FC = () => {
                                                         )}
                                                         <Grid container spacing={3}>
 
-                                                                <Grid item xs={12} md={4}>
+                                                                {/* <Grid item xs={12} md={4}>
                                                                         <Card>
                                                                                 <CardHeader
                                                                                         avatar={<Assessment color="primary" />}
@@ -908,52 +874,243 @@ const TenantAdmin: React.FC = () => {
                                                                                         </Stack>
                                                                                 </CardContent>
                                                                         </Card>
+                                                                </Grid> */}
+                                                                <Grid item xs={12} md={5}>
+                                                                        <Card>
+                                                                                <CardHeader
+                                                                                        avatar={<Assessment color="primary" />}
+                                                                                        title="Collection by Customer Category"
+                                                                                        subheader={
+                                                                                                collectionByCategory
+                                                                                                        ? `${collectionByCategory.start} → ${collectionByCategory.end}`
+                                                                                                        : "Customer collections"
+                                                                                        }
+                                                                                />
+
+                                                                                <CardContent>
+                                                                                        <Stack spacing={1}>
+                                                                                                {!collectionByCategory?.categories?.length ? (
+                                                                                                        <Typography
+                                                                                                                variant="body2"
+                                                                                                                color="text.secondary"
+                                                                                                                textAlign="center"
+                                                                                                                py={4}
+                                                                                                        >
+                                                                                                                No collection data available.
+                                                                                                        </Typography>
+                                                                                                ) : (
+                                                                                                        collectionByCategory.categories.map((item) => (
+                                                                                                                <Box key={item.category_name}>
+                                                                                                                        {/* Category name + total */}
+                                                                                                                        <Typography
+                                                                                                                                variant="body2"
+                                                                                                                                fontWeight={600}
+                                                                                                                        >
+                                                                                                                                {item.category_name}
+                                                                                                                        </Typography>
+                                                                                                                        <Box
+                                                                                                                                display="flex"
+                                                                                                                                justifyContent="space-between"
+                                                                                                                                alignItems="center"
+                                                                                                                        // mb={1}
+                                                                                                                        >
+                                                                                                                                <Box>
+                                                                                                                                        <Typography
+                                                                                                                                                variant="caption"
+                                                                                                                                                color="text.secondary"
+                                                                                                                                        >
+                                                                                                                                                {item.transaction_count.toLocaleString()} transactions
+                                                                                                                                        </Typography>
+                                                                                                                                </Box>
+
+                                                                                                                                <Typography
+                                                                                                                                        variant="body2"
+                                                                                                                                        fontWeight={700}
+                                                                                                                                >
+                                                                                                                                        Collection
+                                                                                                                                        ₦{Number(item.total_collection).toLocaleString()}
+                                                                                                                                </Typography>
+                                                                                                                        </Box>
+
+                                                                                                                        {/* Energy + Debt */}
+                                                                                                                        <Stack
+                                                                                                                                direction="row"
+                                                                                                                                spacing={1}
+                                                                                                                        >
+                                                                                                                                <Box
+                                                                                                                                        sx={{
+                                                                                                                                                flex: 1,
+                                                                                                                                                px: 1,
+                                                                                                                                                borderRadius: 1.5,
+                                                                                                                                                bgcolor: "primary.50",
+                                                                                                                                                border: "1px solid",
+                                                                                                                                                borderColor: "primary.100",
+                                                                                                                                        }}
+                                                                                                                                >
+                                                                                                                                        <Typography
+                                                                                                                                                variant="caption"
+                                                                                                                                                color="text.secondary"
+                                                                                                                                        >
+                                                                                                                                                Energy payment
+                                                                                                                                        </Typography>
+
+                                                                                                                                        <Typography
+                                                                                                                                                variant="body2"
+                                                                                                                                                fontWeight={600}
+                                                                                                                                        >
+                                                                                                                                                ₦
+                                                                                                                                                {Number(
+                                                                                                                                                        item.energy_payment
+                                                                                                                                                ).toLocaleString()}
+                                                                                                                                        </Typography>
+                                                                                                                                </Box>
+
+                                                                                                                                <Box
+                                                                                                                                        sx={{
+                                                                                                                                                flex: 1,
+                                                                                                                                                px: 1,
+                                                                                                                                                borderRadius: 1.5,
+                                                                                                                                                bgcolor: "warning.50",
+                                                                                                                                                border: "1px solid",
+                                                                                                                                                borderColor: "warning.100",
+                                                                                                                                        }}
+                                                                                                                                >
+                                                                                                                                        <Typography
+                                                                                                                                                variant="caption"
+                                                                                                                                                color="text.secondary"
+                                                                                                                                        >
+                                                                                                                                                Debt payment
+                                                                                                                                        </Typography>
+
+                                                                                                                                        <Typography
+                                                                                                                                                variant="body2"
+                                                                                                                                                fontWeight={600}
+                                                                                                                                        >
+                                                                                                                                                ₦
+                                                                                                                                                {Number(
+                                                                                                                                                        item.debt_payment
+                                                                                                                                                ).toLocaleString()}
+                                                                                                                                        </Typography>
+                                                                                                                                </Box>
+                                                                                                                        </Stack>
+                                                                                                                </Box>
+                                                                                                        ))
+                                                                                                )}
+
+                                                                                                {/* Total */}
+                                                                                                {collectionByCategory?.totals && (
+                                                                                                        <>
+                                                                                                                <Divider />
+
+                                                                                                                <Box
+                                                                                                                        sx={{
+                                                                                                                                p: 2,
+                                                                                                                                borderRadius: 2,
+                                                                                                                                bgcolor: "grey.50",
+                                                                                                                        }}
+                                                                                                                >
+                                                                                                                        <Box
+                                                                                                                                display="flex"
+                                                                                                                                justifyContent="space-between"
+                                                                                                                                alignItems="center"
+                                                                                                                                mb={1.5}
+                                                                                                                        >
+                                                                                                                                <Typography fontWeight={700}>
+                                                                                                                                        Total Collection
+                                                                                                                                </Typography>
+
+                                                                                                                                <Typography
+                                                                                                                                        variant="h6"
+                                                                                                                                        fontWeight={800}
+                                                                                                                                        color="primary"
+                                                                                                                                >
+                                                                                                                                        ₦
+                                                                                                                                        {Number(
+                                                                                                                                                collectionByCategory.totals
+                                                                                                                                                        .total_collection
+                                                                                                                                        ).toLocaleString()}
+                                                                                                                                </Typography>
+                                                                                                                        </Box>
+
+                                                                                                                        <Stack
+                                                                                                                                direction="row"
+                                                                                                                                spacing={1}
+                                                                                                                        >
+                                                                                                                                <Box flex={1}>
+                                                                                                                                        <Typography
+                                                                                                                                                variant="caption"
+                                                                                                                                                color="text.secondary"
+                                                                                                                                        >
+                                                                                                                                                Energy Payment
+                                                                                                                                        </Typography>
+
+                                                                                                                                        <Typography fontWeight={600}>
+                                                                                                                                                ₦
+                                                                                                                                                {Number(
+                                                                                                                                                        collectionByCategory.totals
+                                                                                                                                                                .energy_payment
+                                                                                                                                                ).toLocaleString()}
+                                                                                                                                        </Typography>
+                                                                                                                                </Box>
+
+                                                                                                                                <Box flex={1}>
+                                                                                                                                        <Typography
+                                                                                                                                                variant="caption"
+                                                                                                                                                color="text.secondary"
+                                                                                                                                        >
+                                                                                                                                                Debt Payment
+                                                                                                                                        </Typography>
+
+                                                                                                                                        <Typography fontWeight={600}>
+                                                                                                                                                ₦
+                                                                                                                                                {Number(
+                                                                                                                                                        collectionByCategory.totals
+                                                                                                                                                                .debt_payment
+                                                                                                                                                ).toLocaleString()}
+                                                                                                                                        </Typography>
+                                                                                                                                </Box>
+
+                                                                                                                                <Box flex={1}>
+                                                                                                                                        <Typography
+                                                                                                                                                variant="caption"
+                                                                                                                                                color="text.secondary"
+                                                                                                                                        >
+                                                                                                                                                Transactions
+                                                                                                                                        </Typography>
+
+                                                                                                                                        <Typography fontWeight={600}>
+                                                                                                                                                {collectionByCategory.totals
+                                                                                                                                                        .transaction_count.toLocaleString()}
+                                                                                                                                        </Typography>
+                                                                                                                                </Box>
+                                                                                                                        </Stack>
+                                                                                                                </Box>
+                                                                                                        </>
+                                                                                                )}
+                                                                                        </Stack>
+                                                                                </CardContent>
+                                                                        </Card>
                                                                 </Grid>
+                                                                <Grid item xs={12} md={7} >
 
-                                                                <Grid item xs={12} md={8}>
+                                                                        <Stack data-tenant-details>
 
-                                                                        <Stack spacing={3} data-tenant-details>
-
-                                                                                <Card sx={{height:"100%"}}>
+                                                                                <Card sx={{ height: "100%" }}>
                                                                                         <CardHeader avatar={<Security color="primary" />} title="Overview" />
                                                                                         <CardContent>
                                                                                                 <Stack direction="column" spacing={2} mb={2} flexWrap="wrap">
                                                                                                         {/* <Chip label={`Inactive Users: ${(analyticfetchData?.user_summary.inactive_users || 0).toLocaleString()}`} size="small" /> */}
-                                                                                                        <Chip label={`Total Postpaid Customer: ${(postpaid).toLocaleString()}`} size="small" sx={{py:2, fontSize:20}} />
-                                                                                                        <Chip label={`Total Prepaid Customer: ${(prepaid).toLocaleString()}`} size="small" sx={{py:2,fontSize:20}} />
+                                                                                                        <Chip label={`Total Postpaid Customer: ${(postpaid).toLocaleString()}`} size="small" sx={{ py: 2, fontSize: 20 }} />
+                                                                                                        <Chip label={`Total Prepaid Customer: ${(prepaid).toLocaleString()}`} size="small" sx={{ py: 2, fontSize: 20 }} />
                                                                                                         {/* <Chip label={`Total Unmetered Customers: ${(889540).toLocaleString()}`} size="small" /> */}
-                                                                                                        <Chip label={`Suspended Customers: ${(analyticsData?.analytics.suspended_custommers || 0).toLocaleString()}`} size="small" sx={{py:2,fontSize:20}} />
+                                                                                                        <Chip label={`Suspended Customers: ${(analyticsData?.analytics.suspended_custommers || 0).toLocaleString()}`} size="small" sx={{ py: 2, fontSize: 20 }} />
                                                                                                 </Stack>
                                                                                         </CardContent>
                                                                                 </Card>
 
-                                                                                <Grid container spacing={2}>
+                                                                                {/* <Grid container spacing={2} marginTop={2}>
                                                                                         <Grid item xs={12}>
-                                                                                                {/* <Card> */}
-                                                                                                {/* <CardHeader
-                                                                                                        avatar={<Analytics color="primary" />}
-                                                                                                        title="Daily Transactions"
-                                                                                                        subheader="Last 30 Days"
-                                                                                                        action={
-                                                                                                                <Stack direction="row" spacing={1}>
-                                                                                                                        <Button
-                                                                                                                                size="small"
-                                                                                                                                variant={analyticsView === 'summary' ? 'contained' : 'outlined'}
-                                                                                                                                onClick={() => setAnalyticsView('summary')}
-                                                                                                                        >
-                                                                                                                                Chart	View
-                                                                                                                        </Button>
-                                                                                                                        <Button
-                                                                                                                size="small"
-                                                                                                                variant={analyticsView === 'detailed' ? 'contained' : 'outlined'}
-                                                                                                                onClick={() => setAnalyticsView('detailed')}
-                                                                                                        >
-                                                                                                                Table View
-                                                                                                        </Button>
-
-                                                                                                                </Stack>
-                                                                                                        }
-                                                                                                /> */}
+                                                                                                
                                                                                                 <Card sx={{ borderRadius: 4 }}>
                                                                                                         <Box
                                                                                                                 display="flex"
@@ -1003,22 +1160,7 @@ const TenantAdmin: React.FC = () => {
                                                                                                                 </ToggleButtonGroup>
                                                                                                         </Box>
                                                                                                         <CardContent>
-                                                                                                                {/* <LineChart
-                                                                                                                xAxis={[
-                                                                                                                        {
-                                                                                                                                scaleType: 'point',
-                                                                                                                                data: dailyTransactionsMock.labels,
-                                                                                                                        },
-                                                                                                                ]}
-                                                                                                                series={[
-                                                                                                                        {
-                                                                                                                                data: dailyTransactionsMock.data,
-                                                                                                                                label: 'Daily Transactions',
-                                                                                                                        },
-                                                                                                                ]}
-                                                                                                                height={260}
-                                                                                                                margin={{ top: 20, bottom: 30 }}
-                                                                                                        /> */}
+                                                                                                               
                                                                                                                 <Box
                                                                                                                         display="flex"
                                                                                                                         justifyContent="space-between"
@@ -1115,6 +1257,181 @@ const TenantAdmin: React.FC = () => {
                                                                                         </Grid>
 
 
+                                                                                </Grid> */}
+                                                                                <Grid container spacing={2} marginTop={2}>
+                                                                                        <Grid item xs={12}>
+                                                                                                <Card sx={{ borderRadius: 4 }}>
+                                                                                                        {/* Header */}
+                                                                                                        <Box
+                                                                                                                display="flex"
+                                                                                                                justifyContent="space-between"
+                                                                                                                alignItems="flex-start"
+                                                                                                                p={3}
+                                                                                                        >
+                                                                                                                <Stack direction="row" spacing={2}>
+                                                                                                                        <Avatar
+                                                                                                                                sx={{
+                                                                                                                                        bgcolor: "#EEF4FF",
+                                                                                                                                        color: "#1D4ED8",
+                                                                                                                                }}
+                                                                                                                        >
+                                                                                                                                <Analytics />
+                                                                                                                        </Avatar>
+
+                                                                                                                        <Box>
+                                                                                                                                <Typography
+                                                                                                                                        fontWeight={700}
+                                                                                                                                        fontSize={24}
+                                                                                                                                >
+                                                                                                                                        Daily Transactions
+                                                                                                                                </Typography>
+
+                                                                                                                                <Typography color="text.secondary">
+                                                                                                                                        {dailyTransactions?.start &&
+                                                                                                                                                dailyTransactions?.end
+                                                                                                                                                ? `${new Date(
+                                                                                                                                                        dailyTransactions.start
+                                                                                                                                                ).toLocaleDateString()} - ${new Date(
+                                                                                                                                                        dailyTransactions.end
+                                                                                                                                                ).toLocaleDateString()}`
+                                                                                                                                                : "LAST 30 DAYS"}
+                                                                                                                                </Typography>
+                                                                                                                        </Box>
+                                                                                                                </Stack>
+
+                                                                                                                <ToggleButtonGroup
+                                                                                                                        exclusive
+                                                                                                                        value={transactionType}
+                                                                                                                        onChange={(_, value) => {
+                                                                                                                                if (value) {
+                                                                                                                                        setTransactionType(value);
+                                                                                                                                }
+                                                                                                                        }}
+                                                                                                                        size="small"
+                                                                                                                >
+                                                                                                                        <ToggleButton value="collections">
+                                                                                                                                Collections
+                                                                                                                        </ToggleButton>
+
+                                                                                                                        <ToggleButton value="paymentType">
+                                                                                                                                Prepaid / Postpaid
+                                                                                                                        </ToggleButton>
+
+                                                                                                                        <ToggleButton value="debts">
+                                                                                                                                Debt
+                                                                                                                        </ToggleButton>
+                                                                                                                </ToggleButtonGroup>
+                                                                                                        </Box>
+
+                                                                                                        <CardContent>
+                                                                                                                {/* Filter */}
+                                                                                                                <Box
+                                                                                                                        display="flex"
+                                                                                                                        justifyContent="space-between"
+                                                                                                                        alignItems="center"
+                                                                                                                        px={3}
+                                                                                                                        mb={2}
+                                                                                                                >
+                                                                                                                        {/* <FormControl
+                        size="small"
+                        sx={{ minWidth: 240 }}
+                    >
+                        <InputLabel>
+                            Customer Category
+                        </InputLabel>
+
+                        <Select
+                            value={selectedCategory}
+                            label="Customer Category"
+                            onChange={(e) =>
+                                setSelectedCategory(
+                                    e.target.value
+                                )
+                            }
+                        >
+                            <MenuItem value="">
+                                All categories
+                            </MenuItem>
+
+                            {categories.map((category) => (
+                                <MenuItem
+                                    key={category.id}
+                                    value={category.name}
+                                >
+                                    {category.name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl> */}
+                                                                                                                        <FormControl size="small" sx={{ minWidth: 220 }}>
+                                                                                                                                <InputLabel>Customer Category</InputLabel>
+
+                                                                                                                                <Select
+                                                                                                                                        value={selectedCategory}
+                                                                                                                                        label="Customer Category"
+                                                                                                                                        onChange={(e) => setSelectedCategory(e.target.value)}
+                                                                                                                                >
+                                                                                                                                        <MenuItem value="">
+                                                                                                                                                All categories
+                                                                                                                                        </MenuItem>
+
+                                                                                                                                        {categories.map((category) => (
+                                                                                                                                                <MenuItem
+                                                                                                                                                        key={category.id}
+                                                                                                                                                        value={category.name}
+                                                                                                                                                >
+                                                                                                                                                        {category.name}
+                                                                                                                                                </MenuItem>
+                                                                                                                                        ))}
+                                                                                                                                </Select>
+                                                                                                                        </FormControl>
+
+                                                                                                                        {dailyTransactions && (
+                                                                                                                                <Typography
+                                                                                                                                        variant="body2"
+                                                                                                                                        color="text.secondary"
+                                                                                                                                >
+                                                                                                                                        {dailyTransactions.days.length} days
+                                                                                                                                </Typography>
+                                                                                                                        )}
+                                                                                                                </Box>
+
+                                                                                                                {/* Loading */}
+                                                                                                                {dailyTransactionsLoading ? (
+                                                                                                                        <Box
+                                                                                                                                height={320}
+                                                                                                                                display="flex"
+                                                                                                                                alignItems="center"
+                                                                                                                                justifyContent="center"
+                                                                                                                        >
+                                                                                                                                <CircularProgress />
+                                                                                                                        </Box>
+                                                                                                                ) : !dailyTransactions?.days?.length ? (
+                                                                                                                        <Box
+                                                                                                                                height={320}
+                                                                                                                                display="flex"
+                                                                                                                                alignItems="center"
+                                                                                                                                justifyContent="center"
+                                                                                                                        >
+                                                                                                                                <Typography color="text.secondary">
+                                                                                                                                        No transaction data available
+                                                                                                                                </Typography>
+                                                                                                                        </Box>
+                                                                                                                ) : (
+                                                                                                                        <LineChart
+                                                                                                                                height={320}
+                                                                                                                                xAxis={[
+                                                                                                                                        {
+                                                                                                                                                scaleType: "point",
+                                                                                                                                                data: chartData.labels,
+                                                                                                                                        },
+                                                                                                                                ]}
+                                                                                                                                series={chartSeries}
+                                                                                                                        />
+                                                                                                                )}
+                                                                                                        </CardContent>
+                                                                                                </Card>
+                                                                                        </Grid>
                                                                                 </Grid>
 
                                                                         </Stack>

@@ -975,3 +975,94 @@ export const totalVendorWallet = (
   );
 };
 
+export interface CollectionByCategoryItem {
+  category_name: string;
+  total_collection: string;
+  energy_payment: string;
+  debt_payment: string;
+  transaction_count: number;
+}
+
+export interface CollectionByCategoryTotals {
+  category_name: string;
+  total_collection: string;
+  energy_payment: string;
+  debt_payment: string;
+  transaction_count: number;
+}
+
+export interface CollectionByCategoryResponse {
+  start: string;
+  end: string;
+  categories: CollectionByCategoryItem[];
+  totals: CollectionByCategoryTotals;
+}
+
+export const fetchCollectionByCategory = (
+  start_date: string,
+  end_date: string
+) => {
+  return get<CollectionByCategoryResponse>(
+    `/user/dashboard/collection-by-category/?start_date=${start_date}&end_date=${end_date}`
+  );
+};
+
+export interface DailyTransactionDay {
+    total_collection: string;
+    prepaid_collection: string;
+    postpaid_collection: string;
+    unclassified_collection: string;
+    debt_payment: string;
+    transaction_count: number;
+    date: string;
+}
+
+export interface DailyTransactionsResponse {
+    start: string;
+    end: string;
+    category?: string;
+    days: DailyTransactionDay[];
+    totals: {
+        total_collection: string;
+        prepaid_collection: string;
+        postpaid_collection: string;
+        unclassified_collection: string;
+        debt_payment: string;
+        transaction_count: number;
+    };
+}
+
+export const fetchDailyTransactions = (params?: {
+    start_date?: string;
+    end_date?: string;
+    category?: string;
+}) => {
+    const searchParams = new URLSearchParams();
+
+    if (params?.start_date) {
+        searchParams.append("start_date", params.start_date);
+    }
+
+    if (params?.end_date) {
+        searchParams.append("end_date", params.end_date);
+    }
+
+    if (params?.category) {
+        searchParams.append("category", params.category);
+    }
+
+    const query = searchParams.toString();
+
+    return get<DailyTransactionsResponse>(
+        `/user/dashboard/daily-transactions/${query ? `?${query}` : ""}`
+    );
+};
+
+export interface CustomerCategory {
+  id: number;
+  name: string;
+  description: string;
+}
+
+export const fetchCustomerCategories = () =>
+  get<CustomerCategory[]>("/customer/category/");
