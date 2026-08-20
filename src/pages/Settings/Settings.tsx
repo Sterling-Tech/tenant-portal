@@ -57,70 +57,9 @@ import OnboardingPolicySettings from "./OnboardingPolicy";
 //const API_BASE_URL = "http://188.166.161.13:8001/api/v1";
 
 const Settings: React.FC = () => {
-  const { user } = useAppSelector((state: any) => state.auth);
-
-  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
-  // const [activeTab, setActiveTab] = useState(0);
-  const [selectedVendor, setSelectedVendor] =
-    useState<RelatedVendorResponse | null>(null);
+
   const [activeTab, setActiveTab] = useState("account");
-
-  // ================= NOTIFICATIONS =================
-  const [notificationSettings, setNotificationSettings] = useState({
-    email_notifications: true,
-    sms_notifications: false,
-    push_notifications: true,
-  });
-
-  // ================= CONFIGURATION =================
-  const [configurationForm, setConfigurationForm] = useState({
-    organization_name: "",
-    organization_id: "ORG-20394-AB",
-    organization_type: "vendor",
-
-    api_key: "pk_live_x82jshh2728sjj",
-    api_secret: "sk_live_8sjjsjjs929299",
-
-    api_scope: "full_access",
-    rate_limit: "1000",
-
-    domain: "",
-    ip_address: "",
-
-    expiration_date: "",
-    data_limit: "10GB",
-
-    commission_rate: "5",
-
-    saas_enabled: true,
-    billing_cycle: "monthly",
-
-    webhook_url: "",
-  });
-
-  // ================= CONFIGURATION =================
-  const generateApiKey = () => {
-    const random = Math.random().toString(36).substring(2, 18);
-
-    setConfigurationForm({
-      ...configurationForm,
-      api_key: `pk_live_${random}`,
-    });
-
-    setSuccess("API Key Generated Successfully");
-  };
-
-  const rotateApiKey = () => {
-    const random = Math.random().toString(36).substring(2, 18);
-
-    setConfigurationForm({
-      ...configurationForm,
-      api_secret: `sk_live_${random}`,
-    });
-
-    setSuccess("API Secret Rotated Successfully");
-  };
 
   const { can } = usePermission();
 

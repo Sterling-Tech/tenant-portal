@@ -19,7 +19,9 @@ import {
   TableHead,
   TableBody,
   Tooltip,
-  TablePagination
+  TablePagination,
+  Tabs,
+  Tab
 } from "@mui/material";
 import { CalendarToday, Download, ReceiptLong, Search } from "@mui/icons-material";
 import { createDebt, fetchCustomerDebtAnalytic, fetchCustomerTransactions, fetchDebt, fetchDebtAnalytics, fetchDebtHistory, fetchPaymentPlans, searchCustomers } from "../../services/vendorService";
@@ -28,6 +30,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import CustomerSummary from "./CustomerSummary";
 import dayjs from "dayjs";
+import CustomerStatement from "./CustomerTransLedger";
 
 const fmt = (n: number) =>
   "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2 });
@@ -53,7 +56,7 @@ export default function CustomerTrans() {
   /* ---------------- SEARCH ---------------- */
   const [debtType, setDebtType] = useState("");
   const [paymentPlan, setPaymentPlan] = useState("");
-  const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
+ 
   const [amount, setAmount] = useState("");
   const [rate, setRate] = useState("");
   const [description, setDescription] = useState("");
@@ -65,6 +68,7 @@ export default function CustomerTrans() {
     previous: null,
     results: [],
   });
+  const [activeTab, setActiveTab] = useState("ledger");
 
   const loadAnalytics = async () => {
     try {
@@ -546,254 +550,261 @@ export default function CustomerTrans() {
                     customerAnalytic?.last_activity_description ?? "No activity"
                   }
                 />
+              </Card>
 
-
-
-                <Divider />
-                {/* Header */}
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mt={3}
-                  mb={3}
-                  px={3}
+              <Card
+                sx={{
+                  borderRadius: 5,
+                  overflow: "hidden",
+                  boxShadow: "0 10px 40px rgba(15,23,42,0.06)",
+                  marginTop: 5,
+                }}
+              >
+                {/* =========================
+      TAB NAVIGATION
+  ========================== */}
+                <Box
+                  sx={{
+                    borderBottom: "1px solid #E2E8F0",
+                    px: 2,
+                    bgcolor: "#fff",
+                  }}
                 >
-                  <Typography variant="h5" fontWeight={700}>
-                    Transaction History
-                  </Typography>
-
-                  <Button
-                    variant="outlined"
-                    startIcon={<Download />}
-                    onClick={exportCSV}
-                  >
-                    Export CSV
-                  </Button>
-                </Stack>
-
-                {/* Filters */}
-
-                {/* <Stack
-                  direction="row"
-                  spacing={2}
-                  mb={3}
-                  px={3}
-                >
-
-                  <TextField
-                    placeholder="Search vendor, token..."
-                    fullWidth
-                  />
-
-                  <DatePicker />
-
-                  <DatePicker />
-
-                </Stack> */}
-
-                {/* Summary */}
-
-                <Stack
-                  direction="row"
-                  spacing={5}
-                  mb={2}
-                  px={3}
-                >
-                  <Typography>
-                    <strong>Total Transactions:</strong>{" "}
-                    {transHistory.count}
-                  </Typography>
-
-                  <Typography>
-                    <strong>Total Amount:</strong>{" "}
-                    ₦{totalAmount.toLocaleString()}
-
-                  </Typography>
-
-                </Stack>
-
-                {/* Table */}
-
-                {transactionLoading ? (
-
-                  <Box
-                    py={8}
-                    textAlign="center"
-                  >
-                    <CircularProgress />
-
-                    <Typography mt={2}>
-                      Loading transactions...
-                    </Typography>
-
-                  </Box>
-
-                ) : transHistory.results.length === 0 ? (
-
-                  <Box
-                    py={10}
-                    textAlign="center"
-                  >
-
-                    <ReceiptLong
-                      sx={{
-                        fontSize: 60,
-                        color: "grey.400"
-                      }}
-                    />
-
-                    <Typography
-                      variant="h6"
-                      mt={2}
-                    >
-                      No Transactions Found
-                    </Typography>
-
-                    <Typography color="text.secondary">
-                      This customer has not made any transactions yet.
-                    </Typography>
-
-                  </Box>
-
-                ) : (
-                  <TableContainer
-                    component={Paper}
+                  <Tabs
+                    value={activeTab}
+                    onChange={(_, value) => setActiveTab(value)}
+                    variant="scrollable"
+                    scrollButtons="auto"
                     sx={{
-                      maxHeight: 500,
-                      borderRadius: 2,
+                      "& .MuiTab-root": {
+                        minWidth: 160,
+                        fontWeight: 600,
+                      },
                     }}
                   >
+                    <Tab
+                      value="ledger"
+                      label="Transaction Ledger"
+                    />
+                    <Tab
+                      value="transaction"
+                      label="Transactions"
+                    />
 
-                    <Table stickyHeader>
 
-                      <TableHead>
+                  </Tabs>
+                </Box>
+                {/* =========================
+      LEDGER TAB
+  ========================== */}
 
-                        <TableRow>
-
-                          <TableCell>Date</TableCell>
-
-                          <TableCell>Vendor</TableCell>
-
-                          <TableCell>Vendor Email</TableCell>
-
-                          <TableCell>Reference</TableCell>
-
-                          <TableCell>Token</TableCell>
-
-                          <TableCell align="right">Amount</TableCell>
-
-                          <TableCell>Status</TableCell>
-
-                        </TableRow>
-
-                      </TableHead>
-
-                      <TableBody>
-
-                        {transHistory.results.map((tx: any) => (
-                          <TableRow hover key={tx.id}>
-
-                            <TableCell>
-                              {dayjs(tx.timestamp).format("DD MMM YYYY HH:mm")}
-                            </TableCell>
-
-                            <TableCell>
-
-                              <Stack>
-
-                                <Typography fontWeight={600}>
-                                  {tx.vendor?.business_name}
-                                </Typography>
-
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {tx.vendor?.hierachy}
-                                </Typography>
-
-                              </Stack>
-
-                            </TableCell>
-
-                            <TableCell>
-                              {tx.vendor?.email}
-                            </TableCell>
-
-                            <TableCell>
-
-                              {tx.transaction_ref || "N/A"}
-
-                            </TableCell>
-
-                            <TableCell>
-
-                              <Tooltip title={tx.token}>
-
-                                <Typography
-                                  sx={{
-                                    fontFamily: "monospace"
-                                  }}
-                                >
-
-                                  {tx.token?.substring(0, 8)}...
-
-                                </Typography>
-
-                              </Tooltip>
-
-                            </TableCell>
-
-                            <TableCell align="right">
-
-                              <Typography
-                                fontWeight={700}
-                                color="success.main"
-                              >
-
-                                ₦{Number(tx.amount).toLocaleString()}
-
-                              </Typography>
-
-                            </TableCell>
-
-                            <TableCell>
-
-                              <Chip
-                                label="Completed"
-                                color="success"
-                                size="small"
-                              />
-
-                            </TableCell>
-
-                          </TableRow>
-
-                        ))}
-
-                      </TableBody>
-
-                    </Table>
-
-                  </TableContainer>
+                {activeTab === "ledger" && (
+                  <Box sx={{ p: 2 }}>
+                    <CustomerStatement
+                      customerId={customer?.id ?? ""}
+                    />
+                  </Box>
                 )}
+                {/* =========================
+      TAB CONTENT
+  ========================== */}
 
+                {activeTab === "transaction" && (
+                  <>
+                    <Card
+                      elevation={0}
+                      sx={{
+                        mt: 2,
+                        borderRadius: 0,
+                      }}
+                    >
+                      {/* Header */}
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        mt={3}
+                        mb={3}
+                        px={3}
+                      >
+                        <Typography variant="h5" fontWeight={700}>
+                          Transaction History
+                        </Typography>
+
+                        <Button
+                          variant="outlined"
+                          startIcon={<Download />}
+                          onClick={exportCSV}
+                        >
+                          Export CSV
+                        </Button>
+                      </Stack>
+
+                      {/* Summary */}
+                      <Stack
+                        direction="row"
+                        spacing={5}
+                        mb={2}
+                        px={3}
+                      >
+                        <Typography>
+                          <strong>Total Transactions:</strong>{" "}
+                          {transHistory.count}
+                        </Typography>
+
+                        <Typography>
+                          <strong>Total Amount:</strong>{" "}
+                          ₦{totalAmount.toLocaleString()}
+                        </Typography>
+                      </Stack>
+
+                      {/* Loading */}
+                      {transactionLoading ? (
+                        <Box py={8} textAlign="center">
+                          <CircularProgress />
+
+                          <Typography mt={2}>
+                            Loading transactions...
+                          </Typography>
+                        </Box>
+
+                      ) : transHistory.results.length === 0 ? (
+
+                        /* Empty state */
+                        <Box py={10} textAlign="center">
+                          <ReceiptLong
+                            sx={{
+                              fontSize: 60,
+                              color: "grey.400",
+                            }}
+                          />
+
+                          <Typography variant="h6" mt={2}>
+                            No Transactions Found
+                          </Typography>
+
+                          <Typography color="text.secondary">
+                            This customer has not made any transactions yet.
+                          </Typography>
+                        </Box>
+
+                      ) : (
+
+                        /* Table */
+                        <TableContainer
+                          component={Paper}
+                          sx={{
+                            maxHeight: 500,
+                            borderRadius: 2,
+                          }}
+                        >
+                          <Table stickyHeader>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Date</TableCell>
+                                <TableCell>Vendor</TableCell>
+                                <TableCell>Vendor Email</TableCell>
+                                <TableCell>Reference</TableCell>
+                                <TableCell>Token</TableCell>
+                                <TableCell align="right">
+                                  Amount
+                                </TableCell>
+                                <TableCell>Status</TableCell>
+                              </TableRow>
+                            </TableHead>
+
+                            <TableBody>
+                              {transHistory.results.map((tx: any) => (
+                                <TableRow
+                                  hover
+                                  key={tx.id}
+                                >
+                                  <TableCell>
+                                    {dayjs(tx.timestamp).format(
+                                      "DD MMM YYYY HH:mm"
+                                    )}
+                                  </TableCell>
+
+                                  <TableCell>
+                                    <Stack>
+                                      <Typography fontWeight={600}>
+                                        {tx.vendor?.business_name || "N/A"}
+                                      </Typography>
+
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        {tx.vendor?.hierachy || "N/A"}
+                                      </Typography>
+                                    </Stack>
+                                  </TableCell>
+
+                                  <TableCell>
+                                    {tx.vendor?.email || "N/A"}
+                                  </TableCell>
+
+                                  <TableCell>
+                                    {tx.transaction_ref || "N/A"}
+                                  </TableCell>
+
+                                  <TableCell>
+                                    <Tooltip title={tx.token || ""}>
+                                      <Typography
+                                        sx={{
+                                          fontFamily: "monospace",
+                                        }}
+                                      >
+                                        {tx.token
+                                          ? `${tx.token.substring(0, 8)}...`
+                                          : "N/A"}
+                                      </Typography>
+                                    </Tooltip>
+                                  </TableCell>
+
+                                  <TableCell align="right">
+                                    <Typography
+                                      fontWeight={700}
+                                      color="success.main"
+                                    >
+                                      ₦{Number(tx.amount).toLocaleString()}
+                                    </Typography>
+                                  </TableCell>
+
+                                  <TableCell>
+                                    <Chip
+                                      label="Completed"
+                                      color="success"
+                                      size="small"
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      )}
+                    </Card>
+                    <TablePagination
+                      component="div"
+                      count={transHistory.count}
+                      page={page - 1}
+                      rowsPerPage={10}
+                      rowsPerPageOptions={[10]}
+                      onPageChange={(_, newPage) => {
+                        setPage(newPage + 1);
+                      }}
+                      sx={{ px: 3 }}
+                    />
+                  </>
+                )}
 
 
               </Card>
             </Grid>
-            <TablePagination
-              component="div"
-              count={transHistory.count}
-              page={page - 1}
-              rowsPerPage={10}
-              rowsPerPageOptions={[10]}
-              onPageChange={(_, newPage) => {
-                setPage(newPage + 1);
-              }}
-              sx={{ px: 3, ml: 3 }}
-            />
+
+
+
           </Grid>
         )}
 

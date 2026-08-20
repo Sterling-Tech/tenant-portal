@@ -1066,3 +1066,226 @@ export interface CustomerCategory {
 
 export const fetchCustomerCategories = () =>
   get<CustomerCategory[]>("/customer/category/");
+
+
+export interface PrepaidStatementRow {
+  date: string;
+  reference: string;
+  vendor: string;
+  amount: number;
+  paid_arrears: number;
+  energy_value: number;
+  vat: number;
+  units: string | number;
+  token: string;
+  token_type: string;
+  tariff: string;
+  tariff_rate: number;
+  meter_number: string;
+}
+
+export interface PostpaidStatementRow {
+  date: string;
+  particulars: string;
+  reference: string;
+  period: string;
+  previous_read: string | number;
+  current_read: string | number;
+  energy_kwh: string | number;
+  type: string;
+  tariff: string;
+  remark: string;
+  debit: number;
+  credit: number;
+  balance: number;
+}
+export type StatementType = "prepaid" | "postpaid";
+
+export interface CustomerStatementHeader {
+  Name: string;
+  "Account Number": string;
+  "Old Account Number": string;
+  "Meter Number": string;
+  "Phone Number": string;
+  "Service Address": string;
+  District: string;
+  "Service Center": string;
+  "Service Unit": string;
+  "Feeder 11KV": string;
+  "Feeder 33KV": string;
+  Transformer: string;
+  Band: string;
+  Tariff: string;
+  "Tariff Rate": number;
+  Category: string;
+  Class: string;
+  "Metering Type": string;
+  Scheme: string;
+  "Account Status": string;
+}
+
+export interface CustomerStatementSubAccount {
+  bucket: string;
+  plan: string;
+  rate: number;
+  effective_date: string;
+  amount_booked: number;
+  balance: number;
+  status: string;
+}
+
+//new
+export interface BaseStatement {
+  customer_id: number;
+  start: string;
+  end: string;
+
+  header: CustomerStatementHeader;
+
+  sub_accounts: CustomerStatementSubAccount[];
+
+  data_as_of: {
+    as_of: string;
+    age: string;
+    status: string;
+    is_stale: boolean;
+  };
+}
+
+export interface PrepaidStatement
+  extends BaseStatement {
+  type: "prepaid";
+
+  rows: PrepaidStatementRow[];
+
+  total_amount: number;
+  total_paid_arrears: number;
+  total_units: number;
+}
+
+export interface PostpaidStatement
+  extends BaseStatement {
+  type: "postpaid";
+
+  rows: PostpaidStatementRow[];
+
+  opening_balance: number;
+  closing_balance: number;
+  total_debit: number;
+  total_credit: number;
+  bills_before_opening: number;
+}
+
+export type CustomerStatement =
+  | PrepaidStatement
+  | PostpaidStatement;
+  //end 
+// export interface CustomerStatementResponse {
+//   customer_id: number;
+//   type: StatementType;
+//   start: string;
+//   end: string;
+
+//   header: CustomerStatementHeader;
+
+//   rows: PrepaidStatementRow[] | PostpaidStatementRow[];
+
+//   sub_accounts: CustomerStatementSubAccount[];
+// // prepaid
+//   total_amount: number;
+//   total_paid_arrears: number;
+//   total_units: number;
+
+//   // postpaid
+//   opening_balance?: number;
+//   closing_balance?: number;
+//   total_debit?: number;
+//   total_credit?: number;
+//   bills_before_opening?: number;
+
+//   data_as_of: {
+//     as_of: string;
+//     age: string;
+//     status: string;
+//     is_stale: boolean;
+//   };
+// }
+
+export const fetchCustomerStatement = (
+  customerId: number,
+  params?: {
+    start?: string;
+    end?: string;
+    type?: StatementType;
+  }
+) => {
+  const query = new URLSearchParams();
+
+  query.append(
+    "customer_id",
+    String(customerId)
+  );
+
+  if (params?.start) {
+    query.append("start", params.start);
+  }
+
+  if (params?.end) {
+    query.append("end", params.end);
+  }
+
+  if (params?.type) {
+    query.append("type", params.type);
+  }
+
+  return get<CustomerStatement>(
+    `/reports/customer/statement/?${query.toString()}`
+  );
+};
+
+export const exportCustomerStatement = async (
+  customerId: number,
+  format: "csv" | "xlsx" | "pdf",
+  params?: {
+    start?: string;
+    end?: string;
+    type?: "prepaid" | "postpaid";
+  }
+) => {
+  const query = new URLSearchParams();
+
+  query.append(
+    "customer_id",
+    String(customerId)
+  );
+
+  query.append(
+    "export",
+    format
+  );
+
+  if (params?.start) {
+    query.append(
+      "start",
+      params.start
+    );
+  }
+
+  if (params?.end) {
+    query.append(
+      "end",
+      params.end
+    );
+  }
+
+  if (params?.type) {
+    query.append(
+      "type",
+      params.type
+    );
+  }
+
+  return getBlob(
+    `/reports/customer/statement/?${query.toString()}`
+  );
+};
