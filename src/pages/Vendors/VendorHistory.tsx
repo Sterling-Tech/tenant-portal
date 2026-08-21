@@ -317,7 +317,7 @@ const horizontalScrollSx = {
         }}
         spacing={2}
         mb={3}
-         sx={{horizontalScrollSx, mr:20, mt:3}}
+         sx={{horizontalScrollSx, mr:20, mt:2}}
       >
         <SummaryCard
           title="Transactions"
