@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box,
   Card,
@@ -46,7 +46,7 @@ import {
   Refresh as RefreshIcon, Search as SearchIcon, TrendingDown, TrendingUp,
 } from '@mui/icons-material';
 import { useTenants } from "../../hooks/useTenants";
-import { fetchTransactions, fetchVendors, fundVendorWallet, Ledger, PaginatedLedgerResponse, PaginatedVendorResponse, searchVendors, Vendor } from "../../services/vendorService";
+import { exportVendorHistory, fetchTransactions, fetchVendorHistory, fetchVendorLedger, fetchVendors, fundVendorWallet, Ledger, PaginatedLedgerResponse, PaginatedVendorResponse, searchVendors, Vendor, VendorHistoryAsOf, VendorHistoryRow, VendorHistorySummary, VendorLedgerRow, VendorLedgerSummary } from "../../services/vendorService";
 import { useOrgWallets } from "../../hooks/useOrgWallets";
 import {
   BarChart as ReBarChart,
@@ -60,6 +60,9 @@ import { useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store/store';
 import { getErrorMessage } from "../../utils/getErrorMessage";
 import { toast } from "react-toastify";
+import VendorLedger from "./VendorLedger";
+import dayjs from "dayjs";
+import VendorHistory from "./VendorHistory";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type TransactionStatus = 'success' | 'pending' | 'failed';
@@ -155,7 +158,7 @@ const VendorTransactions: React.FC = () => {
   const [txPage, setTxPage] = useState(1);
 
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"analytics" | "ledger">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "history" | "ledger">("analytics");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
 
@@ -178,6 +181,22 @@ const VendorTransactions: React.FC = () => {
   const [startDate, setStartDate] = useState(format(past));
   const tomorrow = new Date();
   tomorrow.setDate(today.getDate() + 1);
+
+  const [txTransactions, setTxTransactions] = useState<VendorLedgerRow[]>([]);
+  const [txSummary, setTxSummary] = useState<VendorLedgerSummary | null>(null);
+
+  const [historyTransactions, setHistoryTransactions] = useState<VendorHistoryRow[]>([]);
+  const [historySummary, setHistorySummary] = useState<VendorHistorySummary | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyTransactionCount, setHistoryTransactionCount] = useState(0);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyStartDate, setHistoryStartDate] = useState(dayjs()
+    .subtract(20, "day")
+    .format("YYYY-MM-DD")
+  );
+  const [historyEndDate, setHistoryEndDate] = useState(dayjs().format("YYYY-MM-DD"));
+  const [historyDirection, setHistoryDirection] = useState<"all" | "debit" | "credit">("all");
+  const [historyDataAsOf, setHistoryDataAsOf] = useState<VendorHistoryAsOf | null>(null);
 
   // ── Generate Report dialog ───────────────────────────────────────────────────
   const [reportOpen, setReportOpen] = useState(false);
@@ -264,97 +283,228 @@ const VendorTransactions: React.FC = () => {
     [vendorsId, vendors]
   );
 
+  // const handleExport = () => {
+  //   if (!transactions.length) {
+  //     setAlert({
+  //       open: true,
+  //       type: "warning",
+  //       message: "No data to export",
+  //     });
+  //     return;
+  //   }
+
+  //   if (startDate > endDate) {
+  //     setAlert({
+  //       open: true,
+  //       type: "error",
+  //       message: "Invalid date range",
+  //     });
+  //     return;
+  //   }
+
+  //   const vendorName = selectedVendor?.business_name || "N/A";
+  //   const headers = ["Reference", "Credit", "Debit", "Balance", "Category", "Date"];
+
+  //   const rows = transactions.map((tx) => [
+  //     tx.transaction_ref,
+  //     tx.credit_amount || "0",
+  //     tx.debit_amount || "0",
+  //     tx.closing_balance || "0",
+  //     tx.category || "",
+  //     new Date(tx.timestamp).toLocaleString(),
+  //   ]);
+
+  //   // Vendor information at the top of the CSV
+  //   const csvContent = [
+  //     ["Vendor Name", vendorName], ["Date From", startDate], ["Date To", endDate],
+  //     [],
+  //     headers,
+  //     ...rows,
+  //   ]
+  //     .map((row) =>
+  //       row
+  //         .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
+  //         .join(",")
+  //     )
+  //     .join("\n");
+
+  //   const blob = new Blob([csvContent], {
+  //     type: "text/csv;charset=utf-8;",
+  //   });
+
+  //   const url = window.URL.createObjectURL(blob);
+
+  //   const link = document.createElement("a");
+  //   link.href = url;
+  //   link.download = `transactions_${vendorName}_${startDate}_${endDate}.csv`;
+
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   document.body.removeChild(link);
+
+  //   window.URL.revokeObjectURL(url);
+  // };
+
   const handleExport = () => {
-    if (!transactions.length) {
+    if (!txTransactions.length) {
       setAlert({
         open: true,
         type: "warning",
         message: "No data to export",
       });
+
       return;
     }
 
-    if (startDate > endDate) {
-      setAlert({
-        open: true,
-        type: "error",
-        message: "Invalid date range",
-      });
-      return;
-    }
+    const headers = [
+      "Date",
+      "Reference",
+      "Category",
+      "Account Role",
+      "Debit",
+      "Credit",
+      "Balance",
+      "Migrated",
+    ];
 
-    const vendorName = selectedVendor?.business_name || "N/A";
-    const headers = ["Reference", "Credit", "Debit", "Balance", "Category", "Date"];
-
-    const rows = transactions.map((tx) => [
-      tx.transaction_ref,
-      tx.credit_amount || "0",
-      tx.debit_amount || "0",
-      tx.closing_balance || "0",
-      tx.category || "",
-      new Date(tx.timestamp).toLocaleString(),
+    const rows = txTransactions.map((tx) => [
+      tx.date,
+      tx.reference,
+      tx.category,
+      tx.account_role,
+      tx.debit,
+      tx.credit,
+      tx.balance ?? "",
+      tx.migrated ? "Yes" : "No",
     ]);
 
-    // Vendor information at the top of the CSV
     const csvContent = [
-      ["Vendor Name", vendorName], ["Date From", startDate], ["Date To", endDate],
+      ["Vendor Name", vendors.find(v => v.id === vendorsId)?.business_name || "N/A"],
+      ["Date From", startDate],
+      ["Date To", endDate],
       [],
       headers,
       ...rows,
     ]
       .map((row) =>
         row
-          .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
+          .map((cell) =>
+            `"${String(cell ?? "").replace(
+              /"/g,
+              '""'
+            )}"`
+          )
           .join(",")
       )
       .join("\n");
 
-    const blob = new Blob([csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
+    const blob = new Blob(
+      [csvContent],
+      {
+        type: "text/csv;charset=utf-8;",
+      }
+    );
 
-    const url = window.URL.createObjectURL(blob);
+    const url =
+      window.URL.createObjectURL(blob);
 
-    const link = document.createElement("a");
+    const link =
+      document.createElement("a");
+
     link.href = url;
-    link.download = `transactions_${vendorName}_${startDate}_${endDate}.csv`;
+
+    link.download =
+      `vendor-ledger-${vendors.find(v => v.id === vendorsId)?.business_name || "vendor"}-${startDate}-${endDate}.csv`;
 
     document.body.appendChild(link);
+
     link.click();
+
     document.body.removeChild(link);
 
     window.URL.revokeObjectURL(url);
   };
+  // const loadTransactions = async (id: string, page: number = 1) => {
+  //   if (!id) return;
 
-  const loadTransactions = async (id: string, page: number = 1) => {
+  //   // ✅ prevent bad date range
+  //   if (startDate > endDate) {
+  //     setAlert({
+  //       open: true,
+  //       type: "error",
+  //       message: "Start date cannot be after end date",
+  //     });
+  //     return;
+  //   }
+
+  //   setLoading(true);
+
+  //   try {
+  //     const res = await fetchTransactions({
+  //       vendor_id: id,
+  //       start_date: startDate,
+  //       end_date: endDate,
+  //       page,
+  //     });
+
+  //     setTransactions(res?.results || []);
+  //     setSummary(res?.summary || { total_debits: 0, total_credits: 0 });
+  //     setTransactionCount(res?.count || 0);
+
+  //   } catch (err: any) {
+  //     console.error("Transaction error:", err);
+
+  //     setAlert({
+  //       open: true,
+  //       type: "error",
+  //       message:
+  //         err?.response?.data?.message ||
+  //         err?.message ||
+  //         "Failed to load transactions",
+  //     });
+
+  //     setTransactions([]); // prevent crash
+
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const loadTransactions = async (
+    id: string,
+    page: number = 1
+  ) => {
     if (!id) return;
 
-    // ✅ prevent bad date range
     if (startDate > endDate) {
       setAlert({
         open: true,
         type: "error",
         message: "Start date cannot be after end date",
       });
+
       return;
     }
 
     setLoading(true);
 
     try {
-      const res = await fetchTransactions({
+      const res = await fetchVendorLedger({
         vendor_id: id,
         start_date: startDate,
         end_date: endDate,
         page,
       });
 
-      setTransactions(res?.results || []);
-      setSummary(res?.summary || { total_debits: 0, total_credits: 0 });
-      setTransactionCount(res?.count || 0);
-
+      setTxTransactions(res?.results ?? []);
+      setTxSummary(res?.summary ?? null);
+      setTransactionCount(res?.count ?? 0);
     } catch (err: any) {
-      console.error("Transaction error:", err);
+      console.error("Vendor ledger error:", err);
+
+      setTxTransactions([]);
+      setTxSummary(null);
+      setTransactionCount(0);
 
       setAlert({
         open: true,
@@ -362,25 +512,13 @@ const VendorTransactions: React.FC = () => {
         message:
           err?.response?.data?.message ||
           err?.message ||
-          "Failed to load transactions",
+          "Failed to load vendor ledger",
       });
-
-      setTransactions([]); // prevent crash
-
     } finally {
       setLoading(false);
     }
   };
 
-  // const chartData = useMemo(() => {
-  //   return transactions.map((tx) => ({
-  //     date: new Date(tx.timestamp).toLocaleDateString(),
-  //     amount: Number(tx.credit_amount || tx.debit_amount || 0),
-  //     type: tx.debit_amount ? "debit" : "credit",
-  //     category: tx.category || "N/A",
-  //     balance: Number(tx.closing_balance || 0),
-  //   }));
-  // }, [transactions]);
   const chartData = useMemo(() => {
     const grouped: Record<
       string,
@@ -417,16 +555,6 @@ const VendorTransactions: React.FC = () => {
     if (vendorsId) loadTransactions(vendorsId);
   }, [vendorsId, startDate, endDate]);
 
-  // const totalPages = Math.ceil(vendorCount / pageSize);
-  const totalPages = Math.max(
-    1,
-    Math.ceil(vendorCount / pageSize)
-  );
-  //transaction pagination
-  const totalTxPages = Math.max(
-    1,
-    Math.ceil(transactionCount / pageSize)
-  );
   useEffect(() => {
     if (!vendors.length) {
       setVendorId(null);
@@ -438,6 +566,218 @@ const VendorTransactions: React.FC = () => {
       selectVendor(vendors[0].id);
     }
   }, [vendors]);
+
+  // const loadVendorHistory = async (
+  //   id: string,
+  //   page: number = 1,
+  //   startDate: string = historyStartDate,
+  //   endDate: string = historyEndDate,
+  //   direction:
+  //     | "all"
+  //     | "debit"
+  //     | "credit" = historyDirection
+  // ) => {
+  //   if (!id) return;
+
+  //   if (startDate > endDate) {
+  //     setAlert({
+  //       open: true,
+  //       type: "error",
+  //       message:
+  //         "Start date cannot be after end date",
+  //     });
+
+  //     return;
+  //   }
+
+  //   setHistoryLoading(true);
+
+  //   try {
+  //     const res =
+  //       await fetchVendorHistory({
+  //         vendor_id: id,
+  //         start: startDate,
+  //         end: endDate,
+  //         direction:
+  //           direction === "all"
+  //             ? ""
+  //             : direction,
+  //         page,
+  //       });
+
+  //     setHistoryTransactions(
+  //       res?.results ?? []
+  //     );
+
+  //     setHistorySummary(
+  //       res?.summary ?? null
+  //     );
+
+  //     setHistoryTransactionCount(
+  //       res?.count ?? 0
+  //     );
+
+  //     setHistoryDataAsOf(
+  //       res?.data_as_of ?? null
+  //     );
+
+  //     setHistoryPage(page);
+  //   } catch (err: any) {
+  //     console.error(
+  //       "Vendor history error:",
+  //       err
+  //     );
+
+  //     setHistoryTransactions([]);
+  //     setHistorySummary(null);
+  //     setHistoryTransactionCount(0);
+  //     setHistoryDataAsOf(null);
+
+  //     setAlert({
+  //       open: true,
+  //       type: "error",
+  //       message:
+  //         err?.response?.data?.message ||
+  //         err?.message ||
+  //         "Failed to load vendor history",
+  //     });
+  //   } finally {
+  //     setHistoryLoading(false);
+  //   }
+  // };
+const loadVendorHistory = useCallback(
+  async (
+    id: string,
+    page: number = 1,
+    startDate: string = historyStartDate,
+    endDate: string = historyEndDate,
+    direction:
+      | "all"
+      | "debit"
+      | "credit" = historyDirection
+  ) => {
+    if (!id) return;
+
+    if (startDate > endDate) {
+      setAlert({
+        open: true,
+        type: "error",
+        message: "Start date cannot be after end date",
+      });
+
+      return;
+    }
+
+    setHistoryLoading(true);
+
+    try {
+      const res = await fetchVendorHistory({
+        vendor_id: id,
+        start: startDate,
+        end: endDate,
+        direction: direction === "all" ? "" : direction,
+        page,
+      });
+
+      setHistoryTransactions(res?.results ?? []);
+      setHistorySummary(res?.summary ?? null);
+      setHistoryTransactionCount(res?.count ?? 0);
+      setHistoryDataAsOf(res?.data_as_of ?? null);
+      setHistoryPage(page);
+    } catch (err: any) {
+      console.error("Vendor history error:", err);
+
+      setHistoryTransactions([]);
+      setHistorySummary(null);
+      setHistoryTransactionCount(0);
+      setHistoryDataAsOf(null);
+
+      setAlert({
+        open: true,
+        type: "error",
+        message:
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to load vendor history",
+      });
+    } finally {
+      setHistoryLoading(false);
+    }
+  },
+  [
+    historyStartDate,
+    historyEndDate,
+    historyDirection,
+  ]
+);
+useEffect(() => {
+  if (!vendorsId) return;
+
+  loadVendorHistory(
+    String(vendorsId),
+    1,
+    historyStartDate,
+    historyEndDate,
+    historyDirection
+  );
+}, [
+  vendorsId,
+  historyStartDate,
+  historyEndDate,
+  historyDirection,
+  loadVendorHistory,
+]);
+
+  const handleVendorHistoryExport = async (
+    format: "csv" | "xlsx" | "pdf"
+  ) => {
+    if (!vendorsId) return;
+
+    try {
+      const response = await exportVendorHistory({
+        vendor_id: vendorsId,
+        start: historyStartDate,
+        end: historyEndDate,
+        direction:
+          historyDirection === "all"
+            ? ""
+            : historyDirection,
+        format,
+      });
+
+      const blob = new Blob([
+        response || [],
+      ]);
+
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = url;
+
+      const extension = format === "xlsx" ? "xlsx" : format;
+
+      link.download =
+        `vendor-history-${selectedVendor?.business_name || "vendor"}-${historyStartDate}-${historyEndDate}.${extension}`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error("Vendor history export error:", err);
+
+      setAlert({
+        open: true,
+        type: "error",
+        message:
+          err?.response?.data?.message ||
+          err?.message ||
+          `Failed to export ${format.toUpperCase()}`,
+      });
+    }
+  };
 
   const handleFundWallet = async () => {
     if (!vendorsId || !amount) return;
@@ -499,18 +839,6 @@ const VendorTransactions: React.FC = () => {
       setFunding(false);
     }
   };
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
-      if (typeFilter === "credit") return tx.credit_amount;
-      if (typeFilter === "debit") return tx.debit_amount;
-      return true;
-    });
-  }, [transactions, typeFilter]);
-
-  //const displayBalance = Number(selectedVendor?.wallet?.balance || 0);
-  const displayBalance =
-    Number(summary?.total_credits || 0) -
-    Number(summary?.total_debits || 0);
 
   const totalCredits = Number(summary.total_credits || 0);
   const totalDebits = Number(summary.total_debits || 0);
@@ -723,7 +1051,7 @@ const VendorTransactions: React.FC = () => {
     setReportError(null);
   };
 
-  const handleFilterChange = (action: () => void) => { action(); setTransactionPage(0); setLedgerPage(0); };
+
   const getStatus = (vendor: Vendor) => {
     switch (vendor.account_status?.toLowerCase()) {
       case "active":
@@ -819,78 +1147,79 @@ const VendorTransactions: React.FC = () => {
           </Grid>
         ))}
       </Grid>
-      <Grid container spacing={3} >
-        {/* SIDEBAR */}
-        <Grid item xs={12} md={4.5} >
-          <Card sx={{ borderRadius: 3 }}>
-            <Box p={2}>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography fontWeight={600}>Select Vendor</Typography>
-                <Typography fontSize={12} color="gray">
-                  {count} total
-                </Typography>
-              </Stack>
-              <Stack direction="row" justifyContent="space-between" spacing={1}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Search vendors..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+      <Card>
+        <Grid container spacing={3} alignItems="stretch">
+          {/* SIDEBAR */}
+          <Grid item xs={12} md={4.5} sx={{ display: "flex", }}>
+            <Card sx={{ borderRadius: 3, width: "100%", display: "flex", flexDirection: "column", }}>
+              <Box p={2} sx={{ flex: 1 }}>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography fontWeight={600}>Select Vendor</Typography>
+                  <Typography fontSize={12} color="gray">
+                    {count} total
+                  </Typography>
+                </Stack>
+                <Stack direction="row" justifyContent="space-between" spacing={1}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Search vendors..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        setPage(1);
+                        load(1);
+                      }
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+
+                  <Button
+                    variant="contained"
+                    startIcon={<Search />}
+                    onClick={() => {
                       setPage(1);
                       load(1);
-                    }
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search fontSize="small" />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <Button
-                  variant="contained"
-                  startIcon={<Search />}
-                  onClick={() => {
-                    setPage(1);
-                    load(1);
-                  }}
-                  sx={{
-                    minWidth: 60,
-                    whiteSpace: "nowrap",
-                    px: 3,
-                  }}
-                >
-                  Search
-                </Button>
-              </Stack>
-              <Stack direction="row" spacing={1} mt={2}>
-                {["all", "active", "inactive", "suspended"].map((tab) => (
-                  <Box
-                    key={tab}
-                    onClick={() => setStatusFilter(tab as any)}
+                    }}
                     sx={{
-                      px: 2,
-                      py: 0.5,
-                      borderRadius: 20,
-                      fontSize: 12,
-                      cursor: "pointer",
-                      bgcolor: statusFilter === tab ? "#eff6ff" : "#f3f4f6",
-                      color: statusFilter === tab ? "#2563eb" : "#6b7280",
-                      fontWeight: 600,
-                      textTransform: "capitalize",
+                      minWidth: 60,
+                      whiteSpace: "nowrap",
+                      px: 3,
                     }}
                   >
-                    {tab}
-                  </Box>
-                ))}
-              </Stack>
-              <Stack mt={2} spacing={1.2}>
-                {vendors?.map((v) => {
+                    Search
+                  </Button>
+                </Stack>
+                <Stack direction="row" spacing={1} mt={2}>
+                  {["all", "active", "inactive", "suspended"].map((tab) => (
+                    <Box
+                      key={tab}
+                      onClick={() => setStatusFilter(tab as any)}
+                      sx={{
+                        px: 2,
+                        py: 0.5,
+                        borderRadius: 20,
+                        fontSize: 12,
+                        cursor: "pointer",
+                        bgcolor: statusFilter === tab ? "#eff6ff" : "#f3f4f6",
+                        color: statusFilter === tab ? "#2563eb" : "#6b7280",
+                        fontWeight: 600,
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {tab}
+                    </Box>
+                  ))}
+                </Stack>
+                <Stack mt={2} spacing={1.2}>
+                  {vendors?.map((v) => {
                     // const isActive = v?.account_status === "active";
                     const status = getStatus(v);
                     const chip = statusConfig[status];
@@ -991,82 +1320,80 @@ const VendorTransactions: React.FC = () => {
                       </Box>
                     );
                   })}
-                
-
-              </Stack>
-              {/* Pagination */}
-
-              <div className="flex items-center justify-between px-4 py-4 border-t">
-                <div className="text-sm text-gray-500">
-                  Showing page {page} • {count} total vendors
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    disabled={!previous}
-                    onClick={() => previous && setPage((p) => p - 1)}
-                    className={`px-4 py-2 rounded-lg border ${previous
-                      ? "bg-white hover:bg-gray-100"
-                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      }`}
-                  >
-                    Previous
-                  </button>
-
-                  <button
-                    disabled={!next}
-                    onClick={() => next && setPage((p) => p + 1)}
-                    className={`px-4 py-2 rounded-lg border ${next
-                      ? "bg-blue-900 text-white hover:bg-blue-800"
-                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      }`}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-
-            </Box>
-          </Card>
-
-        </Grid>
-
-        {/* MAIN */}
-        <Grid item xs={12} md={7.5} >
-          <Stack spacing={3}>
 
 
-            {/* HEADER */}
-            <Card sx={{ p: 2, borderRadius: 3 }}>
-              <Stack direction="row" justifyContent="space-between">
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Box
-                    sx={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 2,
-                      bgcolor: "#2563eb",
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {selectedVendor?.business_name?.slice(0, 2)}
-                  </Box>
-
-                  <Box>
-                    <Typography fontWeight={700}>
-                      {selectedVendor?.business_name}
-                    </Typography>
-                    <Typography fontSize={12} color="#6b7280">
-                      ID: VND-{vendorsId}
-                    </Typography>
-                  </Box>
                 </Stack>
+                {/* Pagination */}
 
-                {/* <Stack direction="row" spacing={1}>
+                <div className="flex items-center justify-between px-4 py-4 border-t">
+                  <div className="text-sm text-gray-500">
+                    Showing page {page} • {count} total vendors
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      disabled={!previous}
+                      onClick={() => previous && setPage((p) => p - 1)}
+                      className={`px-4 py-2 rounded-lg border ${previous
+                        ? "bg-white hover:bg-gray-100"
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        }`}
+                    >
+                      Previous
+                    </button>
+
+                    <button
+                      disabled={!next}
+                      onClick={() => next && setPage((p) => p + 1)}
+                      className={`px-4 py-2 rounded-lg border ${next
+                        ? "bg-blue-900 text-white hover:bg-blue-800"
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+
+              </Box>
+            </Card>
+
+          </Grid>
+
+          {/* MAIN */}
+          <Grid item xs={12} md={7.5} sx={{ display: "flex", }}>
+            <Stack spacing={3} sx={{ width: "100%", }}>
+              {/* HEADER */}
+              <Stack sx={{ p: 2, borderRadius: 3, width: "100%", }}>
+                <Stack direction="row" justifyContent="space-between">
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Box
+                      sx={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 2,
+                        bgcolor: "#2563eb",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {selectedVendor?.business_name?.slice(0, 2)}
+                    </Box>
+
+                    <Box>
+                      <Typography fontWeight={700}>
+                        {selectedVendor?.business_name}
+                      </Typography>
+                      <Typography fontSize={12} color="#6b7280">
+                        ID: VND-{vendorsId}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  {/* <Stack direction="row" spacing={1}>
                   <Button size="small" variant="outlined">
                     View Profile
                   </Button>
@@ -1075,274 +1402,239 @@ const VendorTransactions: React.FC = () => {
                   </Button>
                 </Stack> */}
 
-              </Stack>
-              <Divider sx={{ my: 2 }} />
-              {/* WALLET */}
-              <Stack sx={{ p: 2, marginTop: 1, }}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <AccountBalanceWallet fontSize="small" />
-                  <Typography fontSize={12}>VENDING WALLET</Typography>
                 </Stack>
+                <Divider sx={{ my: 2 }} />
+                {/* WALLET */}
+                <Stack sx={{ p: 2, marginTop: 1, }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <AccountBalanceWallet fontSize="small" />
+                    <Typography fontSize={12}>VENDING WALLET</Typography>
+                  </Stack>
 
-                <Typography fontSize={22} fontWeight={700} color="#16a34a">
-                  ₦{Number(selectedVendor?.wallet?.balance || 0).toLocaleString()}
-                </Typography>
+                  <Typography fontSize={22} fontWeight={700} color="#16a34a">
+                    ₦{Number(selectedVendor?.wallet?.balance || 0).toLocaleString()}
+                  </Typography>
 
-                <Typography fontSize={12} color="#6b7280">
-                  Available balance
-                </Typography>
+                  <Typography fontSize={12} color="#6b7280">
+                    Available balance
+                  </Typography>
 
-              </Stack>
-            </Card>
-
-            {/* WALLET + TABS ROW */}
-            <Stack direction="row" spacing={3}>
-              {/* TABS + CONTENT */}
-              <Box flex={1}>
-                <Stack direction="row" spacing={3} borderBottom="1px solid #e5e7eb">
-                  {["ledger", "analytics"].map((tab) => (
-                    <Box
-                      key={tab}
-                      onClick={() => setActiveTab(tab as any)}
-                      sx={{
-                        pb: 1,
-                        cursor: "pointer",
-                        borderBottom:
-                          activeTab === tab
-                            ? "2px solid #2563eb"
-                            : "2px solid transparent",
-                        fontWeight: 600,
-                        fontSize: 14,
-                      }}
-                    >
-                      {tab === "ledger" ? "Transaction Ledger" : "Analytics"}
-                    </Box>
-                  ))}
                 </Stack>
-
-                {/* ANALYTICS */}
-                {activeTab === "analytics" && (
-                  <Card sx={{ mt: 2, p: 2, borderRadius: 3 }}>
-                    <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-                      <BarChart fontSize="small" />
-                      <Typography fontWeight={600}>
-                        Transaction Volume — Last 14 Days
-                      </Typography>
-                    </Stack>
-
-                    <ResponsiveContainer width="100%" height={220}>
-                      <ReBarChart data={chartData}>
-                        <XAxis dataKey="date" />
-
-                        <RechartsTooltip />
-
-                        <Bar
-                          dataKey="credit"
-                          name="Credit"
-                          fill="#16A34A"
-                          radius={[6, 6, 0, 0]}
-                        />
-
-                        <Bar
-                          dataKey="debit"
-                          name="Debit"
-                          fill="#DC2626"
-                          radius={[6, 6, 0, 0]}
-                        />
-                      </ReBarChart>
-                    </ResponsiveContainer>
-                  </Card>
-                )}
-
-                {/* LEDGER */}
-                {activeTab === "ledger" && (
-                  <Card sx={{ mt: 2, borderRadius: 3 }}>
-                    <Box p={2}>
-                      <Stack direction="row" spacing={1} mb={2} alignItems="center">
-
-                        <TextField
-                          size="small"
-                          placeholder="Search ref, description..."
-                          fullWidth
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              height: 34,
-                              fontSize: 12,
-                              bgcolor: "#f9fafb",
-                            },
-                          }}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <Search sx={{ fontSize: 14 }} />
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-
-                        <TextField
-                          fullWidth
-                          select
-                          value={typeFilter}
-                          onChange={(e) => setTypeFilter(e.target.value as any)}
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              height: 34,
-                              fontSize: 12,
-                              bgcolor: "#f9fafb",
-                            },
-                          }}
-                        >
-                          <MenuItem value="all">All Types</MenuItem>
-                          <MenuItem value="credit">Credit</MenuItem>
-                          <MenuItem value="debit">Debit</MenuItem>
-                        </TextField>
-
-                        <TextField
-                          size="small"
-                          fullWidth
-                          type="date"
-                          value={startDate}
-                          onChange={(e) => {
-                            if (e.target.value <= endDate) {
-                              setStartDate(e.target.value);
-                            } else {
-                              setAlert({
-                                open: true,
-                                type: "error",
-                                message: "Start date cannot be after end date",
-                              });
-                            }
-                          }}
-                        />
-
-                        <TextField
-                          size="small"
-                          fullWidth
-                          type="date"
-                          value={endDate}
-                          onChange={(e) => {
-                            if (e.target.value >= startDate) {
-                              setEndDate(e.target.value);
-                            } else {
-                              setAlert({
-                                open: true,
-                                type: "error",
-                                message: "End date cannot be before start date",
-                              });
-                            }
-                          }}
-                        />
-
-                        <Button
-                          startIcon={<FileDownload />}
-                          variant="outlined"
-                          size="small"
-                          onClick={handleExport}
-                          sx={{
-                            px: 5
-                          }}
-                        >
-                          Export
-                        </Button>
-                      </Stack>
-
-                      {loading ? (
-                        <CircularProgress />
-                      ) : (
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow sx={{ bgcolor: "#f9fafb" }}>
-                              <TableCell>REFERENCE</TableCell>
-                              {/* <TableCell>DESCRIPTION</TableCell> */}
-                              <TableCell>CREDIT</TableCell>
-                              <TableCell>DEBIT</TableCell>
-                              <TableCell>BALANCE</TableCell>
-                              <TableCell>CATEGORY</TableCell>
-                              <TableCell>DATE & TIME</TableCell>
-                            </TableRow>
-                          </TableHead>
-
-                          <TableBody>
-                            {filteredTransactions.map((tx) => (
-                              <TableRow key={tx.transaction_ref} hover>
-                                <TableCell>{tx.transaction_ref}</TableCell>
-
-                                {/* <TableCell>
-                                  <Typography fontWeight={500}>
-                                    Wallet Funding
-                                  </Typography>
-                                  <Typography fontSize={12} color="#6b7280">
-                                    Bank Transfer via NIBSS
-                                  </Typography>
-                                </TableCell> */}
-
-                                <TableCell sx={{ color: "#16a34a", fontWeight: 600 }}>
-                                  {tx.credit_amount
-                                    ? `+₦${Number(tx.credit_amount).toLocaleString()}`
-                                    : "—"}
-                                </TableCell>
-
-                                <TableCell sx={{ color: "#dc2626", fontWeight: 600 }}>
-                                  {tx.debit_amount
-                                    ? `-₦${Number(tx.debit_amount).toLocaleString()}`
-                                    : "—"}
-                                </TableCell>
-                                <TableCell sx={{ fontWeight: 600 }}>
-                                  ₦{Number(tx.closing_balance || 0).toLocaleString()}
-                                </TableCell>
-                                {/* <TableCell>
-                                  <Chip
-                                    label="Success"
-                                    size="small"
-                                    sx={{
-                                      bgcolor: "#dcfce7",
-                                      color: "#16a34a",
-                                      fontWeight: 600,
-                                      fontSize: 11,
-                                    }}
-                                  />
-                                </TableCell> */}
-                                <TableCell>
-                                  {categoryLabel(tx.category)}
-                                </TableCell>
-
-                                <TableCell>
-                                  {new Date(tx.timestamp).toLocaleString()}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      )}
-                      <Stack
-                        direction="row"
-                        justifyContent="center"
-                        mt={2}
-                      >
-
-                        <Pagination
-                          count={totalTxPages}
-                          page={txPage}
-                          onChange={(_, value) => {
-                            setTxPage(value);
-                            if (vendorsId)
-                              loadTransactions(vendorsId, value);
-                          }}
-                          color="primary"
-                          size="small"
-                          shape="rounded"
-                        />
-                      </Stack>
-                    </Box>
-
-                  </Card>
-                )}
-              </Box>
+              </Stack>
             </Stack>
-          </Stack>
+          </Grid>
         </Grid>
-      </Grid>
+      </Card>
+      {/* here */}
+      {/* WALLET + TABS ROW */}
+      <Card sx={{ p: 1, mt: 5 }}>
+        <Stack direction="row" spacing={3}>
+          {/* TABS + CONTENT */}
+          <Box flex={1}>
+            <Stack direction="row" spacing={3} borderBottom="1px solid #e5e7eb">
+              {["ledger", "history", "analytics"].map((tab) => (
+                <Box
+                  key={tab}
+                  onClick={() => setActiveTab(tab as any)}
+                  sx={{
+                    pb: 1,
+                    cursor: "pointer",
+                    borderBottom:
+                      activeTab === tab
+                        ? "2px solid #2563eb"
+                        : "2px solid transparent",
+                    fontWeight: 600,
+                    fontSize: 14,
+                  }}
+                >
+                  {tab === "ledger" ? "Transaction Ledger" : tab === "history" ? "Transaction History" : "Analytics"}
+                </Box>
+              ))}
+            </Stack>
+
+            {/* ANALYTICS */}
+            {activeTab === "analytics" && (
+              <Card sx={{ mt: 2, p: 2, borderRadius: 3 }}>
+                <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+                  <BarChart fontSize="small" />
+                  <Typography fontWeight={600}>
+                    Transaction Volume — Last 14 Days
+                  </Typography>
+                </Stack>
+
+                <ResponsiveContainer width="100%" height={220}>
+                  <ReBarChart data={chartData}>
+                    <XAxis dataKey="date" />
+
+                    <RechartsTooltip />
+
+                    <Bar
+                      dataKey="credit"
+                      name="Credit"
+                      fill="#16A34A"
+                      radius={[6, 6, 0, 0]}
+                    />
+
+                    <Bar
+                      dataKey="debit"
+                      name="Debit"
+                      fill="#DC2626"
+                      radius={[6, 6, 0, 0]}
+                    />
+                  </ReBarChart>
+                </ResponsiveContainer>
+              </Card>
+            )}
+
+            {/* LEDGER */}
+            {activeTab === "ledger" && (
+              <VendorLedger
+                vendorName={
+                  selectedVendor?.business_name ??
+                  "Unknown Vendor"
+                }
+
+                txTransactions={txTransactions}
+                txSummary={txSummary}
+
+                loading={loading}
+                transactionCount={transactionCount}
+                page={txPage}
+
+                startDate={startDate}
+                endDate={endDate}
+
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+
+                onPageChange={(newPage) => {
+                  setTxPage(newPage);
+
+                  if (vendorsId) {
+                    loadTransactions(
+                      vendorsId,
+                      newPage
+                    );
+                  }
+                }}
+
+                onRefresh={() => {
+                  setTxPage(1);
+
+                  if (vendorsId) {
+                    loadTransactions(
+                      vendorsId,
+                      1
+                    );
+                  }
+                }}
+
+                onExport={handleExport}
+              />
+
+            )}
+            {activeTab === "history" && (
+              <VendorHistory
+                vendorId={vendorsId ?? ""}
+                vendorName={
+                  selectedVendor?.business_name ??
+                  "Unknown Vendor"
+                }
+
+                transactions={
+                  historyTransactions
+                }
+
+                summary={
+                  historySummary
+                }
+
+                loading={
+                  historyLoading
+                }
+
+                transactionCount={
+                  historyTransactionCount
+                }
+
+                page={
+                  historyPage
+                }
+
+                startDate={
+                  historyStartDate
+                }
+
+                endDate={
+                  historyEndDate
+                }
+
+                direction={
+                  historyDirection
+                }
+
+                dataAsOf={
+                  historyDataAsOf
+                }
+
+                onPageChange={(newPage) => {
+                  if (!vendorsId) return;
+
+                  loadVendorHistory(
+                    String(vendorsId),
+                    newPage
+                  );
+                }}
+
+                onFilterChange={(
+                  newStartDate,
+                  newEndDate,
+                  newDirection
+                ) => {
+                  setHistoryStartDate(
+                    newStartDate
+                  );
+
+                  setHistoryEndDate(
+                    newEndDate
+                  );
+
+                  setHistoryDirection(
+                    newDirection
+                  );
+
+                  setHistoryPage(1);
+
+                  if (vendorsId) {
+                    loadVendorHistory(
+                      String(vendorsId),
+                      1,
+                      newStartDate,
+                      newEndDate,
+                      newDirection
+                    );
+                  }
+                }}
+
+                onRefresh={() => {
+                  if (!vendorsId) return;
+
+                  loadVendorHistory(
+                    String(vendorsId),
+                    historyPage
+                  );
+                }}
+
+                onExport={(format) => {
+                  handleVendorHistoryExport(
+                    format
+                  );
+                }}
+              />
+            )}
+          </Box>
+        </Stack>
+      </Card>
 
       <Dialog
         open={openFund}
@@ -1390,9 +1682,6 @@ const VendorTransactions: React.FC = () => {
               value="Tenant Wallet"
               disabled
             />
-            {/* <TextField select label="Funding Source" fullWidth size="small">
-        <MenuItem>Bank Transfer (NIBSS)</MenuItem>
-      </TextField> */}
 
             <TextField
               label="Transaction Note"

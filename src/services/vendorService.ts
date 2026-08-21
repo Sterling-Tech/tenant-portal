@@ -1289,3 +1289,133 @@ export const exportCustomerStatement = async (
     `/reports/customer/statement/?${query.toString()}`
   );
 };
+
+export interface VendorLedgerRow {
+  date: string;
+  reference: string;
+  category: string;
+  account_role: string;
+  debit: number;
+  credit: number;
+  balance: number | null;
+  migrated: boolean;
+}
+
+export interface VendorLedgerSummary {
+  vendor_id: number;
+  start: string;
+  end: string;
+  opening_balance: number;
+  closing_balance: number;
+  total_debit: number;
+  total_credit: number;
+}
+
+export interface VendorLedgerResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: VendorLedgerRow[];
+  summary: VendorLedgerSummary;
+  data_as_of: {
+    as_of: string;
+    age: string;
+    status: string;
+    is_stale: boolean;
+  };
+}
+
+export const fetchVendorLedger = (params?: {
+  start_date?: string;
+  end_date?: string;
+  vendor_id?: string | number;
+  page?: number;
+}) =>
+  get<VendorLedgerResponse>(
+    `/reports/vendor/ledger/${buildQuery(params)}`
+  );
+
+
+  export interface VendorHistoryRow {
+  date: string;
+  posted_at: string;
+  reference: string;
+
+  transaction_type: string;
+  direction: "debit" | "credit";
+  status: string;
+  bill_type: "prepaid" | "postpaid" | string;
+
+  value: number;
+  vat: number;
+  debt: number;
+  fee: number;
+  refund: number;
+
+  amount: number;
+  debit: number;
+  credit: number;
+  balance: number | null;
+
+  account_no: string | null;
+  customer_name: string | null;
+  meter_number: string | null;
+  units: number | string | null;
+  token: string | null;
+
+  reversed: boolean;
+}
+export interface VendorHistorySummary {
+  vendor_id: number;
+  start: string;
+  end: string;
+  direction: string;
+  count: number;
+}
+
+export interface VendorHistoryAsOf {
+  as_of: string;
+  age: string;
+  status: string;
+  is_stale: boolean;
+}
+export interface VendorHistoryResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: VendorHistoryRow[];
+  summary: VendorHistorySummary;
+  data_as_of: VendorHistoryAsOf;
+}
+
+export interface FetchVendorHistoryParams {
+  vendor_id: string | number;
+  start?: string;
+  end?: string;
+  direction?: "debit" | "credit" | "";
+  page?: number;
+}
+export const fetchVendorHistory =  (params?: {
+  vendor_id: string | number;
+  start?: string;
+  end?: string;
+  direction?: "debit" | "credit" | "";
+  page?: number;}
+) =>get<VendorHistoryResponse>(
+    `/reports/vendor/history/${buildQuery(params)}`
+  );
+  export const exportVendorHistory = async (
+  params: {
+    vendor_id: string | number;
+    start?: string;
+    end?: string;
+    direction?: "debit" | "credit" | "";
+    format: "csv" | "xlsx" | "pdf";
+  }
+) => {
+   return getBlob(
+      `/reports/vendor/history/${buildQuery(params)}`,
+    )
+};
+
+

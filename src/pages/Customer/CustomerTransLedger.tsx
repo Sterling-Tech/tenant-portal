@@ -166,56 +166,13 @@ export default function CustomerStatement({
         }
     };
 
-    const isPrepaidRow = (
-        row: PrepaidStatementRow | PostpaidStatementRow
-    ): row is PrepaidStatementRow => {
-        return "token" in row;
-    };
-
-    const isPostpaidRow = (
-        row: PrepaidStatementRow | PostpaidStatementRow
-    ): row is PostpaidStatementRow => {
-        return "particulars" in row;
-    };
+    
 
     /**
      * Search
      */
-    // const filteredRows = useMemo(() => {
-    //     if (!statement?.rows) {
-    //         return [];
-    //     }
-
-    //     if (!search.trim()) {
-    //         return statement.rows;
-    //     }
-
-    //     const value =
-    //         search.toLowerCase();
-
-    //     return statement.rows.filter(
-    //         (row) =>
-    //             row.reference
-    //                 ?.toLowerCase()
-    //                 .includes(value) ||
-    //             row.token
-    //                 ?.toLowerCase()
-    //                 .includes(value) ||
-    //             row.vendor
-    //                 ?.toLowerCase()
-    //                 .includes(value) ||
-    //             row.tariff
-    //                 ?.toLowerCase()
-    //                 .includes(value) ||
-    //             row.meter_number
-    //                 ?.toLowerCase()
-    //                 .includes(value)
-    //     );
-    // }, [
-    //     statement?.rows,
-    //     search,
-    // ]);
-const filteredRows = useMemo(() => {
+  
+    const filteredRows = useMemo(() => {
   if (!statement) {
     return [];
   }
@@ -351,15 +308,7 @@ const filteredRows = useMemo(() => {
     /**
      * Type change
      */
-    // const handleTypeChange = (
-    //   event: SelectChangeEvent<"prepaid" | "postpaid">
-    // ) => {
-    //   const type = event.target.value as
-    //     | "prepaid"
-    //     | "postpaid";
-
-    //   setStatementType(type);
-    // };
+  
     const handleTypeChange = (
         event: SelectChangeEvent<"prepaid" | "postpaid">
     ) => {
@@ -1035,40 +984,7 @@ const filteredRows = useMemo(() => {
             {/* =====================================================
           TOTALS
       ====================================================== */}
-            {/* {statement && (
-                <Grid container spacing={2}>
 
-                    <Grid item xs={12} md={4}>
-                        <SummaryCard
-                            title="Total Amount"
-                            value={formatCurrency(
-                                statement.total_amount
-                            )}
-                        />
-                    </Grid>
-
-                    <Grid item xs={12} md={4}>
-                        <SummaryCard
-                            title="Total Paid Arrears"
-                            value={formatCurrency(
-                                statement.total_paid_arrears
-                            )}
-                        />
-                    </Grid>
-
-                    <Grid item xs={12} md={4}>
-                        <SummaryCard
-                            title={statement.type === "prepaid" ? "Total Units" : "Total Debt"}
-                            value={
-                                statement.type === "prepaid"
-                                    ? formatNumber(statement.total_units)
-                                    : formatCurrency(statement.total_paid_arrears)
-                            }
-                        />
-                    </Grid>
-
-                </Grid>
-            )} */}
             {statement &&
                 <Card
                     sx={{
@@ -1092,7 +1008,7 @@ const filteredRows = useMemo(() => {
                         <Grid container spacing={2}>
 
                             {statement.type === "prepaid" ? (
-                                <>
+                                <Grid sx={{mt:5}}>
                                     <Grid item xs={12} sm={6} md={3}>
                                         <SummaryCard
                                             title="Total Amount"
@@ -1128,10 +1044,10 @@ const filteredRows = useMemo(() => {
                                             )}
                                         />
                                     </Grid>
-                                </>
+                                </Grid>
                             ) : (
-                                <>
-                                    <Grid item xs={12} sm={6} md={3}>
+                                <Grid sx={{mt:5}}>
+                                    <Grid item xs={12} sm={6} md={3} >
                                         <SummaryCard
                                             title="Opening Balance"
                                             value={formatCurrency(
@@ -1166,7 +1082,7 @@ const filteredRows = useMemo(() => {
                                             )}
                                         />
                                     </Grid>
-                                </>
+                                </Grid>
                             )}
 
                         </Grid>
@@ -1259,107 +1175,6 @@ function Info({
     );
 }
 
-// function PrepaidRow({
-//     row,
-//     formatCurrency,
-//     formatDate,
-// }: {
-//     row: CustomerStatementRow;
-//     formatCurrency: (
-//         value: number | string
-//     ) => string;
-//     formatDate: (
-//         value?: string
-//     ) => string;
-// }) {
-//     return (
-//         <TableRow hover>
-
-//             <TableCell>
-//                 {formatDate(row.date)}
-//             </TableCell>
-
-//             <TableCell>
-//                 <Typography
-//                     fontWeight={600}
-//                     fontSize={13}
-//                     sx={{
-//                         maxWidth: 180,
-//                         overflow: "hidden",
-//                         textOverflow:
-//                             "ellipsis",
-//                         whiteSpace:
-//                             "nowrap",
-//                     }}
-//                 >
-//                     {row.reference}
-//                 </Typography>
-//             </TableCell>
-
-//             <TableCell align="right">
-//                 <Typography
-//                     fontWeight={600}
-//                     color="success.main"
-//                 >
-//                     {formatCurrency(
-//                         row.amount
-//                     )}
-//                 </Typography>
-//             </TableCell>
-
-//             <TableCell align="right">
-//                 {formatCurrency(
-//                     row.paid_arrears
-//                 )}
-//             </TableCell>
-
-//             <TableCell align="right">
-//                 {formatCurrency(
-//                     row.energy_value
-//                 )}
-//             </TableCell>
-
-//             <TableCell align="right">
-//                 {formatCurrency(
-//                     row.vat
-//                 )}
-//             </TableCell>
-
-//             <TableCell>
-//                 <Typography
-//                     fontFamily="monospace"
-//                     fontSize={12}
-//                     sx={{
-//                         maxWidth: 190,
-//                         overflow: "hidden",
-//                         textOverflow:
-//                             "ellipsis",
-//                         whiteSpace:
-//                             "nowrap",
-//                     }}
-//                     title={row.token}
-//                 >
-//                     {row.token || "-"}
-//                 </Typography>
-//             </TableCell>
-
-//             <TableCell>
-//                 {row.tariff || "-"}
-//             </TableCell>
-
-//             <TableCell align="right">
-//                 {formatCurrency(
-//                     row.tariff_rate
-//                 )}
-//             </TableCell>
-
-//             <TableCell>
-//                 {row.meter_number || "-"}
-//             </TableCell>
-
-//         </TableRow>
-//     );
-// }
 
 function SummaryCard({
     title,
