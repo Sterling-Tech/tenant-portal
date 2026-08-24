@@ -728,6 +728,38 @@ useEffect(() => {
   loadVendorHistory,
 ]);
 
+const handleHistoryFilterChange = async (
+    startDate: string,
+    endDate: string,
+    direction: "all" | "debit" | "credit"
+) => {
+    if (!vendorsId) return;
+
+    if (startDate > endDate) {
+        setAlert({
+            open: true,
+            type: "error",
+            message: "Start date cannot be after end date",
+        });
+
+        return;
+    }
+
+    // Update UI state
+    setHistoryStartDate(startDate);
+    setHistoryEndDate(endDate);
+    setHistoryDirection(direction);
+
+    // Fetch using the NEW values directly
+    await loadVendorHistory(
+        String(vendorsId),
+        1,
+        startDate,
+        endDate,
+        direction
+    );
+};
+
   const handleVendorHistoryExport = async (
     format: "csv" | "xlsx" | "pdf"
   ) => {
@@ -1534,103 +1566,34 @@ useEffect(() => {
 
             )}
             {activeTab === "history" && (
+
               <VendorHistory
-                vendorId={vendorsId ?? ""}
-                vendorName={
-                  selectedVendor?.business_name ??
-                  "Unknown Vendor"
-                }
-
-                transactions={
-                  historyTransactions
-                }
-
-                summary={
-                  historySummary
-                }
-
-                loading={
-                  historyLoading
-                }
-
-                transactionCount={
-                  historyTransactionCount
-                }
-
-                page={
-                  historyPage
-                }
-
-                startDate={
-                  historyStartDate
-                }
-
-                endDate={
-                  historyEndDate
-                }
-
-                direction={
-                  historyDirection
-                }
-
-                dataAsOf={
-                  historyDataAsOf
-                }
-
-                onPageChange={(newPage) => {
-                  if (!vendorsId) return;
-
-                  loadVendorHistory(
-                    String(vendorsId),
-                    newPage
-                  );
-                }}
-
-                onFilterChange={(
-                  newStartDate,
-                  newEndDate,
-                  newDirection
-                ) => {
-                  setHistoryStartDate(
-                    newStartDate
-                  );
-
-                  setHistoryEndDate(
-                    newEndDate
-                  );
-
-                  setHistoryDirection(
-                    newDirection
-                  );
-
-                  setHistoryPage(1);
-
-                  if (vendorsId) {
-                    loadVendorHistory(
-                      String(vendorsId),
-                      1,
-                      newStartDate,
-                      newEndDate,
-                      newDirection
-                    );
-                  }
-                }}
-
-                onRefresh={() => {
-                  if (!vendorsId) return;
-
-                  loadVendorHistory(
-                    String(vendorsId),
-                    historyPage
-                  );
-                }}
-
-                onExport={(format) => {
-                  handleVendorHistoryExport(
-                    format
-                  );
-                }}
-              />
+    vendorId={vendorsId ?? ""}
+    vendorName={selectedVendor?.business_name}
+    transactions={historyTransactions}
+    summary={historySummary}
+    loading={historyLoading}
+    transactionCount={historyTransactionCount}
+    page={historyPage}
+    startDate={historyStartDate}
+    endDate={historyEndDate}
+    direction={historyDirection}
+    dataAsOf={historyDataAsOf}
+    onPageChange={(page) =>
+        loadVendorHistory(String(vendorsId), page)
+    }
+    onFilterChange={handleHistoryFilterChange}
+    onRefresh={() =>
+        loadVendorHistory(
+            String(vendorsId),
+            historyPage,
+            historyStartDate,
+            historyEndDate,
+            historyDirection
+        )
+    }
+    onExport={handleVendorHistoryExport}
+/>
             )}
           </Box>
         </Stack>

@@ -1404,18 +1404,27 @@ export const fetchVendorHistory =  (params?: {
 ) =>get<VendorHistoryResponse>(
     `/reports/vendor/history/${buildQuery(params)}`
   );
-  export const exportVendorHistory = async (
-  params: {
-    vendor_id: string | number;
-    start?: string;
-    end?: string;
-    direction?: "debit" | "credit" | "";
-    format: "csv" | "xlsx" | "pdf";
-  }
-) => {
-   return getBlob(
-      `/reports/vendor/history/${buildQuery(params)}`,
-    )
+
+export const exportVendorHistory = async ({
+  vendor_id,
+  start,
+  end,
+  direction,
+  format,
+}: {
+  vendor_id: string | number;
+  start?: string;
+  end?: string;
+  direction?: "debit" | "credit" | "";
+  format: "csv" | "xlsx" | "pdf";
+}) => {
+  return getBlob(
+    `/reports/vendor/history/${buildQuery({
+      vendor_id,
+      start,
+      end,
+      direction,
+      export: format,
+    })}`
+  );
 };
-
-
