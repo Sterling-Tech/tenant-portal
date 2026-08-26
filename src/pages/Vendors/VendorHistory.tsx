@@ -281,6 +281,7 @@ const VendorHistory: React.FC<VendorHistoryProps> = ({
             onExport(format);
         }
     };
+
     const horizontalScrollSx = {
         width: "100%",
         overflowX: "auto",
@@ -309,56 +310,97 @@ const VendorHistory: React.FC<VendorHistoryProps> = ({
             {/* ----------------------------------------- */}
             {/* SUMMARY */}
             {/* ----------------------------------------- */}
+            <Box
+                sx={{
+                    width: "100%",
+                    maxWidth: "100%",
+                    overflowX: "auto",
+                    overflowY: "hidden",
+                    pb: 1,
+                    mt: 2,
+                    mb: 3,
 
-            <Stack
-                direction={{
-                    xs: "column",
-                    sm: "row",
+                    "&::-webkit-scrollbar": {
+                        height: 8,
+                    },
+
+                    "&::-webkit-scrollbar-track": {
+                        backgroundColor: "#F1F5F9",
+                        borderRadius: 10,
+                    },
+
+                    "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: "#CBD5E1",
+                        borderRadius: 10,
+                    },
+
+                    "&::-webkit-scrollbar-thumb:hover": {
+                        backgroundColor: "#94A3B8",
+                    },
+
+                    // Firefox
+                    scrollbarWidth: "thin",
+                    scrollbarColor: "#CBD5E1 #F1F5F9",
                 }}
-                spacing={2}
-                mb={3}
-                sx={{ horizontalScrollSx, mr: 20, mt: 2 }}
             >
-                <SummaryCard
-                    title="Transactions"
-                    value={transactionCount.toLocaleString()}
-                />
+                <Stack
+                    direction="row"
+                    spacing={2}
+                    sx={{
+                        width: "max-content",
+                        minWidth: "100%",
+                        ml: 2,
+                    }}
+                >
+                    <Box sx={{ minWidth: 250 }}>
+                        <SummaryCard
+                            title="Transactions"
+                            value={transactionCount.toLocaleString()}
+                        />
+                    </Box>
 
-                <SummaryCard
-                    title="Total Debit"
-                    value={formatCurrency(
-                        transactions.reduce(
-                            (sum, tx) =>
-                                sum + Number(tx.debit || 0),
-                            0
-                        )
-                    )}
-                />
+                    <Box sx={{ minWidth: 250 }}>
+                        <SummaryCard
+                            title="Total Debit"
+                            value={formatCurrency(
+                                transactions.reduce(
+                                    (sum, tx) =>
+                                        sum + Number(tx.debit || 0),
+                                    0
+                                )
+                            )}
+                        />
+                    </Box>
 
-                <SummaryCard
-                    title="Total Credit"
-                    value={formatCurrency(
-                        transactions.reduce(
-                            (sum, tx) =>
-                                sum + Number(tx.credit || 0),
-                            0
-                        )
-                    )}
-                />
+                    <Box sx={{ minWidth: 250 }}>
+                        <SummaryCard
+                            title="Total Credit"
+                            value={formatCurrency(
+                                transactions.reduce(
+                                    (sum, tx) =>
+                                        sum + Number(tx.credit || 0),
+                                    0
+                                )
+                            )}
+                        />
+                    </Box>
 
-                <SummaryCard
-                    title="Period"
-                    value={
-                        summary
-                            ? `${dayjs(summary.start).format(
-                                "DD MMM"
-                            )} - ${dayjs(summary.end).format(
-                                "DD MMM YYYY"
-                            )}`
-                            : "N/A"
-                    }
-                />
-            </Stack>
+                    <Box sx={{ minWidth: 250 }}>
+                        <SummaryCard
+                            title="Period"
+                            value={
+                                summary
+                                    ? `${dayjs(summary.start).format(
+                                        "DD MMM"
+                                    )} - ${dayjs(summary.end).format(
+                                        "DD MMM YYYY"
+                                    )}`
+                                    : "N/A"
+                            }
+                        />
+                    </Box>
+                </Stack>
+            </Box>
 
             {/* ----------------------------------------- */}
             {/* DATA STATUS */}
@@ -395,7 +437,7 @@ const VendorHistory: React.FC<VendorHistoryProps> = ({
                     boxShadow: "none",
                     border:
                         "1px solid #E5E7EB",
-                    horizontalScrollSx,
+                    justifyContent:"space-between",
                 }}
             >
                 <CardContent>
@@ -633,715 +675,506 @@ const VendorHistory: React.FC<VendorHistoryProps> = ({
                 //         borderRadius: 2,
                 //     }}
                 // >
-                //     <Table
-                //         size="small"
-                //         sx={{
-                //             minWidth: 1250,
-                //             width: "max-content",
-                //         }}
-                //     >
-                //         <TableHead>
-                //             <TableRow
-                //                 sx={{
-                //                     bgcolor: "#F8FAFC",
-                //                 }}
-                //             >
-                //                 {/* <TableCell /> */}
-                //                 <TableCell>
-                //                     MORE
-                //                 </TableCell>
-                //                 <TableCell>
-                //                     DATE
-                //                 </TableCell>
-
-                //                 <TableCell>
-                //                     CUSTOMER
-                //                 </TableCell>
-
-                //                 <TableCell>
-                //                     REFERENCE
-                //                 </TableCell>
-
-                //                 <TableCell>
-                //                     TYPE
-                //                 </TableCell>
-
-                //                 <TableCell>
-                //                     BILL TYPE
-                //                 </TableCell>
-
-                //                 <TableCell
-                //                     align="right"
-                //                 >
-                //                     AMOUNT
-                //                 </TableCell>
-
-                //                 <TableCell>
-                //                     DIRECTION
-                //                 </TableCell>
-
-                //                 <TableCell>
-                //                     STATUS
-                //                 </TableCell>
-
-                //                 <TableCell>
-                //                     METER
-                //                 </TableCell>
-                //             </TableRow>
-                //         </TableHead>
-
-                //         <TableBody>
-                //             {filteredTransactions.map(
-                //                 (tx) => {
-                //                     const rowId = `${tx.reference}-${tx.date}`;
-
-                //                     const expanded =
-                //                         expandedRow ===
-                //                         rowId;
-
-                //                     return (
-                //                         <React.Fragment
-                //                             key={rowId}
-                //                         >
-                //                             <TableRow
-                //                                 hover
-                //                             >
-                //                                 <TableCell
-                //                                     padding="checkbox"
-                //                                 >
-                //                                     <IconButton
-                //                                         size="small"
-                //                                         onClick={() =>
-                //                                             setExpandedRow(
-                //                                                 expanded
-                //                                                     ? null
-                //                                                     : rowId
-                //                                             )
-                //                                         }
-                //                                     >
-                //                                         {expanded ? (
-                //                                             <ExpandLess />
-                //                                         ) : (
-                //                                             <ExpandMore />
-                //                                         )}
-                //                                     </IconButton>
-                //                                 </TableCell>
-
-                //                                 <TableCell>
-                //                                     <Stack>
-                //                                         <Typography
-                //                                             fontSize={
-                //                                                 13
-                //                                             }
-                //                                             fontWeight={
-                //                                                 500
-                //                                             }
-                //                                         >
-                //                                             {dayjs(
-                //                                                 tx.date
-                //                                             ).format(
-                //                                                 "DD MMM YYYY"
-                //                                             )}
-                //                                         </Typography>
-
-                //                                         <Typography
-                //                                             fontSize={
-                //                                                 11
-                //                                             }
-                //                                             color="text.secondary"
-                //                                         >
-                //                                             {dayjs(
-                //                                                 tx.date
-                //                                             ).format(
-                //                                                 "HH:mm:ss"
-                //                                             )}
-                //                                         </Typography>
-                //                                     </Stack>
-                //                                 </TableCell>
-
-                //                                 <TableCell>
-                //                                     <Typography
-                //                                         fontSize={
-                //                                             13
-                //                                         }
-                //                                         fontWeight={
-                //                                             600
-                //                                         }
-                //                                     >
-                //                                         {tx.customer_name ||
-                //                                             "N/A"}
-                //                                     </Typography>
-
-                //                                     <Typography
-                //                                         fontSize={
-                //                                             11
-                //                                         }
-                //                                         color="text.secondary"
-                //                                     >
-                //                                         {tx.account_no ||
-                //                                             "No account"}
-                //                                     </Typography>
-                //                                 </TableCell>
-
-                //                                 <TableCell>
-                //                                     <Typography
-                //                                         fontFamily="monospace"
-                //                                         fontSize={
-                //                                             11
-                //                                         }
-                //                                     >
-                //                                         {tx.reference}
-                //                                     </Typography>
-                //                                 </TableCell>
-
-                //                                 <TableCell>
-                //                                     <Chip
-                //                                         label={
-                //                                             tx.transaction_type ||
-                //                                             "N/A"
-                //                                         }
-                //                                         size="small"
-                //                                         variant="outlined"
-                //                                     />
-                //                                 </TableCell>
-
-                //                                 <TableCell>
-                //                                     <Chip
-                //                                         label={
-                //                                             tx.bill_type ||
-                //                                             "N/A"
-                //                                         }
-                //                                         size="small"
-                //                                         sx={{
-                //                                             textTransform:
-                //                                                 "capitalize",
-                //                                         }}
-                //                                     />
-                //                                 </TableCell>
-
-                //                                 <TableCell
-                //                                     align="right"
-                //                                 >
-                //                                     <Typography
-                //                                         fontWeight={
-                //                                             700
-                //                                         }
-                //                                         color={
-                //                                             tx.direction ===
-                //                                                 "credit"
-                //                                                 ? "success.main"
-                //                                                 : "error.main"
-                //                                         }
-                //                                     >
-                //                                         {tx.direction ===
-                //                                             "credit"
-                //                                             ? "+"
-                //                                             : "-"}
-                //                                         {formatCurrency(
-                //                                             tx.amount
-                //                                         )}
-                //                                     </Typography>
-                //                                 </TableCell>
-
-                //                                 <TableCell>
-                //                                     <Chip
-                //                                         label={directionLabel(
-                //                                             tx.direction
-                //                                         )}
-                //                                         size="small"
-                //                                         color={
-                //                                             tx.direction ===
-                //                                                 "credit"
-                //                                                 ? "success"
-                //                                                 : "error"
-                //                                         }
-                //                                         variant="outlined"
-                //                                     />
-                //                                 </TableCell>
-
-                //                                 <TableCell>
-                //                                     <Chip
-                //                                         label={
-                //                                             tx.status ||
-                //                                             "N/A"
-                //                                         }
-                //                                         size="small"
-                //                                         color={getStatusColor(
-                //                                             tx.status
-                //                                         )}
-                //                                         variant="outlined"
-                //                                     />
-                //                                 </TableCell>
-
-                //                                 <TableCell>
-                //                                     <Typography
-                //                                         fontFamily="monospace"
-                //                                         fontSize={
-                //                                             12
-                //                                         }
-                //                                     >
-                //                                         {tx.meter_number ||
-                //                                             "N/A"}
-                //                                     </Typography>
-                //                                 </TableCell>
-                //                             </TableRow>
-
-                //                             {/* -------------------------------- */}
-                //                             {/* EXPANDED DETAILS */}
-                //                             {/* -------------------------------- */}
-
-                //                             <TableRow>
-                //                                 <TableCell
-                //                                     colSpan={10}
-                //                                     sx={{
-                //                                         p: 0,
-                //                                         border: 0,
-                //                                     }}
-                //                                 >
-                //                                     <Collapse
-                //                                         in={expanded}
-                //                                         timeout="auto"
-                //                                         unmountOnExit
-                //                                     >
-                //                                         <Box
-                //                                             sx={{
-                //                                                 p: 2,
-                //                                                 bgcolor:
-                //                                                     "#F8FAFC",
-                //                                             }}
-                //                                         >
-                //                                             <Stack
-                //                                                 direction={{
-                //                                                     xs: "column",
-                //                                                     md: "row",
-                //                                                 }}
-                //                                                 spacing={3}
-                //                                             >
-                //                                                 <HistoryDetail
-                //                                                     label="Value"
-                //                                                     value={formatCurrency(
-                //                                                         tx.value
-                //                                                     )}
-                //                                                 />
-
-                //                                                 <HistoryDetail
-                //                                                     label="VAT"
-                //                                                     value={formatCurrency(
-                //                                                         tx.vat
-                //                                                     )}
-                //                                                 />
-
-                //                                                 <HistoryDetail
-                //                                                     label="Fee"
-                //                                                     value={formatCurrency(
-                //                                                         tx.fee
-                //                                                     )}
-                //                                                 />
-
-                //                                                 <HistoryDetail
-                //                                                     label="Debt"
-                //                                                     value={formatCurrency(
-                //                                                         tx.debt
-                //                                                     )}
-                //                                                 />
-
-                //                                                 <HistoryDetail
-                //                                                     label="Refund"
-                //                                                     value={formatCurrency(
-                //                                                         tx.refund
-                //                                                     )}
-                //                                                 />
-
-                //                                                 <HistoryDetail
-                //                                                     label="Units"
-                //                                                     value={
-                //                                                         tx.units ??
-                //                                                         "N/A"
-                //                                                     }
-                //                                                 />
-
-                //                                                 <HistoryDetail
-                //                                                     label="Balance"
-                //                                                     value={
-                //                                                         tx.balance !==
-                //                                                             null
-                //                                                             ? formatCurrency(
-                //                                                                 tx.balance
-                //                                                             )
-                //                                                             : "N/A"
-                //                                                     }
-                //                                                 />
-                //                                             </Stack>
-
-                //                                             <Divider
-                //                                                 sx={{
-                //                                                     my: 2,
-                //                                                 }}
-                //                                             />
-
-                //                                             <Stack
-                //                                                 direction={{
-                //                                                     xs: "column",
-                //                                                     md: "row",
-                //                                                 }}
-                //                                                 spacing={3}
-                //                                             >
-                //                                                 <HistoryDetail
-                //                                                     label="Account Number"
-                //                                                     value={
-                //                                                         tx.account_no ||
-                //                                                         "N/A"
-                //                                                     }
-                //                                                 />
-
-                //                                                 <HistoryDetail
-                //                                                     label="Meter Number"
-                //                                                     value={
-                //                                                         tx.meter_number ||
-                //                                                         "N/A"
-                //                                                     }
-                //                                                 />
-
-                //                                                 <HistoryDetail
-                //                                                     label="Posted At"
-                //                                                     value={
-                //                                                         tx.posted_at
-                //                                                             ? dayjs(
-                //                                                                 tx.posted_at
-                //                                                             ).format(
-                //                                                                 "DD MMM YYYY, HH:mm:ss"
-                //                                                             )
-                //                                                             : "N/A"
-                //                                                     }
-                //                                                 />
-
-                //                                                 <HistoryDetail
-                //                                                     label="Reversed"
-                //                                                     value={
-                //                                                         tx.reversed
-                //                                                             ? "Yes"
-                //                                                             : "No"
-                //                                                     }
-                //                                                 />
-                //                                             </Stack>
-
-                //                                             {tx.token && (
-                //                                                 <>
-                //                                                     <Divider
-                //                                                         sx={{
-                //                                                             my: 2,
-                //                                                         }}
-                //                                                     />
-
-                //                                                     <Stack
-                //                                                         direction="row"
-                //                                                         alignItems="center"
-                //                                                         spacing={1}
-                //                                                     >
-                //                                                         <Typography
-                //                                                             fontSize={
-                //                                                                 12
-                //                                                             }
-                //                                                             fontWeight={
-                //                                                                 600
-                //                                                             }
-                //                                                         >
-                //                                                             Token:
-                //                                                         </Typography>
-
-                //                                                         <Typography
-                //                                                             fontFamily="monospace"
-                //                                                             fontSize={
-                //                                                                 12
-                //                                                             }
-                //                                                         >
-                //                                                             {tx.token}
-                //                                                         </Typography>
-
-                //                                                         <Tooltip
-                //                                                             title={
-                //                                                                 copiedToken ===
-                //                                                                     tx.token
-                //                                                                     ? "Copied"
-                //                                                                     : "Copy token"
-                //                                                             }
-                //                                                         >
-                //                                                             <IconButton
-                //                                                                 size="small"
-                //                                                                 onClick={() =>
-                //                                                                     copyToken(
-                //                                                                         tx.token!
-                //                                                                     )
-                //                                                                 }
-                //                                                             >
-                //                                                                 <ContentCopy
-                //                                                                     fontSize="small"
-                //                                                                 />
-                //                                                             </IconButton>
-                //                                                         </Tooltip>
-                //                                                     </Stack>
-                //                                                 </>
-                //                                             )}
-                //                                         </Box>
-                //                                     </Collapse>
-                //                                 </TableCell>
-                //                             </TableRow>
-                //                         </React.Fragment>
-                //                     );
-                //                 }
-                //             )}
-                //         </TableBody>
-                //     </Table>
-                // </Box>
                 <Box
     sx={{
         width: "100%",
         maxWidth: "100%",
         overflowX: "auto",
         overflowY: "hidden",
-        border: "1px solid #E5E7EB",
-        borderRadius: 2,
+        pb: 1,
+        mt: 2,
+        mb: 3,
 
-        // scrollbar styling
         "&::-webkit-scrollbar": {
             height: 8,
         },
+
         "&::-webkit-scrollbar-track": {
             backgroundColor: "#F1F5F9",
+            borderRadius: 10,
         },
+
         "&::-webkit-scrollbar-thumb": {
             backgroundColor: "#CBD5E1",
             borderRadius: 10,
         },
+
         "&::-webkit-scrollbar-thumb:hover": {
             backgroundColor: "#94A3B8",
         },
+
+        // Firefox
+        scrollbarWidth: "thin",
+        scrollbarColor: "#CBD5E1 #F1F5F9",
     }}
 >
-    <Table
-        size="small"
+                    <Table
+                        size="small"
+                        // sx={{
+                        //     minWidth: 1250,
+                        //     width: "max-content",
+                        // }}
+                        // direction="row"
+        // spacing={2}
         sx={{
-            minWidth: 1250,
             width: "max-content",
+            minWidth: "100%",
+            mr: 2,
         }}
-    >
-        <TableHead>
-            <TableRow
-                sx={{
-                    bgcolor: "#F8FAFC",
-                }}
-            >
-                <TableCell>MORE</TableCell>
-                <TableCell>DATE</TableCell>
-                <TableCell>CUSTOMER</TableCell>
-                <TableCell>REFERENCE</TableCell>
-                <TableCell>TYPE</TableCell>
-                <TableCell>BILL TYPE</TableCell>
-                <TableCell align="right">
-                    AMOUNT
-                </TableCell>
-                <TableCell>DIRECTION</TableCell>
-                <TableCell>STATUS</TableCell>
-                <TableCell>METER</TableCell>
-            </TableRow>
-        </TableHead>
-
-        <TableBody>
-            {filteredTransactions.map((tx) => {
-                const rowId = `${tx.reference}-${tx.date}`;
-                const expanded = expandedRow === rowId;
-
-                return (
-                    <React.Fragment key={rowId}>
-                        <TableRow hover>
-                            <TableCell padding="checkbox">
-                                <IconButton
-                                    size="small"
-                                    onClick={() =>
-                                        setExpandedRow(
-                                            expanded
-                                                ? null
-                                                : rowId
-                                        )
-                                    }
-                                >
-                                    {expanded ? (
-                                        <ExpandLess />
-                                    ) : (
-                                        <ExpandMore />
-                                    )}
-                                </IconButton>
-                            </TableCell>
-
-                            <TableCell>
-                                <Stack>
-                                    <Typography
-                                        fontSize={13}
-                                        fontWeight={500}
-                                    >
-                                        {dayjs(tx.date).format(
-                                            "DD MMM YYYY"
-                                        )}
-                                    </Typography>
-
-                                    <Typography
-                                        fontSize={11}
-                                        color="text.secondary"
-                                    >
-                                        {dayjs(tx.date).format(
-                                            "HH:mm:ss"
-                                        )}
-                                    </Typography>
-                                </Stack>
-                            </TableCell>
-
-                            <TableCell>
-                                <Typography
-                                    fontSize={13}
-                                    fontWeight={600}
-                                >
-                                    {tx.customer_name || "N/A"}
-                                </Typography>
-
-                                <Typography
-                                    fontSize={11}
-                                    color="text.secondary"
-                                >
-                                    {tx.account_no ||
-                                        "No account"}
-                                </Typography>
-                            </TableCell>
-
-                            <TableCell>
-                                <Typography
-                                    fontFamily="monospace"
-                                    fontSize={11}
-                                    sx={{
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
-                                    {tx.reference}
-                                </Typography>
-                            </TableCell>
-
-                            <TableCell>
-                                <Chip
-                                    label={
-                                        tx.transaction_type ||
-                                        "N/A"
-                                    }
-                                    size="small"
-                                    variant="outlined"
-                                />
-                            </TableCell>
-
-                            <TableCell>
-                                <Chip
-                                    label={
-                                        tx.bill_type || "N/A"
-                                    }
-                                    size="small"
-                                    sx={{
-                                        textTransform:
-                                            "capitalize",
-                                    }}
-                                />
-                            </TableCell>
-
-                            <TableCell align="right">
-                                <Typography
-                                    fontWeight={700}
-                                    color={
-                                        tx.direction ===
-                                        "credit"
-                                            ? "success.main"
-                                            : "error.main"
-                                    }
-                                    sx={{
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
-                                    {tx.direction === "credit"
-                                        ? "+"
-                                        : "-"}
-                                    {formatCurrency(tx.amount)}
-                                </Typography>
-                            </TableCell>
-
-                            <TableCell>
-                                <Chip
-                                    label={directionLabel(
-                                        tx.direction
-                                    )}
-                                    size="small"
-                                    color={
-                                        tx.direction ===
-                                        "credit"
-                                            ? "success"
-                                            : "error"
-                                    }
-                                    variant="outlined"
-                                />
-                            </TableCell>
-
-                            <TableCell>
-                                <Chip
-                                    label={
-                                        tx.status || "N/A"
-                                    }
-                                    size="small"
-                                    color={getStatusColor(
-                                        tx.status
-                                    )}
-                                    variant="outlined"
-                                />
-                            </TableCell>
-
-                            <TableCell>
-                                <Typography
-                                    fontFamily="monospace"
-                                    fontSize={12}
-                                    sx={{
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
-                                    {tx.meter_number || "N/A"}
-                                </Typography>
-                            </TableCell>
-                        </TableRow>
-
-                        {/* Expanded row */}
-                        <TableRow>
-                            <TableCell
-                                colSpan={10}
+                    >
+                        <TableHead>
+                            <TableRow
                                 sx={{
-                                    p: 0,
-                                    border: 0,
+                                    bgcolor: "#F8FAFC",
                                 }}
                             >
-                                <Collapse
-                                    in={expanded}
-                                    timeout="auto"
-                                    unmountOnExit
+                                {/* <TableCell /> */}
+                                <TableCell>
+                                    MORE
+                                </TableCell>
+                                <TableCell>
+                                    DATE
+                                </TableCell>
+
+                                <TableCell>
+                                    CUSTOMER
+                                </TableCell>
+
+                                <TableCell>
+                                    REFERENCE
+                                </TableCell>
+
+                                <TableCell>
+                                    TYPE
+                                </TableCell>
+
+                                <TableCell>
+                                    BILL TYPE
+                                </TableCell>
+
+                                <TableCell
+                                    align="right"
                                 >
-                                    <Box
-                                        sx={{
-                                            p: 2,
-                                            bgcolor: "#F8FAFC",
-                                            minWidth: 1000,
-                                        }}
-                                    >
-                                        {/* your expanded content */}
-                                    </Box>
-                                </Collapse>
-                            </TableCell>
-                        </TableRow>
-                    </React.Fragment>
-                );
-            })}
-        </TableBody>
-    </Table>
-</Box>
+                                    AMOUNT
+                                </TableCell>
+
+                                <TableCell>
+                                    DIRECTION
+                                </TableCell>
+
+                                <TableCell>
+                                    STATUS
+                                </TableCell>
+
+                                <TableCell>
+                                    METER
+                                </TableCell>
+                            </TableRow>
+                        </TableHead>
+
+                        <TableBody>
+                            {filteredTransactions.map(
+                                (tx) => {
+                                    const rowId = `${tx.reference}-${tx.date}`;
+
+                                    const expanded =
+                                        expandedRow ===
+                                        rowId;
+
+                                    return (
+                                        <React.Fragment
+                                            key={rowId}
+                                        >
+                                            <TableRow
+                                                hover
+                                            >
+                                                <TableCell
+                                                    padding="checkbox"
+                                                >
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() =>
+                                                            setExpandedRow(
+                                                                expanded
+                                                                    ? null
+                                                                    : rowId
+                                                            )
+                                                        }
+                                                    >
+                                                        {expanded ? (
+                                                            <ExpandLess />
+                                                        ) : (
+                                                            <ExpandMore />
+                                                        )}
+                                                    </IconButton>
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <Stack>
+                                                        <Typography
+                                                            fontSize={
+                                                                13
+                                                            }
+                                                            fontWeight={
+                                                                500
+                                                            }
+                                                        >
+                                                            {dayjs(
+                                                                tx.date
+                                                            ).format(
+                                                                "DD MMM YYYY"
+                                                            )}
+                                                        </Typography>
+
+                                                        <Typography
+                                                            fontSize={
+                                                                11
+                                                            }
+                                                            color="text.secondary"
+                                                        >
+                                                            {dayjs(
+                                                                tx.date
+                                                            ).format(
+                                                                "HH:mm:ss"
+                                                            )}
+                                                        </Typography>
+                                                    </Stack>
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <Typography
+                                                        fontSize={
+                                                            13
+                                                        }
+                                                        fontWeight={
+                                                            600
+                                                        }
+                                                    >
+                                                        {tx.customer_name ||
+                                                            "N/A"}
+                                                    </Typography>
+
+                                                    <Typography
+                                                        fontSize={
+                                                            11
+                                                        }
+                                                        color="text.secondary"
+                                                    >
+                                                        {tx.account_no ||
+                                                            "No account"}
+                                                    </Typography>
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <Typography
+                                                        fontFamily="monospace"
+                                                        fontSize={
+                                                            11
+                                                        }
+                                                    >
+                                                        {tx.reference}
+                                                    </Typography>
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <Chip
+                                                        label={
+                                                            tx.transaction_type ||
+                                                            "N/A"
+                                                        }
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <Chip
+                                                        label={
+                                                            tx.bill_type ||
+                                                            "N/A"
+                                                        }
+                                                        size="small"
+                                                        sx={{
+                                                            textTransform:
+                                                                "capitalize",
+                                                        }}
+                                                    />
+                                                </TableCell>
+
+                                                <TableCell
+                                                    align="right"
+                                                >
+                                                    <Typography
+                                                        fontWeight={
+                                                            700
+                                                        }
+                                                        color={
+                                                            tx.direction ===
+                                                                "credit"
+                                                                ? "success.main"
+                                                                : "error.main"
+                                                        }
+                                                    >
+                                                        {tx.direction ===
+                                                            "credit"
+                                                            ? "+"
+                                                            : "-"}
+                                                        {formatCurrency(
+                                                            tx.amount
+                                                        )}
+                                                    </Typography>
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <Chip
+                                                        label={directionLabel(
+                                                            tx.direction
+                                                        )}
+                                                        size="small"
+                                                        color={
+                                                            tx.direction ===
+                                                                "credit"
+                                                                ? "success"
+                                                                : "error"
+                                                        }
+                                                        variant="outlined"
+                                                    />
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <Chip
+                                                        label={
+                                                            tx.status ||
+                                                            "N/A"
+                                                        }
+                                                        size="small"
+                                                        color={getStatusColor(
+                                                            tx.status
+                                                        )}
+                                                        variant="outlined"
+                                                    />
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <Typography
+                                                        fontFamily="monospace"
+                                                        fontSize={
+                                                            12
+                                                        }
+                                                    >
+                                                        {tx.meter_number ||
+                                                            "N/A"}
+                                                    </Typography>
+                                                </TableCell>
+                                            </TableRow>
+
+                                            {/* -------------------------------- */}
+                                            {/* EXPANDED DETAILS */}
+                                            {/* -------------------------------- */}
+
+                                            <TableRow>
+                                                <TableCell
+                                                    colSpan={10}
+                                                    sx={{
+                                                        p: 0,
+                                                        border: 0,
+                                                    }}
+                                                >
+                                                    <Collapse
+                                                        in={expanded}
+                                                        timeout="auto"
+                                                        unmountOnExit
+                                                    >
+                                                        <Box
+                                                            sx={{
+                                                                p: 2,
+                                                                bgcolor:
+                                                                    "#F8FAFC",
+                                                            }}
+                                                        >
+                                                            <Stack
+                                                                direction={{
+                                                                    xs: "column",
+                                                                    md: "row",
+                                                                }}
+                                                                spacing={3}
+                                                            >
+                                                                <HistoryDetail
+                                                                    label="Value"
+                                                                    value={formatCurrency(
+                                                                        tx.value
+                                                                    )}
+                                                                />
+
+                                                                <HistoryDetail
+                                                                    label="VAT"
+                                                                    value={formatCurrency(
+                                                                        tx.vat
+                                                                    )}
+                                                                />
+
+                                                                <HistoryDetail
+                                                                    label="Fee"
+                                                                    value={formatCurrency(
+                                                                        tx.fee
+                                                                    )}
+                                                                />
+
+                                                                <HistoryDetail
+                                                                    label="Debt"
+                                                                    value={formatCurrency(
+                                                                        tx.debt
+                                                                    )}
+                                                                />
+
+                                                                <HistoryDetail
+                                                                    label="Refund"
+                                                                    value={formatCurrency(
+                                                                        tx.refund
+                                                                    )}
+                                                                />
+
+                                                                <HistoryDetail
+                                                                    label="Units"
+                                                                    value={
+                                                                        tx.units ??
+                                                                        "N/A"
+                                                                    }
+                                                                />
+
+                                                                <HistoryDetail
+                                                                    label="Balance"
+                                                                    value={
+                                                                        tx.balance !==
+                                                                            null
+                                                                            ? formatCurrency(
+                                                                                tx.balance
+                                                                            )
+                                                                            : "N/A"
+                                                                    }
+                                                                />
+                                                            </Stack>
+
+                                                            <Divider
+                                                                sx={{
+                                                                    my: 2,
+                                                                }}
+                                                            />
+
+                                                            <Stack
+                                                                direction={{
+                                                                    xs: "column",
+                                                                    md: "row",
+                                                                }}
+                                                                spacing={3}
+                                                            >
+                                                                <HistoryDetail
+                                                                    label="Account Number"
+                                                                    value={
+                                                                        tx.account_no ||
+                                                                        "N/A"
+                                                                    }
+                                                                />
+
+                                                                <HistoryDetail
+                                                                    label="Meter Number"
+                                                                    value={
+                                                                        tx.meter_number ||
+                                                                        "N/A"
+                                                                    }
+                                                                />
+
+                                                                <HistoryDetail
+                                                                    label="Posted At"
+                                                                    value={
+                                                                        tx.posted_at
+                                                                            ? dayjs(
+                                                                                tx.posted_at
+                                                                            ).format(
+                                                                                "DD MMM YYYY, HH:mm:ss"
+                                                                            )
+                                                                            : "N/A"
+                                                                    }
+                                                                />
+
+                                                                <HistoryDetail
+                                                                    label="Reversed"
+                                                                    value={
+                                                                        tx.reversed
+                                                                            ? "Yes"
+                                                                            : "No"
+                                                                    }
+                                                                />
+                                                            </Stack>
+
+                                                            {tx.token && (
+                                                                <>
+                                                                    <Divider
+                                                                        sx={{
+                                                                            my: 2,
+                                                                        }}
+                                                                    />
+
+                                                                    <Stack
+                                                                        direction="row"
+                                                                        alignItems="center"
+                                                                        spacing={1}
+                                                                    >
+                                                                        <Typography
+                                                                            fontSize={
+                                                                                12
+                                                                            }
+                                                                            fontWeight={
+                                                                                600
+                                                                            }
+                                                                        >
+                                                                            Token:
+                                                                        </Typography>
+
+                                                                        <Typography
+                                                                            fontFamily="monospace"
+                                                                            fontSize={
+                                                                                12
+                                                                            }
+                                                                        >
+                                                                            {tx.token}
+                                                                        </Typography>
+
+                                                                        <Tooltip
+                                                                            title={
+                                                                                copiedToken ===
+                                                                                    tx.token
+                                                                                    ? "Copied"
+                                                                                    : "Copy token"
+                                                                            }
+                                                                        >
+                                                                            <IconButton
+                                                                                size="small"
+                                                                                onClick={() =>
+                                                                                    copyToken(
+                                                                                        tx.token!
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <ContentCopy
+                                                                                    fontSize="small"
+                                                                                />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                    </Stack>
+                                                                </>
+                                                            )}
+                                                        </Box>
+                                                    </Collapse>
+                                                </TableCell>
+                                            </TableRow>
+                                        </React.Fragment>
+                                    );
+                                }
+                            )}
+                        </TableBody>
+                    </Table>
+                </Box>
             )}
 
             {/* ----------------------------------------- */}
@@ -1360,6 +1193,8 @@ const VendorHistory: React.FC<VendorHistoryProps> = ({
                 }}
                 spacing={2}
                 mt={3}
+                ml={3}
+                mr={20}
             >
                 <Typography
                     variant="body2"
@@ -1382,7 +1217,7 @@ const VendorHistory: React.FC<VendorHistoryProps> = ({
                         color="primary"
                         size="small"
                         shape="rounded"
-                        sx={{mr:20}}
+                        sx={{ mr: 20 }}
                     />
                 )}
             </Stack>
