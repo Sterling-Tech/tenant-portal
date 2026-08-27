@@ -33,13 +33,30 @@ const fmt = (n: Number) =>
   "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2 });
 
 /* ---------------- COMPONENT ---------------- */
-const DEBT_TYPES = [
+// const DEBT_TYPES = [
 
-  { label: "Payment", value: "payment" },
-  // reversals
-  { label: "Rreversal", value: "reversal" },
+//   { label: "Payment", value: "payment" },
+//   { label: "Rreversal", value: "reversal" },
+// ];
+
+const buckets = [
+  {
+    id: 1,
+    name: "Electricity Debt",
+  },
+  {
+    id: 2,
+    name: "Arrears",
+  },
+  {
+    id: 3,
+    name: "Payment"
+  },
+  {
+    id: 4,
+    name: "Rreversal"
+  }
 ];
-
 interface EditDebtForm {
   payment_plan: number | "";
   rate: string;
@@ -64,12 +81,12 @@ export default function DebtManager() {
   const [vendorForm, setVendorForm] = useState<Partial<VendorForm>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   /* ---------------- SEARCH ---------------- */
-  const [debtType, setDebtType] = useState("");
-  const [paymentPlan, setPaymentPlan] = useState<number[]>([]);
+
   const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
+  const [bucket, setBucket] = useState<number | "">("");
+  const [paymentPlan, setPaymentPlan] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [rate, setRate] = useState("");
-  const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
 
   const [editOpen, setEditOpen] = useState(false);
@@ -143,9 +160,9 @@ export default function DebtManager() {
   const validateDebtForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!debtType) {
-      newErrors.debtType = "Debt type is required";
-    }
+    // if (!debtType) {
+    //   newErrors.debtType = "Debt type is required";
+    // }
 
     if (!amount) {
       newErrors.amount = "Amount is required";
@@ -163,12 +180,15 @@ export default function DebtManager() {
       newErrors.date = "Effective date is required";
     }
 
-    if (!description.trim()) {
-      newErrors.description = "Description is required";
-    }
+    // if (!description.trim()) {
+    //   newErrors.description = "Description is required";
+    // }
 
-    if (paymentPlan.length === 0) {
-      newErrors.paymentPlan = "Select at least one payment plan";
+    // if (paymentPlan.length === 0) {
+    //   newErrors.paymentPlan = "Select at least one payment plan";
+    // }
+    if (!paymentPlan) {
+      newErrors.paymentPlan = "Payment plan is required";
     }
 
     setErrors(newErrors);
@@ -176,38 +196,101 @@ export default function DebtManager() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // const handleCreateDebt = async () => {
+  //   const isValid = validateDebtForm();
+
+  //   if (!isValid) return;
+
+  //   try {
+  //     setCreating(true);
+
+  //     await createDebt({
+  //       customer: customer.id,
+  //       description,
+  //       payment_plan: paymentPlan[0], 
+  //       effective_date: date,
+  //       rate: Number(rate),
+  //       debt_type: debtType,
+  //       amount: Number(amount),
+  //     });
+
+  //     setSuccessMsg("Debt created successfully");
+
+
+  //     setDebtType("");
+  //     setAmount("");
+  //     setRate("");
+  //     setDate("");
+  //     setDescription("");
+  //     setPaymentPlan([]);
+  //     setErrors({});
+
+  //   } catch (err: any) {
+  //     setErrorMsg(
+  //       err?.response?.data?.message ||
+  //       "Failed to create debt"
+  //     );
+  //   } finally {
+  //     setCreating(false);
+  //   }
+  // };
   const handleCreateDebt = async () => {
     const isValid = validateDebtForm();
 
     if (!isValid) return;
 
+    if (!bucket) {
+      setErrors((prev) => ({
+        ...prev,
+        bucket: "Please select a debt bucket",
+      }));
+
+      return;
+    }
+
+    if (!paymentPlan) {
+      setErrors((prev) => ({
+        ...prev,
+        paymentPlan:
+          "Please select a payment plan",
+      }));
+
+      return;
+    }
+
     try {
       setCreating(true);
 
       await createDebt({
-        customer: customer.id,
-        description,
-        payment_plan: paymentPlan[0], // or whatever API expects
+        customer: Number(customer.id),
+        bucket: Number(bucket),
+        payment_plan: Number(paymentPlan),
         effective_date: date,
-        rate: Number(rate),
-        debt_type: debtType,
-        amount: Number(amount),
+        rate: rate,
+        amount: amount,
       });
 
-      setSuccessMsg("Debt created successfully");
+      setSuccessMsg(
+        "Debt created successfully"
+      );
 
-      // Clear form
-      setDebtType("");
+      // Reset form
       setAmount("");
       setRate("");
       setDate("");
-      setDescription("");
-      setPaymentPlan([]);
-      setErrors({});
+      setBucket("");
+      setPaymentPlan(null);
 
+      setErrors({});
     } catch (err: any) {
+      console.error(
+        "Create debt error:",
+        err?.response?.data || err
+      );
+
       setErrorMsg(
         err?.response?.data?.message ||
+        err?.response?.data?.detail ||
         "Failed to create debt"
       );
     } finally {
@@ -493,7 +576,7 @@ export default function DebtManager() {
 
                 <Stack direction="row" spacing={1} mt={2}>
                   <Chip label="active" size="small" sx={{ bgcolor: "#10b981", color: "#fff" }} />
-                  <Chip label="postpaid" size="small" sx={{ bgcolor: "#f59e0b", color: "#fff" }} />
+                  <Chip label={customer.metering_type.name} size="small" sx={{ bgcolor: "#f59e0b", color: "#fff" }} />
                   <Chip label="industrial" size="small" sx={{ bgcolor: "#64748b", color: "#fff" }} />
                 </Stack>
               </Box>
@@ -504,7 +587,7 @@ export default function DebtManager() {
                   {[
                     // ["Phone", customer.phone],
                     // ["City", customer.city],
-                    ["Category", customer.category],
+                    ["Category", customer.customer_category.name],
                     ["Token", customer.token],
                   ].map(([label, value]) => (
                     <Stack direction="row" justifyContent="space-between" key={label}>
@@ -517,7 +600,7 @@ export default function DebtManager() {
                 <Divider sx={{ my: 2 }} />
 
                 {/* ACTIVE DEBT */}
-               
+
                 {debts.map((d: any) => (
                   <Card
                     key={d.id}
@@ -698,9 +781,10 @@ export default function DebtManager() {
                 Fill in all fields — this debt will be automatically activated
               </Typography>
 
+
               <FormControl
                 fullWidth
-                error={!!errors.debtType}
+                error={!!errors.bucket}
                 sx={{
                   mt: 2,
                   mb: 2,
@@ -710,30 +794,46 @@ export default function DebtManager() {
                     height: 50,
                     bgcolor: "#f9fafb",
                   },
-                }}>
-                <InputLabel>Select debt type</InputLabel>
+                }}
+              >
+                <InputLabel>Debt Bucket</InputLabel>
+
                 <Select
-                  value={debtType}
-                  label="Debt Type"
-                  onChange={(e) => setDebtType(e.target.value)}
+                  value={bucket}
+                  label="Debt Bucket"
+                  onChange={(e) => {
+                    setBucket(
+                      e.target.value === ""
+                        ? ""
+                        : Number(e.target.value)
+                    );
+
+                    setErrors((prev) => ({
+                      ...prev,
+                      bucket: "",
+                    }));
+                  }}
                 >
-                  {DEBT_TYPES.map((d) => (
-                    <MenuItem key={d.value} value={d.value}>
-                      {d.label} ({d.value})
+                  {buckets.map((b: any) => (
+                    <MenuItem
+                      key={b.id}
+                      value={b.id}
+                    >
+                      {b.name}
                     </MenuItem>
                   ))}
                 </Select>
-                {errors.debtType && (
+
+                {errors.bucket && (
                   <Typography
                     color="error"
                     fontSize={12}
                     mt={0.5}
                   >
-                    {errors.debtType}
+                    {errors.bucket}
                   </Typography>
                 )}
               </FormControl>
-
               <Stack direction="row" spacing={2}>
                 <TextField
                   fullWidth
@@ -813,7 +913,7 @@ export default function DebtManager() {
                 />
               </LocalizationProvider>
 
-              <TextField
+              {/* <TextField
                 fullWidth
                 multiline
                 rows={4}
@@ -845,10 +945,10 @@ export default function DebtManager() {
                     alignItems: "center",
                   },
                 }}
-              />
+              /> */}
 
 
-              <FormControl sx={{
+              {/* <FormControl sx={{
 
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
@@ -947,7 +1047,132 @@ export default function DebtManager() {
                     </Box>
                   );
                 })}
-              </FormControl>
+              </FormControl> */}
+              <Box>
+                <Typography
+                  fontSize={13}
+                  fontWeight={700}
+                  mt={1.5}
+                  mb={1.5}
+                >
+                  Payment Plan
+                </Typography>
+
+                {paymentPlans.map((p) => {
+                  const selected =
+                    paymentPlan === p.id;
+
+                  return (
+                    <Box
+                      key={p.id}
+                      onClick={() => {
+                        setPaymentPlan(p.id);
+
+                        setErrors((prev) => ({
+                          ...prev,
+                          paymentPlan: "",
+                        }));
+                      }}
+                      sx={{
+                        border: selected
+                          ? "2px solid #2563eb"
+                          : "1px solid #e5e7eb",
+                        borderRadius: 3,
+                        px: 1.5,
+                        py: 1.2,
+                        mb: 1,
+                        cursor: "pointer",
+                        bgcolor: selected
+                          ? "#f0f7ff"
+                          : "#fff",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={1.5}
+                        alignItems="flex-start"
+                      >
+                        <Checkbox
+                          checked={selected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+
+                            setPaymentPlan(selected ? null : p.id);
+
+                            setErrors((prev) => ({
+                              ...prev,
+                              paymentPlan: "",
+                            }));
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          sx={{
+                            mt: "-2px",
+                            p: 0.5,
+                            color: "#94a3b8",
+                            "&.Mui-checked": {
+                              color: "#2563eb",
+                            },
+                          }}
+                        />
+
+                        <Box>
+                          <Typography
+                            fontSize={13}
+                            fontWeight={600}
+                          >
+                            {p.name}
+                          </Typography>
+
+                          <Stack
+                            direction="row"
+                            spacing={0.5}
+                            mt={0.5}
+                          >
+                            <Chip
+                              label={p.code}
+                              size="small"
+                              sx={{
+                                height: 18,
+                                fontSize: 9,
+                                bgcolor: "#e6f0ff",
+                                color: "#2563eb",
+                              }}
+                            />
+
+                            <Typography
+                              fontSize={10}
+                              color="#6b7a99"
+                            >
+                              Per Transaction
+                            </Typography>
+                          </Stack>
+
+                          <Typography
+                            fontSize={11}
+                            color="#6b7a99"
+                            mt={0.3}
+                          >
+                            {p.description}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Box>
+                  );
+                })}
+
+                {errors.paymentPlan && (
+                  <Typography
+                    color="error"
+                    fontSize={12}
+                    mt={1}
+                  >
+                    {errors.paymentPlan}
+                  </Typography>
+                )}
+              </Box>
+
+
 
               <Tooltip
                 title={

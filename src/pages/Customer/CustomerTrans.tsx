@@ -58,6 +58,7 @@ export default function CustomerTrans() {
   const [paymentPlan, setPaymentPlan] = useState("");
  
   const [amount, setAmount] = useState("");
+  const [bucket, setBucket] = useState<number | "">("");
   const [rate, setRate] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
@@ -139,13 +140,12 @@ export default function CustomerTrans() {
       setCreating(true);
 
       await createDebt({
-        customer: customer.id,
-        description,
-        payment_plan: Number(paymentPlan), // now using code
+        customer: Number(customer.id),
+        bucket: Number(bucket),
+        payment_plan: Number(paymentPlan),
         effective_date: date,
-        rate: Number(rate),
-        debt_type: debtType,
-        amount: Number(amount),
+        rate: rate,
+        amount: amount,
       });
 
       setSuccessMsg("Debt created successfully");

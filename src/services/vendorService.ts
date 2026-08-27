@@ -788,16 +788,50 @@ export const fetchCustomerDebtAnalytic = (customerId: string) =>
   }>(`/customer/debt/analytic/?customer_id=${customerId}`);
 
 // 🔹 Create Debt
-export const createDebt = (payload: {
-  customer: string;
+export interface CustInfo {
+  name: string;
+  address: string;
+}
+
+export interface PaymentPlan {
+  id: number;
+  name: string;
   description: string;
+  code: string;
+  is_active: boolean;
+}
+
+export interface DebtResponse {
+  id: number;
+  customer: CustInfo;
+  bucket: string;
+  payment_plan: PaymentPlan;
+  effective_date: string;
+  rate: string;
+  balance: string;
+  is_suspended: boolean;
+  is_settled: boolean;
+}
+// export const createDebt = (payload: {
+//   customer: string;
+//   bucket:string;
+//   payment_plan: number;
+//   effective_date: string;
+//   rate: number;
+//   amount: number;
+// }) => post<DebtResponse>("/customer/debt/", payload);
+export const createDebt = (payload: {
+  customer: number;
+  bucket: number;
   payment_plan: number;
   effective_date: string;
-  rate: number;
-  debt_type: string;
-  amount: number;
-}) => post("/customer/debt/", payload);
-
+  rate: string;
+  amount: string;
+}) =>
+  post<DebtResponse>(
+    "/customer/debt/",
+    payload
+  );
 export const fetchanalytics = (params?: {
   start_date?: string
   end_date?: string
