@@ -10,11 +10,11 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
-import OnboardingVendor from "../../components/OnboardingUser/OnboardingVendor";
-import OnboardingSubVendor from "../../components/OnboardingUser/OnboardingSubVendor";
-import OnboardingAgent from "../../components/OnboardingUser/OnboardingAgent";
-import OnboardingCashier from "../../components/OnboardingUser/OnboardingCashier";
-import OnboardingPOS from "../../components/OnboardingUser/OnboardingPOS";
+// import OnboardingVendor from "../../components/OnboardingUser/OnboardingVendor";
+// import OnboardingSubVendor from "../../components/OnboardingUser/OnboardingSubVendor";
+// import OnboardingAgent from "../../components/OnboardingUser/OnboardingAgent";
+// import OnboardingCashier from "../../components/OnboardingUser/OnboardingCashier";
+// import OnboardingPOS from "../../components/OnboardingUser/OnboardingPOS";
 import { TAB_CONFIG, theme } from "../../components/OnboardingUser/constants";
 import { getAllVendors, onboardVendor, OnboardVendorPayload, RelatedVendorResponse } from "../../services/onbordingService";
 import ConfigureVendor from "../../components/OnboardingUser/ConfigureVendor";
@@ -24,6 +24,7 @@ import { getErrorMessage } from "../../utils/getErrorMessage";
 // import VendorKycReview from "./VendorKycReview";
 import OnboardVendorModal from "./OnboardVendorModal";
 import KycReview from "./KycReview";
+import { useVendors } from "../../hooks/useVendors";
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
 
@@ -68,7 +69,8 @@ export default function OnboardingPage() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
 
-  const [entities, setEntities] = useState<RelatedVendorResponse[]>([]);
+  // const [entities, setEntities] = useState<RelatedVendorResponse[]>([]);
+  const [vendors, setVendors] = useState<RelatedVendorResponse[]>([]);
 
   const [loading, setLoading] = useState(false);
 
@@ -88,6 +90,12 @@ export default function OnboardingPage() {
 
   const config = TAB_CONFIG[activeTab];
   //const rows = TAB_DATA[activeTab];
+  const {
+    data: entities = [],
+    isLoading: vendorsLoading,
+    error: vendorsError,
+  } = useVendors();
+
 
   const TAB_COUNTS = {
     vendors: entities.filter(
@@ -132,27 +140,27 @@ export default function OnboardingPage() {
         .includes(search.toLowerCase())
   );
 
-  useEffect(() => {
-    const fetchEntities = async () => {
-      try {
-        setLoading(true);
+  // useEffect(() => {
+  //   const fetchEntities = async () => {
+  //     try {
+  //       setLoading(true);
 
-        const response = await getAllVendors();
+  //       const response = await getAllVendors();
 
-        console.log("Vendors received:", response);
+  //       console.log("Vendors received:", response);
 
-        setEntities(response);
-        //setEntities(Array.isArray(response) ? response : []);
-      } catch (error) {
-        console.error(error);
-        toast.error(getErrorMessage(error))
-      } finally {
-        setLoading(false);
-      }
-    };
+  //       setEntities(response);
+  //     } catch (error) {
+  //       console.error(error);
+  //       toast.error(getErrorMessage(error))
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchEntities();
-  }, []);
+  //   fetchEntities();
+  // }, []);
+
 
   const filteredByTab = entities.filter((vendor) => {
     switch (activeTab) {
@@ -214,10 +222,8 @@ export default function OnboardingPage() {
         password: "",
         business_name: "",
       });
-
       // reload vendors
-      const data = await getAllVendors();
-      setEntities(data);
+      await getAllVendors();
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -334,7 +340,7 @@ export default function OnboardingPage() {
             </span>
           </Tooltip>
         </Box>
-        
+
         {activeTab === "vendors" && can("review_vendor_kyc") && <KycReview />}
 
         {/* ALL VENDORS */}
@@ -454,11 +460,11 @@ export default function OnboardingPage() {
       </Box>
 
       {/* ── Per-entity wizard modals ── */}
-      <OnboardingVendor open={modalOpen && activeTab === "vendors"} onClose={() => setModalOpen(false)} />
+      {/* <OnboardingVendor open={modalOpen && activeTab === "vendors"} onClose={() => setModalOpen(false)} />
       <OnboardingSubVendor open={modalOpen && activeTab === "subvendors"} onClose={() => setModalOpen(false)} />
       <OnboardingAgent open={modalOpen && activeTab === "agents"} onClose={() => setModalOpen(false)} />
       <OnboardingCashier open={modalOpen && activeTab === "cashiers"} onClose={() => setModalOpen(false)} />
-      <OnboardingPOS open={modalOpen && activeTab === "pos"} onClose={() => setModalOpen(false)} />
+      <OnboardingPOS open={modalOpen && activeTab === "pos"} onClose={() => setModalOpen(false)} /> */}
     </ThemeProvider>
   );
 }

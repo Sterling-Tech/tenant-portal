@@ -1005,10 +1005,10 @@ export default function CustomerStatement({
                                 : "Postpaid Account Summary"}
                         </Typography>
 
-                        <Grid container spacing={2}>
+                        <Grid>
 
                             {statement.type === "prepaid" ? (
-                                <Grid sx={{mt:5}}>
+                                <Grid sx={{mt:5}} container spacing={2}>
                                     <Grid item xs={12} sm={6} md={3}>
                                         <SummaryCard
                                             title="Total Amount"
@@ -1046,7 +1046,7 @@ export default function CustomerStatement({
                                     </Grid>
                                 </Grid>
                             ) : (
-                                <Grid sx={{mt:5}}>
+                                <Grid sx={{mt:5}} container spacing={2}>
                                     <Grid item xs={12} sm={6} md={3} >
                                         <SummaryCard
                                             title="Opening Balance"

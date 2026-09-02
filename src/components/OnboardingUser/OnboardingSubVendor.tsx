@@ -4,7 +4,7 @@
  * Entity: Subvendor   Parent: Vendor (user selects)
  * API endpoint: POST /api/subvendors
  */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Box, Typography, FormControl, Select, MenuItem } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import WizardShell from "./WizardShell";
@@ -27,6 +27,7 @@ import {
 import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement, DRAFT_KEYS, saveDraft, getDraft, clearDraft } from "./validation";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
+import { useVendors } from "../../hooks/useVendors";
 // ─── Form shape ───────────────────────────────────────────────────────────────
 export interface SubVendorForm {
     parentVendorId: string;   // selected vendor ID / name
@@ -143,7 +144,7 @@ export default function OnboardingSubVendor({ open, onClose }: Props) {
     const [step, setStep] = useState(0);
     const [form, setForm] = useState<SubVendorForm>(EMPTY_FORM);
     const [loading, setLoading] = useState(false);
-    const [relatedVends, setRelatedVends] = useState<RelatedVendorResponse[]>([]);
+    // const [relatedVends, setRelatedVends] = useState<RelatedVendorResponse[]>([]);
 
     const [parentVendorError, setParentVendorError] = useState("");
     const [basicErrors, setBasicErrors] = useState<Partial<Record<keyof BasicFormData, string>>>({});
@@ -154,23 +155,38 @@ export default function OnboardingSubVendor({ open, onClose }: Props) {
 
     function resetAndClose() { setStep(0); setForm(EMPTY_FORM); onClose(); }
 
-    useEffect(() => {
-        const fetchRelatedVendors = async () => {
-            try {
-                const vendors = await getAllVendors();
-                setRelatedVends(
-                    vendors.filter(
-                        (item) =>
-                            item.hierachy === "vendor"
-                    )
-                );
-            } catch (error) {
-                console.error("Failed to fetch related vendors", error);
-            }
-        };
+    const {
+        data: vendors = [],
+        isLoading: vendorsLoading,
+        error: vendorsError,
+    } = useVendors();
 
-        fetchRelatedVendors();
-    }, []);
+    const relatedVends = useMemo(
+        () =>
+            vendors.filter(
+                (vendor:any) =>
+                    vendor.hierachy === "vendor"
+            ),
+        [vendors]
+    );
+
+    // useEffect(() => {
+    //     const fetchRelatedVendors = async () => {
+    //         try {
+    //             const vendors = await getAllVendors();
+    //             setRelatedVends(
+    //                 vendors.filter(
+    //                     (item) =>
+    //                         item.hierachy === "vendor"
+    //                 )
+    //             );
+    //         } catch (error) {
+    //             console.error("Failed to fetch related vendors", error);
+    //         }
+    //     };
+
+    //     fetchRelatedVendors();
+    // }, []);
 
     async function handleSubmit() {
         try {
@@ -344,45 +360,45 @@ export default function OnboardingSubVendor({ open, onClose }: Props) {
     };
 
     // save and continue
-        const STORAGE_KEY = DRAFT_KEYS.SUBVENDOR;
-    
-        const handleSaveDraft = () => {
-            saveDraft(STORAGE_KEY, {
-                step,
-                form,
-            });
-    
-            toast.success("Draft saved successfully.");
-        };
-    
-        useEffect(() => {
-            if (!open) return;
-    
-            try {
-                const draft = getDraft<{
-                    step: number;
-                    form: SubVendorForm;
-                }>(STORAGE_KEY);
-    
-                if (!draft) return;
-    
-                setStep(draft.step ?? 0);
-                setForm(draft.form ?? EMPTY_FORM);
-    
-                toast.info("Draft restored.");
-            } catch {
-                clearDraft(STORAGE_KEY);
-            }
-        }, [open]);
-    
-        const discardDraft = () => {
+    const STORAGE_KEY = DRAFT_KEYS.SUBVENDOR;
+
+    const handleSaveDraft = () => {
+        saveDraft(STORAGE_KEY, {
+            step,
+            form,
+        });
+
+        toast.success("Draft saved successfully.");
+    };
+
+    useEffect(() => {
+        if (!open) return;
+
+        try {
+            const draft = getDraft<{
+                step: number;
+                form: SubVendorForm;
+            }>(STORAGE_KEY);
+
+            if (!draft) return;
+
+            setStep(draft.step ?? 0);
+            setForm(draft.form ?? EMPTY_FORM);
+
+            toast.info("Draft restored.");
+        } catch {
             clearDraft(STORAGE_KEY);
-    
-            setStep(0);
-            setForm(EMPTY_FORM);
-    
-            toast.success("Draft discarded.");
-        };
+        }
+    }, [open]);
+
+    const discardDraft = () => {
+        clearDraft(STORAGE_KEY);
+
+        setStep(0);
+        setForm(EMPTY_FORM);
+
+        toast.success("Draft discarded.");
+    };
     return (
 
         <WizardShell
@@ -398,10 +414,10 @@ export default function OnboardingSubVendor({ open, onClose }: Props) {
         >
             {step === 0 && <StepParentSubVendor selectedVendor={form.parentVendorId} error={parentVendorError} onSelect={(v) => { setParentVendorError(""); setForm((p) => ({ ...p, parentVendorId: v })) }} relatedVends={relatedVends} />}
             {step === 1 && <StepBasic data={form.basic} onChange={setSection("basic")} entityLabel="Subvendor" errors={basicErrors} />}
-            {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} errors={profileErrors}/>}
-            {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} errors={kycErrors}/>}
-            {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} errors={controlErrors}/>}
-            {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} errors={agreementErrors}/>}
+            {step === 2 && <StepProfile data={form.profile} onChange={setSection("profile")} errors={profileErrors} />}
+            {step === 3 && <StepKYC data={form.kyc} onChange={setSection("kyc")} errors={kycErrors} />}
+            {step === 4 && <StepControls data={form.controls} onChange={setSection("controls")} onToggleTxType={toggleTxType} errors={controlErrors} />}
+            {step === 5 && <StepAgreement data={form.agreement} onChange={setSection("agreement")} onToggleAgreed={toggleAgreed} errors={agreementErrors} />}
         </WizardShell>
     );
 }

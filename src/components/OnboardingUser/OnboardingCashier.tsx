@@ -3,7 +3,7 @@
  * Entity: Cashier   Parent: Agent (user selects)
  * API endpoint: POST /api/cashiers
  */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Box, Typography, FormControl, Select, MenuItem } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import WizardShell from "./WizardShell";
@@ -22,6 +22,7 @@ import { createVendor, getAllVendors, RelatedVendorResponse } from "../../servic
 import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement, DRAFT_KEYS, saveDraft, getDraft, clearDraft } from "./validation";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
+import { useVendors } from "../../hooks/useVendors";
 export interface CashierForm {
   parentAgentId: string;
   basic: BasicFormData;
@@ -118,7 +119,7 @@ interface Props { open: boolean; onClose: () => void; }
 export default function OnboardingCashier({ open, onClose }: Props) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<CashierForm>(EMPTY_FORM);
-  const [agents, setAgents] = useState<RelatedVendorResponse[]>([]);
+  // const [agents, setAgents] = useState<RelatedVendorResponse[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [parentAgentError, setParentAgentError] = useState("");
@@ -130,24 +131,39 @@ export default function OnboardingCashier({ open, onClose }: Props) {
 
   function resetAndClose() { setStep(0); setForm(EMPTY_FORM); onClose(); }
 
-  useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        const vendors = await getAllVendors();
+  // useEffect(() => {
+  //   const fetchAgents = async () => {
+  //     try {
+  //       const vendors = await getAllVendors();
 
-        setAgents(
-          vendors.filter(
-            (item) =>
-              item.hierachy === "agent"
-          )
-        );
-      } catch (error) {
-        console.error(error);
-      }
-    };
+  //       setAgents(
+  //         vendors.filter(
+  //           (item) =>
+  //             item.hierachy === "agent"
+  //         )
+  //       );
+  //     } catch (error) {
+  //       console.error(error);
+  //     }
+  //   };
 
-    fetchAgents();
-  }, []);
+  //   fetchAgents();
+  // }, []);
+  
+  const {
+    data: vendors = [],
+    isLoading: vendorsLoading,
+    error: vendorsError,
+  } = useVendors();
+
+  const agents = useMemo(
+    () =>
+      vendors.filter(
+        (vendor: any) =>
+          vendor.hierachy === "agent"
+      ),
+    [vendors]
+  );
 
   async function handleSubmit() {
     try {

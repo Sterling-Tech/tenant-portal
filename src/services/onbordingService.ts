@@ -121,6 +121,7 @@ export interface RelatedVendorResponse{
     kyc_reviewed_at?: string | null;
     kyc_rejection_reason?: string | null;
 }
+
 export interface OnboardVendorPayload{
     email:string;
     password:string;

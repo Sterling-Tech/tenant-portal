@@ -4,7 +4,7 @@
  * Entity: Agent   Parent: Subvendor (user selects)
  * API endpoint: POST /api/agents
  */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Box, Typography, FormControl, Select, MenuItem } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import WizardShell from "./WizardShell";
@@ -23,6 +23,7 @@ import { createVendor, getAllVendors, RelatedVendorResponse } from "../../servic
 import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement, clearDraft, getDraft, DRAFT_KEYS, saveDraft } from "./validation";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
+import { useVendors } from "../../hooks/useVendors";
 
 export interface AgentForm {
   parentSubvendorId: string;
@@ -119,7 +120,7 @@ interface Props { open: boolean; onClose: () => void; }
 export default function OnboardingAgent({ open, onClose }: Props) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<AgentForm>(EMPTY_FORM);
-  const [subVendors, setSubVendors] = useState<RelatedVendorResponse[]>([]);
+  // const [subVendors, setSubVendors] = useState<RelatedVendorResponse[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [parentSubVendorError, setParentSubVendorError] = useState("");
@@ -131,24 +132,38 @@ export default function OnboardingAgent({ open, onClose }: Props) {
   function resetAndClose() { setStep(0); setForm(EMPTY_FORM); onClose(); }
 
 
-  useEffect(() => {
-    const fetchSubVendors = async () => {
-      try {
-        const vendors = await getAllVendors();
+  // useEffect(() => {
+  //   const fetchSubVendors = async () => {
+  //     try {
+  //       const vendors = await getAllVendors();
 
-        setSubVendors(
-          vendors.filter(
-            (item) =>
-              item.hierachy === "sub_vendor"
-          )
-        );
-      } catch (error) {
-        console.error(error);
-      }
-    };
+  //       setSubVendors(
+  //         vendors.filter(
+  //           (item) =>
+  //             item.hierachy === "sub_vendor"
+  //         )
+  //       );
+  //     } catch (error) {
+  //       console.error(error);
+  //     }
+  //   };
 
-    fetchSubVendors();
-  }, []);
+  //   fetchSubVendors();
+  // }, []);
+  const {
+    data: vendors = [],
+    isLoading: vendorsLoading,
+    error: vendorsError,
+  } = useVendors();
+
+  const subVendors = useMemo(
+    () =>
+      vendors.filter(
+        (vendor: any) =>
+          vendor.hierachy === "sub_vendor"
+      ),
+    [vendors]
+  );
 
   async function handleSubmit() {
     try {

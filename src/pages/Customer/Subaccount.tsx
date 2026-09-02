@@ -82,7 +82,6 @@ export default function DebtManager() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   /* ---------------- SEARCH ---------------- */
 
-  const [expandedDebt, setExpandedDebt] = useState<string | null>("d1");
   const [bucket, setBucket] = useState<number | "">("");
   const [paymentPlan, setPaymentPlan] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
@@ -160,10 +159,6 @@ export default function DebtManager() {
   const validateDebtForm = () => {
     const newErrors: Record<string, string> = {};
 
-    // if (!debtType) {
-    //   newErrors.debtType = "Debt type is required";
-    // }
-
     if (!amount) {
       newErrors.amount = "Amount is required";
     } else if (Number(amount) <= 0) {
@@ -179,14 +174,6 @@ export default function DebtManager() {
     if (!date) {
       newErrors.date = "Effective date is required";
     }
-
-    // if (!description.trim()) {
-    //   newErrors.description = "Description is required";
-    // }
-
-    // if (paymentPlan.length === 0) {
-    //   newErrors.paymentPlan = "Select at least one payment plan";
-    // }
     if (!paymentPlan) {
       newErrors.paymentPlan = "Payment plan is required";
     }
@@ -196,44 +183,7 @@ export default function DebtManager() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // const handleCreateDebt = async () => {
-  //   const isValid = validateDebtForm();
 
-  //   if (!isValid) return;
-
-  //   try {
-  //     setCreating(true);
-
-  //     await createDebt({
-  //       customer: customer.id,
-  //       description,
-  //       payment_plan: paymentPlan[0], 
-  //       effective_date: date,
-  //       rate: Number(rate),
-  //       debt_type: debtType,
-  //       amount: Number(amount),
-  //     });
-
-  //     setSuccessMsg("Debt created successfully");
-
-
-  //     setDebtType("");
-  //     setAmount("");
-  //     setRate("");
-  //     setDate("");
-  //     setDescription("");
-  //     setPaymentPlan([]);
-  //     setErrors({});
-
-  //   } catch (err: any) {
-  //     setErrorMsg(
-  //       err?.response?.data?.message ||
-  //       "Failed to create debt"
-  //     );
-  //   } finally {
-  //     setCreating(false);
-  //   }
-  // };
   const handleCreateDebt = async () => {
     const isValid = validateDebtForm();
 
@@ -270,10 +220,10 @@ export default function DebtManager() {
         amount: amount,
       });
 
-      setSuccessMsg(
-        "Debt created successfully"
-      );
-
+      // setSuccessMsg(
+      //   "Debt created successfully"
+      // );
+      toast.success("Debt created successfully")
       // Reset form
       setAmount("");
       setRate("");
@@ -282,17 +232,22 @@ export default function DebtManager() {
       setPaymentPlan(null);
 
       setErrors({});
+      const debtRes = await fetchDebt(customer.id);
+      setDebts(debtRes || []);
+      const analyticRes = await fetchCustomerDebtAnalytic(customer.id);
+      setCustomerAnalytic(analyticRes);
     } catch (err: any) {
       console.error(
         "Create debt error:",
         err?.response?.data || err
       );
 
-      setErrorMsg(
-        err?.response?.data?.message ||
-        err?.response?.data?.detail ||
-        "Failed to create debt"
-      );
+      // setErrorMsg(
+      //   err?.response?.data?.message ||
+      //   err?.response?.data?.detail ||
+      //   "Failed to create debt"
+      // );
+      getErrorMessage(err || err?.response || err?.response?.data || err?.response?.data?.message || "Failed to create debt")
     } finally {
       setCreating(false);
     }
@@ -401,6 +356,10 @@ export default function DebtManager() {
       setSaving(false);
     }
   };
+
+  const activeDebts = debts.filter(
+    (d) => Number(d.balance) > 0
+  );
   /* ---------------- UI ---------------- */
   const { can } = usePermission();
   return (
@@ -601,7 +560,8 @@ export default function DebtManager() {
 
                 {/* ACTIVE DEBT */}
 
-                {debts.map((d: any) => (
+                {/* {debts.map((d: any) => ( */}
+                {activeDebts.map((d: any) => (
                   <Card
                     key={d.id}
                     sx={{
@@ -624,7 +584,8 @@ export default function DebtManager() {
                           fontWeight={700}
                           color="#b91c1c"
                         >
-                          ACTIVE DEBT
+                          
+                          {d.is_suspended ? "SUSPENDED DEBT" :  "ACTIVE DEBT"}
                         </Typography>
 
                         <Chip
@@ -751,7 +712,7 @@ export default function DebtManager() {
                               Edit
                             </Button>
 
-                            <Button
+                            {/* <Button
                               size="small"
                               variant="contained"
                               color={d.is_suspended ? "success" : "warning"}
@@ -759,7 +720,18 @@ export default function DebtManager() {
                               onClick={() => handleSuspendActivateDebt(d)}
                             >
                               {d.is_suspended ? "Activate" : "Suspend"}
-                            </Button>
+                            </Button> */}
+                            {Number(d.balance) > 0 && (
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color={d.is_suspended ? "success" : "warning"}
+                                disabled={!can("retrieve_admin")}
+                                onClick={() => handleSuspendActivateDebt(d)}
+                              >
+                                {d.is_suspended ? "Activate" : "Suspend"}
+                              </Button>
+                            )}
                           </span>
                         </Tooltip>
                       </Stack>

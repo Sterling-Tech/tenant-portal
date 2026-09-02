@@ -391,22 +391,26 @@ export interface Category {
   description: string;
 }
 export interface Ledger {
-  transaction_ref: string
-  debit_amount: string
-  credit_amount: string
-  closing_balance: string
-  category:string;
-  timestamp: string
+  transaction_ref: string;
+  category: string;
+  debit_amount: string;
+  credit_amount: string;
+  closing_balance: number;
+  is_migrated: boolean;
+  timestamp: string;
 }
+
+export interface LedgerSummary {
+  total_debits: number | null;
+  total_credits: number | null;
+}
+
 export interface PaginatedLedgerResponse {
   count: number;
   next: string | null;
   previous: string | null;
   results: Ledger[];
-  summary: {
-    total_debits: number;
-    total_credits: number;
-  }
+  summary: LedgerSummary;
 }
 export interface AnalyticsCount {
   analytics: {
@@ -614,13 +618,17 @@ export const buildQuery = (params?: Record<string, unknown>) => {
 };
 
 
-export const fetchTransactions = (params?: {
-  start_date?: string;
-  end_date?: string;
+export const fetchTransactions = (params: {
+  start_date: string;
+  end_date: string;
   vendor_id?: string;
   page?: number;
+  page_size?: number;
 }) =>
-  get<PaginatedLedgerResponse>(`/vendor/ledger/${buildQuery(params)}`)
+  get<PaginatedLedgerResponse>(
+    `/vendor/ledger/${buildQuery(params)}`
+  );
+
 
 export const fetchCustomers = (params?: {
   page?: number;

@@ -46,7 +46,7 @@ import {
   Refresh as RefreshIcon, Search as SearchIcon, TrendingDown, TrendingUp,
 } from '@mui/icons-material';
 import { useTenants } from "../../hooks/useTenants";
-import { exportVendorHistory, fetchTransactions, fetchVendorHistory, fetchVendorLedger, fetchVendors, fundVendorWallet, Ledger, PaginatedLedgerResponse, PaginatedVendorResponse, searchVendors, Vendor, VendorHistoryAsOf, VendorHistoryRow, VendorHistorySummary, VendorLedgerRow, VendorLedgerSummary } from "../../services/vendorService";
+import { exportVendorHistory, fetchTransactions, fetchVendorHistory, fetchVendorLedger, fetchVendors, fundVendorWallet, Ledger, LedgerSummary, PaginatedLedgerResponse, PaginatedVendorResponse, searchVendors, Vendor, VendorHistoryAsOf, VendorHistoryRow, VendorHistorySummary, VendorLedgerRow, VendorLedgerSummary } from "../../services/vendorService";
 import { useOrgWallets } from "../../hooks/useOrgWallets";
 import {
   BarChart as ReBarChart,
@@ -146,9 +146,14 @@ const VendorTransactions: React.FC = () => {
     total_debits: 0,
     total_credits: 0,
   });
+
+  const [ledgerSummary, setLedgerSummary] = useState<LedgerSummary>({
+    total_debits: 0,
+    total_credits: 0,
+  });
+
   const [page, setPage] = useState(1);
   const [pageSize] = useState(5);
-  const [vendorCount, setVendorCount] = useState(0);
   const [success, setSuccess] = useState<string | null>(null);
 
   const [transactionPage, setTransactionPage] = useState(0);
@@ -256,10 +261,6 @@ const VendorTransactions: React.FC = () => {
           statusFilter === "all"
             ? undefined
             : statusFilter as "active" | "inactive" | "suspended",
-        // vendor_type:
-        //   vendorTypeFilter === "all"
-        //     ? undefined
-        //     : vendorTypeFilter as "internal" | "external",
       });
 
       setVendors(res.results);
@@ -282,68 +283,6 @@ const VendorTransactions: React.FC = () => {
     () => vendors?.find((t) => t.id === vendorsId),
     [vendorsId, vendors]
   );
-
-  // const handleExport = () => {
-  //   if (!transactions.length) {
-  //     setAlert({
-  //       open: true,
-  //       type: "warning",
-  //       message: "No data to export",
-  //     });
-  //     return;
-  //   }
-
-  //   if (startDate > endDate) {
-  //     setAlert({
-  //       open: true,
-  //       type: "error",
-  //       message: "Invalid date range",
-  //     });
-  //     return;
-  //   }
-
-  //   const vendorName = selectedVendor?.business_name || "N/A";
-  //   const headers = ["Reference", "Credit", "Debit", "Balance", "Category", "Date"];
-
-  //   const rows = transactions.map((tx) => [
-  //     tx.transaction_ref,
-  //     tx.credit_amount || "0",
-  //     tx.debit_amount || "0",
-  //     tx.closing_balance || "0",
-  //     tx.category || "",
-  //     new Date(tx.timestamp).toLocaleString(),
-  //   ]);
-
-  //   // Vendor information at the top of the CSV
-  //   const csvContent = [
-  //     ["Vendor Name", vendorName], ["Date From", startDate], ["Date To", endDate],
-  //     [],
-  //     headers,
-  //     ...rows,
-  //   ]
-  //     .map((row) =>
-  //       row
-  //         .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
-  //         .join(",")
-  //     )
-  //     .join("\n");
-
-  //   const blob = new Blob([csvContent], {
-  //     type: "text/csv;charset=utf-8;",
-  //   });
-
-  //   const url = window.URL.createObjectURL(blob);
-
-  //   const link = document.createElement("a");
-  //   link.href = url;
-  //   link.download = `transactions_${vendorName}_${startDate}_${endDate}.csv`;
-
-  //   document.body.appendChild(link);
-  //   link.click();
-  //   document.body.removeChild(link);
-
-  //   window.URL.revokeObjectURL(url);
-  // };
 
   const handleExport = () => {
     if (!txTransactions.length) {
@@ -424,51 +363,6 @@ const VendorTransactions: React.FC = () => {
 
     window.URL.revokeObjectURL(url);
   };
-  // const loadTransactions = async (id: string, page: number = 1) => {
-  //   if (!id) return;
-
-  //   // ✅ prevent bad date range
-  //   if (startDate > endDate) {
-  //     setAlert({
-  //       open: true,
-  //       type: "error",
-  //       message: "Start date cannot be after end date",
-  //     });
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   try {
-  //     const res = await fetchTransactions({
-  //       vendor_id: id,
-  //       start_date: startDate,
-  //       end_date: endDate,
-  //       page,
-  //     });
-
-  //     setTransactions(res?.results || []);
-  //     setSummary(res?.summary || { total_debits: 0, total_credits: 0 });
-  //     setTransactionCount(res?.count || 0);
-
-  //   } catch (err: any) {
-  //     console.error("Transaction error:", err);
-
-  //     setAlert({
-  //       open: true,
-  //       type: "error",
-  //       message:
-  //         err?.response?.data?.message ||
-  //         err?.message ||
-  //         "Failed to load transactions",
-  //     });
-
-  //     setTransactions([]); // prevent crash
-
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const loadTransactions = async (
     id: string,
@@ -519,6 +413,46 @@ const VendorTransactions: React.FC = () => {
     }
   };
 
+  const fetchLedger = async (
+  id: string,
+  page: number = 1
+) => {
+  try {
+    setLoading(true);
+
+    const res = await fetchTransactions({
+      start_date: startDate,
+      end_date: endDate,
+      page,
+      page_size: 200,
+      vendor_id: id,
+    });
+
+    console.log("LEDGER RESPONSE:", res);
+
+    setTransactions(res.results || []);
+
+    setLedgerSummary(
+      res.summary || {
+        total_debits: 0,
+        total_credits: 0,
+      }
+    );
+
+  } catch (error) {
+    console.error(
+      "Failed to fetch ledger:",
+      error
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+  useEffect(() => {
+    if (vendorsId) fetchLedger(vendorsId);
+  }, [vendorsId, startDate, endDate]);
+
   const chartData = useMemo(() => {
     const grouped: Record<
       string,
@@ -530,7 +464,7 @@ const VendorTransactions: React.FC = () => {
     > = {};
 
     transactions.forEach((tx) => {
-      const date = new Date(tx.timestamp).toLocaleDateString();
+      const date = dayjs(tx.timestamp).format("DD MMM");
 
       if (!grouped[date]) {
         grouped[date] = {
@@ -567,96 +501,95 @@ const VendorTransactions: React.FC = () => {
     }
   }, [vendors]);
 
-  // const loadVendorHistory = async (
-  //   id: string,
-  //   page: number = 1,
-  //   startDate: string = historyStartDate,
-  //   endDate: string = historyEndDate,
-  //   direction:
-  //     | "all"
-  //     | "debit"
-  //     | "credit" = historyDirection
-  // ) => {
-  //   if (!id) return;
+  const loadVendorHistory = useCallback(
+    async (
+      id: string,
+      page: number = 1,
+      startDate: string = historyStartDate,
+      endDate: string = historyEndDate,
+      direction:
+        | "all"
+        | "debit"
+        | "credit" = historyDirection
+    ) => {
+      if (!id) return;
 
-  //   if (startDate > endDate) {
-  //     setAlert({
-  //       open: true,
-  //       type: "error",
-  //       message:
-  //         "Start date cannot be after end date",
-  //     });
+      if (startDate > endDate) {
+        setAlert({
+          open: true,
+          type: "error",
+          message: "Start date cannot be after end date",
+        });
 
-  //     return;
-  //   }
+        return;
+      }
 
-  //   setHistoryLoading(true);
+      setHistoryLoading(true);
 
-  //   try {
-  //     const res =
-  //       await fetchVendorHistory({
-  //         vendor_id: id,
-  //         start: startDate,
-  //         end: endDate,
-  //         direction:
-  //           direction === "all"
-  //             ? ""
-  //             : direction,
-  //         page,
-  //       });
+      try {
+        const res = await fetchVendorHistory({
+          vendor_id: id,
+          start: startDate,
+          end: endDate,
+          direction: direction === "all" ? "" : direction,
+          page,
+        });
 
-  //     setHistoryTransactions(
-  //       res?.results ?? []
-  //     );
+        setHistoryTransactions(res?.results ?? []);
+        setHistorySummary(res?.summary ?? null);
+        setHistoryTransactionCount(res?.count ?? 0);
+        setHistoryDataAsOf(res?.data_as_of ?? null);
+        setHistoryPage(page);
+      } catch (err: any) {
+        console.error("Vendor history error:", err);
 
-  //     setHistorySummary(
-  //       res?.summary ?? null
-  //     );
+        setHistoryTransactions([]);
+        setHistorySummary(null);
+        setHistoryTransactionCount(0);
+        setHistoryDataAsOf(null);
 
-  //     setHistoryTransactionCount(
-  //       res?.count ?? 0
-  //     );
+        setAlert({
+          open: true,
+          type: "error",
+          message:
+            err?.response?.data?.message ||
+            err?.message ||
+            "Failed to load vendor history",
+        });
+      } finally {
+        setHistoryLoading(false);
+      }
+    },
+    [
+      historyStartDate,
+      historyEndDate,
+      historyDirection,
+    ]
+  );
+  useEffect(() => {
+    if (!vendorsId) return;
 
-  //     setHistoryDataAsOf(
-  //       res?.data_as_of ?? null
-  //     );
+    loadVendorHistory(
+      String(vendorsId),
+      1,
+      historyStartDate,
+      historyEndDate,
+      historyDirection
+    );
+  }, [
+    vendorsId,
+    historyStartDate,
+    historyEndDate,
+    historyDirection,
+    loadVendorHistory,
+  ]);
 
-  //     setHistoryPage(page);
-  //   } catch (err: any) {
-  //     console.error(
-  //       "Vendor history error:",
-  //       err
-  //     );
-
-  //     setHistoryTransactions([]);
-  //     setHistorySummary(null);
-  //     setHistoryTransactionCount(0);
-  //     setHistoryDataAsOf(null);
-
-  //     setAlert({
-  //       open: true,
-  //       type: "error",
-  //       message:
-  //         err?.response?.data?.message ||
-  //         err?.message ||
-  //         "Failed to load vendor history",
-  //     });
-  //   } finally {
-  //     setHistoryLoading(false);
-  //   }
-  // };
-const loadVendorHistory = useCallback(
-  async (
-    id: string,
-    page: number = 1,
-    startDate: string = historyStartDate,
-    endDate: string = historyEndDate,
-    direction:
-      | "all"
-      | "debit"
-      | "credit" = historyDirection
+  const handleHistoryFilterChange = async (
+    startDate: string,
+    endDate: string,
+    direction: "all" | "debit" | "credit"
   ) => {
-    if (!id) return;
+    if (!vendorsId) return;
 
     if (startDate > endDate) {
       setAlert({
@@ -668,83 +601,6 @@ const loadVendorHistory = useCallback(
       return;
     }
 
-    setHistoryLoading(true);
-
-    try {
-      const res = await fetchVendorHistory({
-        vendor_id: id,
-        start: startDate,
-        end: endDate,
-        direction: direction === "all" ? "" : direction,
-        page,
-      });
-
-      setHistoryTransactions(res?.results ?? []);
-      setHistorySummary(res?.summary ?? null);
-      setHistoryTransactionCount(res?.count ?? 0);
-      setHistoryDataAsOf(res?.data_as_of ?? null);
-      setHistoryPage(page);
-    } catch (err: any) {
-      console.error("Vendor history error:", err);
-
-      setHistoryTransactions([]);
-      setHistorySummary(null);
-      setHistoryTransactionCount(0);
-      setHistoryDataAsOf(null);
-
-      setAlert({
-        open: true,
-        type: "error",
-        message:
-          err?.response?.data?.message ||
-          err?.message ||
-          "Failed to load vendor history",
-      });
-    } finally {
-      setHistoryLoading(false);
-    }
-  },
-  [
-    historyStartDate,
-    historyEndDate,
-    historyDirection,
-  ]
-);
-useEffect(() => {
-  if (!vendorsId) return;
-
-  loadVendorHistory(
-    String(vendorsId),
-    1,
-    historyStartDate,
-    historyEndDate,
-    historyDirection
-  );
-}, [
-  vendorsId,
-  historyStartDate,
-  historyEndDate,
-  historyDirection,
-  loadVendorHistory,
-]);
-
-const handleHistoryFilterChange = async (
-    startDate: string,
-    endDate: string,
-    direction: "all" | "debit" | "credit"
-) => {
-    if (!vendorsId) return;
-
-    if (startDate > endDate) {
-        setAlert({
-            open: true,
-            type: "error",
-            message: "Start date cannot be after end date",
-        });
-
-        return;
-    }
-
     // Update UI state
     setHistoryStartDate(startDate);
     setHistoryEndDate(endDate);
@@ -752,13 +608,13 @@ const handleHistoryFilterChange = async (
 
     // Fetch using the NEW values directly
     await loadVendorHistory(
-        String(vendorsId),
-        1,
-        startDate,
-        endDate,
-        direction
+      String(vendorsId),
+      1,
+      startDate,
+      endDate,
+      direction
     );
-};
+  };
 
   const handleVendorHistoryExport = async (
     format: "csv" | "xlsx" | "pdf"
@@ -1197,7 +1053,16 @@ const handleHistoryFilterChange = async (
                     size="small"
                     placeholder="Search vendors..."
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSearch(value);
+
+                      // When search is cleared, reload the normal vendor list
+                      if (value.trim() === "") {
+                        setPage(1);
+                        load(1);
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         setPage(1);
@@ -1212,7 +1077,6 @@ const handleHistoryFilterChange = async (
                       ),
                     }}
                   />
-
                   <Button
                     variant="contained"
                     startIcon={<Search />}
@@ -1252,7 +1116,6 @@ const handleHistoryFilterChange = async (
                 </Stack>
                 <Stack mt={2} spacing={1.2}>
                   {vendors?.map((v) => {
-                    // const isActive = v?.account_status === "active";
                     const status = getStatus(v);
                     const chip = statusConfig[status];
                     const selected = vendorsId === v.id;
@@ -1494,27 +1357,44 @@ const handleHistoryFilterChange = async (
                   </Typography>
                 </Stack>
 
-                <ResponsiveContainer width="100%" height={220}>
-                  <ReBarChart data={chartData}>
-                    <XAxis dataKey="date" />
 
-                    <RechartsTooltip />
+                {chartData.length === 0 ? (
+                  <Box
+                    sx={{
+                      height: 220,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "text.secondary",
+                    }}
+                  >
+                    <Typography fontSize={13}>
+                      No transaction data available for this period.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <ReBarChart data={chartData}>
+                      <XAxis dataKey="date" />
 
-                    <Bar
-                      dataKey="credit"
-                      name="Credit"
-                      fill="#16A34A"
-                      radius={[6, 6, 0, 0]}
-                    />
+                      <RechartsTooltip />
 
-                    <Bar
-                      dataKey="debit"
-                      name="Debit"
-                      fill="#DC2626"
-                      radius={[6, 6, 0, 0]}
-                    />
-                  </ReBarChart>
-                </ResponsiveContainer>
+                      <Bar
+                        dataKey="credit"
+                        name="Credit"
+                        fill="#16A34A"
+                        radius={[6, 6, 0, 0]}
+                      />
+
+                      <Bar
+                        dataKey="debit"
+                        name="Debit"
+                        fill="#DC2626"
+                        radius={[6, 6, 0, 0]}
+                      />
+                    </ReBarChart>
+                  </ResponsiveContainer>
+                )}
               </Card>
             )}
 
@@ -1568,32 +1448,32 @@ const handleHistoryFilterChange = async (
             {activeTab === "history" && (
 
               <VendorHistory
-    vendorId={vendorsId ?? ""}
-    vendorName={selectedVendor?.business_name}
-    transactions={historyTransactions}
-    summary={historySummary}
-    loading={historyLoading}
-    transactionCount={historyTransactionCount}
-    page={historyPage}
-    startDate={historyStartDate}
-    endDate={historyEndDate}
-    direction={historyDirection}
-    dataAsOf={historyDataAsOf}
-    onPageChange={(page) =>
-        loadVendorHistory(String(vendorsId), page)
-    }
-    onFilterChange={handleHistoryFilterChange}
-    onRefresh={() =>
-        loadVendorHistory(
-            String(vendorsId),
-            historyPage,
-            historyStartDate,
-            historyEndDate,
-            historyDirection
-        )
-    }
-    onExport={handleVendorHistoryExport}
-/>
+                vendorId={vendorsId ?? ""}
+                vendorName={selectedVendor?.business_name}
+                transactions={historyTransactions}
+                summary={historySummary}
+                loading={historyLoading}
+                transactionCount={historyTransactionCount}
+                page={historyPage}
+                startDate={historyStartDate}
+                endDate={historyEndDate}
+                direction={historyDirection}
+                dataAsOf={historyDataAsOf}
+                onPageChange={(page) =>
+                  loadVendorHistory(String(vendorsId), page)
+                }
+                onFilterChange={handleHistoryFilterChange}
+                onRefresh={() =>
+                  loadVendorHistory(
+                    String(vendorsId),
+                    historyPage,
+                    historyStartDate,
+                    historyEndDate,
+                    historyDirection
+                  )
+                }
+                onExport={handleVendorHistoryExport}
+              />
             )}
           </Box>
         </Stack>

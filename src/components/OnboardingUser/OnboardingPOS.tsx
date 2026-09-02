@@ -3,7 +3,7 @@
  * Entity: POS   Parent: Agent (user selects)
  * API endpoint: POST /api/pos
  */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Box, Typography, FormControl, Select, MenuItem } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import WizardShell from "./WizardShell";
@@ -22,6 +22,7 @@ import { createVendor, getAllVendors, RelatedVendorResponse } from "../../servic
 import { validateProfile, validateBasic, validateKYC, validateControls, validateAgreement, DRAFT_KEYS, saveDraft, getDraft, clearDraft } from "./validation";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
+import { useVendors } from "../../hooks/useVendors";
 
 export interface POSForm {
   parentCashierId: string;
@@ -119,7 +120,7 @@ interface Props { open: boolean; onClose: () => void; }
 export default function OnboardingPOS({ open, onClose }: Props) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<POSForm>(EMPTY_FORM);
-  const [cashiers, setCashiers] = useState<RelatedVendorResponse[]>([]);
+  // const [cashiers, setCashiers] = useState<RelatedVendorResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [parentCashierError, setParentCashierError] = useState("");
 
@@ -130,24 +131,38 @@ export default function OnboardingPOS({ open, onClose }: Props) {
   const [agreementErrors, setAgreementErrors] = useState<Partial<Record<keyof AgreementFormData, string>>>({});
   function resetAndClose() { setStep(0); setForm(EMPTY_FORM); onClose(); }
 
-  useEffect(() => {
-    const fetchCashiers = async () => {
-      try {
-        const vendors = await getAllVendors();
+  // useEffect(() => {
+  //   const fetchCashiers = async () => {
+  //     try {
+  //       const vendors = await getAllVendors();
 
-        setCashiers(
-          vendors.filter(
-            (item) =>
-              item.hierachy === "agent"
-          )
-        );
-      } catch (error) {
-        console.error(error);
-      }
-    };
+  //       setCashiers(
+  //         vendors.filter(
+  //           (item) =>
+  //             item.hierachy === "agent"
+  //         )
+  //       );
+  //     } catch (error) {
+  //       console.error(error);
+  //     }
+  //   };
 
-    fetchCashiers();
-  }, []);
+  //   fetchCashiers();
+  // }, []);
+  const {
+    data: vendors = [],
+    isLoading: vendorsLoading,
+    error: vendorsError,
+  } = useVendors();
+
+  const cashiers = useMemo(
+    () =>
+      vendors.filter(
+        (vendor: any) =>
+          vendor.hierachy === "cashiers"
+      ),
+    [vendors]
+  );
 
   async function handleSubmit() {
     try {
