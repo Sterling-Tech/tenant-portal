@@ -169,7 +169,7 @@ const BulkAssign: React.FC = () => {
       <Box
         sx={{
           height: 250,
-          background: "linear-gradient(90deg,#22C1DC,#1E73E8)",
+          background: "#203864",
           px: 4,
           pt: 4,
         }}

@@ -83,6 +83,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const [customerMenuOpen, setCustomerMenuOpen] = useState(false); // 👈 ADD THIS // For collapsible vendor section
     const [reengineerMenuOpen, setReengineerMenuOpen] = useState(false); // 👈 ADD THIS // For collapsible vendor section
     const [debtMgtOpen, setDebtMgtOpen] = useState(false); // 👈 ADD THIS // For collapsible vendor section
+    const [crmdOpen, setCrmdOpen] = useState(false); // 👈 ADD THIS // For collapsible vendor section
 
     // Load tenant from localStorage on mount only
     useEffect(() => {
@@ -563,6 +564,54 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </List>
                 </Collapse>
 
+                {/* crmd */}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        onClick={() => setCrmdOpen(!crmdOpen)}
+                        sx={{
+                            bgcolor: crmdOpen ? 'action.selected' : 'inherit',
+                        }}
+                    >
+                        <ListItemIcon>
+                            <Store />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary="CRMD"
+                            primaryTypographyProps={{ fontWeight: isVendorSection ? 600 : 400 }}
+                        />
+                        {crmdOpen ? <ExpandLess /> : <ExpandMore />}
+                    </ListItemButton>
+                </ListItem>
+                <Collapse in={crmdOpen} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+
+                        <ListItem disablePadding>
+                            <ListItemButton
+                                selected={location.pathname === '/customer/crmd'}
+                                onClick={() => handleNavigation('/customer/crmd')}
+                                sx={{
+                                    pl: 4,
+                                    '&.Mui-selected': {
+                                        backgroundColor: 'primary.main',
+                                        color: 'white',
+                                        '&:hover': {
+                                            backgroundColor: 'primary.dark',
+                                        },
+                                        '& .MuiListItemIcon-root': {
+                                            color: 'white',
+                                        },
+                                    },
+                                }}
+                            >
+                                <ListItemIcon>
+                                    <People />
+                                </ListItemIcon>
+                                <ListItemText primary="Network Configuration" />
+                            </ListItemButton>
+                        </ListItem>
+                    </List>
+                </Collapse>
+
                 {/* ring fencing */}
                 {can("manage_schemes") && (
                     <ListItem disablePadding>
@@ -585,8 +634,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <ListItemIcon>
                                 <Settings />
                             </ListItemIcon>
-                            {/* <ListItemText primary="Settings" /> */}
-                            <ListItemText primary="Ringfence Mgmt" />
+                            {/* <ListItemText primary="Ringfence Mgmt" /> */}
+                            <ListItemText primary="Menu Configuration" />
                         </ListItemButton>
                     </ListItem>
                 )}

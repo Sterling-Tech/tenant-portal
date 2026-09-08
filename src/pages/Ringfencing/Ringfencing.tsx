@@ -16,6 +16,7 @@ export default function ReferenceManagement() {
           mb: 3,
           borderRadius: 2,
           border: "1px solid #E5E7EB",
+          py: 2,
         }}
       >
         <Tabs
@@ -24,9 +25,10 @@ export default function ReferenceManagement() {
           textColor="primary"
           indicatorColor="primary"
         >
-          <Tab label="Schemes" />
-          <Tab label="Suppliers" />
-          <Tab label="Investors" />
+          <Tab label="Configure Schemes" />
+          <Tab label="Configure Suppliers" />
+          <Tab label="Configure Investors" />
+          <Tab label="Configure DISCOs" />
         </Tabs>
       </Paper>
 
@@ -34,6 +36,12 @@ export default function ReferenceManagement() {
 
       {tab === 1 && <SupplierDashboard />}
       {tab === 2 && (<InvestorDashboard />)}
+      {tab === 3 && (
+        <Box sx={{ textAlign: "center", mt: 5 }}>
+          <h3>DISCOs Configuration</h3>
+          <p>DISCOs configuration is currently under development.</p>
+        </Box>
+      )}
     </Box>
   );
 }

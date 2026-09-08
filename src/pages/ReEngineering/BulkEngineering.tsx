@@ -119,7 +119,7 @@ const BulkEngineering: React.FC = () => {
       <Box
         sx={{
           height: 250,
-          background: "linear-gradient(90deg,#22C1E9 0%, #1D74E7 100%)",
+          background: "#203864",
           px: 5,
           py: 4,
         }}
@@ -136,9 +136,9 @@ const BulkEngineering: React.FC = () => {
           <Box
             onClick={openFilePicker}
             sx={{
-              border: selectedFile ? "4px dashed #1FA387" : "4px dashed blue",
+              border: selectedFile ? "3px dashed #203864" : "3px dashed #203864",
               borderRadius: 2,
-              minHeight: 280,
+              minHeight: 120,
               cursor: "pointer",
               display: "flex",
               flexDirection: "column",

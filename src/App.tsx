@@ -27,6 +27,7 @@ import MapRefund from './pages/Customer/MapRefund';
 import GroupManagement from './pages/Roles/Roles';
 import FundingRequest from './pages/Vendors/FundingRequest'
 import Ringfencing from './pages/Ringfencing/Ringfencing';
+import CrmdHome from './pages/Crmd/CrmdHome';
 // Enhanced theme
 const theme = createTheme({
     palette: {
@@ -131,6 +132,16 @@ const App: React.FC = () => {
                                     <ProtectedRoute>
                                         <Layout>
                                             <Subaccount />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/customer/crmd"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <CrmdHome />
                                         </Layout>
                                     </ProtectedRoute>
                                 }
