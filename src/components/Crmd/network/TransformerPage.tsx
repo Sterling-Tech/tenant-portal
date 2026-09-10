@@ -1,53 +1,96 @@
 import {
-  Button,
-  Card,
-  Chip,
-  IconButton,
-  InputAdornment,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
 
-import Box from "@mui/material/Box";
-
-import SearchIcon from "@mui/icons-material/Search";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-
-import {
   useEffect,
+
   useState,
+
 } from "react";
 
+
 import {
+
   useMutation,
+
   useQuery,
+
   useQueryClient,
+
 } from "@tanstack/react-query";
 
+
 import {
-  ServiceCenter,
-  ServiceCenterPayload,
-  createServiceCenter,
-  deleteServiceCenter,
-  getServiceCenters,
-  updateServiceCenter,
-} from "../../services/crmdService";
 
-import { toast } from "react-toastify";
+  Box,
 
-import { getErrorMessage } from "../../utils/getErrorMessage";
-import ServiceCenterFormModal from "./ServiceCenterFormModal";
-import DeleteServiceCenterDialog from "./DeleteServiceCenterDialog";
+  Button,
+
+  Card,
+
+  Chip,
+
+  IconButton,
+
+  InputAdornment,
+
+  Stack,
+
+  TextField,
+
+  Typography,
+
+} from "@mui/material";
 
 
+import SearchIcon
+  from "@mui/icons-material/Search";
+
+import AddIcon
+  from "@mui/icons-material/Add";
+
+import EditIcon
+  from "@mui/icons-material/Edit";
+
+import DeleteIcon
+  from "@mui/icons-material/Delete";
+
+
+import {
+
+  Transformer,
+
+  TransformerPayload,
+
+  createTransformer,
+
+  deleteTransformer,
+
+  getTransformers,
+
+  updateTransformer,
+
+} from "../../../services/crmdService";
+
+
+import {
+  toast
+} from "react-toastify";
+
+
+import {
+  getErrorMessage
+} from "../../../utils/getErrorMessage";
+import TransformerFormModal from "./TransformerFormModal";
+import DeleteTransformerDialog from "./DeleteTransformerDialog";
 
 const PAGE_SIZE = 10;
 
 
-export default function ServiceCenterPage() {
+export default function TransformerPage() {
+
+
+  // =========================
+  // REACT QUERY
+  // =========================
 
   const queryClient =
     useQueryClient();
@@ -57,37 +100,62 @@ export default function ServiceCenterPage() {
   // LOCAL STATE
   // =========================
 
-  const [search, setSearch] =
-    useState("");
-
   const [
-    debouncedSearch,
-    setDebouncedSearch,
+
+    search,
+
+    setSearch,
+
   ] = useState("");
 
 
-  const [page, setPage] =
-    useState(1);
+  const [
 
+    debouncedSearch,
 
-  const [modalOpen, setModalOpen] =
-    useState(false);
+    setDebouncedSearch,
+
+  ] = useState("");
 
 
   const [
-    editingServiceCenter,
-    setEditingServiceCenter,
-  ] = useState<ServiceCenter | null>(
-    null
-  );
+
+    page,
+
+    setPage,
+
+  ] = useState(1);
 
 
   const [
-    deletingServiceCenter,
-    setDeletingServiceCenter,
-  ] = useState<ServiceCenter | null>(
-    null
-  );
+
+    modalOpen,
+
+    setModalOpen,
+
+  ] = useState(false);
+
+
+  const [
+
+    editingTransformer,
+
+    setEditingTransformer,
+
+  ] = useState<
+    Transformer | null
+  >(null);
+
+
+  const [
+
+    deletingTransformer,
+
+    setDeletingTransformer,
+
+  ] = useState<
+    Transformer | null
+  >(null);
 
 
   // =========================
@@ -96,14 +164,18 @@ export default function ServiceCenterPage() {
 
   useEffect(() => {
 
+
     const timer =
       setTimeout(() => {
+
 
         setDebouncedSearch(
           search
         );
 
+
         setPage(1);
+
 
       }, 400);
 
@@ -111,11 +183,12 @@ export default function ServiceCenterPage() {
     return () =>
       clearTimeout(timer);
 
+
   }, [search]);
 
 
   // =========================
-  // FETCH SERVICE CENTERS
+  // FETCH TRANSFORMERS
   // =========================
 
   const {
@@ -132,9 +205,10 @@ export default function ServiceCenterPage() {
 
   } = useQuery({
 
+
     queryKey: [
 
-      "service-centers",
+      "transformers",
 
       debouncedSearch,
 
@@ -147,7 +221,7 @@ export default function ServiceCenterPage() {
 
     queryFn: () =>
 
-      getServiceCenters(
+      getTransformers(
 
         debouncedSearch,
 
@@ -156,6 +230,7 @@ export default function ServiceCenterPage() {
         PAGE_SIZE
 
       ),
+
 
   });
 
@@ -166,13 +241,21 @@ export default function ServiceCenterPage() {
 
   useEffect(() => {
 
+
     if (isError) {
 
+
       toast.error(
-        getErrorMessage(error)
+
+        getErrorMessage(
+          error
+        )
+
       );
 
+
     }
+
 
   }, [
 
@@ -187,7 +270,8 @@ export default function ServiceCenterPage() {
   // NORMALIZE RESPONSE
   // =========================
 
-  const serviceCenters =
+  const transformers =
+
     Array.isArray(data)
 
       ? data
@@ -196,6 +280,7 @@ export default function ServiceCenterPage() {
 
 
   const totalCount =
+
     Array.isArray(data)
 
       ? data.length
@@ -204,12 +289,16 @@ export default function ServiceCenterPage() {
 
 
   const totalPages =
+
     Math.max(
 
       1,
 
       Math.ceil(
-        totalCount / PAGE_SIZE
+
+        totalCount /
+        PAGE_SIZE
+
       )
 
     );
@@ -219,17 +308,23 @@ export default function ServiceCenterPage() {
   // CREATE MUTATION
   // =========================
 
-  const createMutation =
+  const createTransformerMutation =
+
     useMutation({
 
+
       mutationFn:
-        createServiceCenter,
+
+        createTransformer,
 
 
       onSuccess: () => {
 
+
         toast.success(
-          "Service center created successfully."
+
+          "Transformer created successfully."
+
         );
 
 
@@ -239,25 +334,36 @@ export default function ServiceCenterPage() {
         queryClient.invalidateQueries({
 
           queryKey:
-            ["service-centers"],
+
+            ["transformers"],
 
         });
+
 
       },
 
 
-      onError: (error) => {
+      onError: (
+
+        error
+
+      ) => {
+
 
         console.error(error);
 
 
         toast.error(
 
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
 
         );
 
+
       },
+
 
     });
 
@@ -266,8 +372,10 @@ export default function ServiceCenterPage() {
   // UPDATE MUTATION
   // =========================
 
-  const updateMutation =
+  const updateTransformerMutation =
+
     useMutation({
+
 
       mutationFn: ({
 
@@ -278,14 +386,14 @@ export default function ServiceCenterPage() {
       }: {
 
         payload:
-          ServiceCenterPayload;
+          TransformerPayload;
 
         id:
           number;
 
       }) =>
 
-        updateServiceCenter(
+        updateTransformer(
 
           payload,
 
@@ -296,15 +404,18 @@ export default function ServiceCenterPage() {
 
       onSuccess: () => {
 
+
         toast.success(
-          "Service center updated successfully."
+
+          "Transformer updated successfully."
+
         );
 
 
         setModalOpen(false);
 
 
-        setEditingServiceCenter(
+        setEditingTransformer(
           null
         );
 
@@ -312,25 +423,36 @@ export default function ServiceCenterPage() {
         queryClient.invalidateQueries({
 
           queryKey:
-            ["service-centers"],
+
+            ["transformers"],
 
         });
+
 
       },
 
 
-      onError: (error) => {
+      onError: (
+
+        error
+
+      ) => {
+
 
         console.error(error);
 
 
         toast.error(
 
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
 
         );
 
+
       },
+
 
     });
 
@@ -339,38 +461,45 @@ export default function ServiceCenterPage() {
   // DELETE MUTATION
   // =========================
 
-  const deleteMutation =
+  const deleteTransformerMutation =
+
     useMutation({
 
+
       mutationFn:
-        deleteServiceCenter,
+
+        deleteTransformer,
 
 
       onSuccess: () => {
 
+
         toast.success(
-          "Service center deleted successfully."
+
+          "Transformer deleted successfully."
+
         );
 
 
-        setDeletingServiceCenter(
+        setDeletingTransformer(
           null
         );
 
 
         /*
-          If the last item
-          on this page is deleted,
-          move to previous page.
+          If last item on page
+          was deleted,
+          go to previous page.
         */
 
         if (
 
-          serviceCenters.length === 1 &&
+          transformers.length === 1 &&
 
           page > 1
 
         ) {
+
 
           setPage(
 
@@ -379,109 +508,140 @@ export default function ServiceCenterPage() {
 
           );
 
+
         } else {
+
 
           queryClient.invalidateQueries({
 
             queryKey:
-              ["service-centers"],
+
+              ["transformers"],
 
           });
 
+
         }
+
 
       },
 
 
       onError: (
+
         error: any
+
       ) => {
 
+
         const status =
+
           error?.response?.status;
 
 
-        if (status === 409) {
+        if (
+
+          status === 409
+
+        ) {
+
 
           toast.error(
 
-            "This service center is being used by other records. Please deactivate it instead."
+            "This transformer is being used by other records. Please deactivate it instead."
 
           );
+
 
         } else {
 
+
           toast.error(
 
-            getErrorMessage(error)
+            getErrorMessage(
+              error
+            )
 
           );
 
+
         }
 
+
       },
+
 
     });
 
 
   // =========================
-  // SUBMIT
+  // HANDLE SUBMIT
   // =========================
 
   const handleSubmit = (
 
     payload:
-      ServiceCenterPayload
+      TransformerPayload
 
   ) => {
 
+
     if (
 
-      editingServiceCenter
+      editingTransformer
 
     ) {
 
-      updateMutation.mutate({
+
+      updateTransformerMutation.mutate({
 
         payload,
 
+
         id:
-          editingServiceCenter.id,
+
+          editingTransformer.id,
 
       });
 
+
     } else {
 
-      createMutation.mutate(
+
+      createTransformerMutation.mutate(
 
         payload
 
       );
 
+
     }
+
 
   };
 
 
   // =========================
-  // DELETE
+  // HANDLE DELETE
   // =========================
 
   const handleDelete = () => {
 
+
     if (
 
-      !deletingServiceCenter
+      !deletingTransformer
 
     )
       return;
 
 
-    deleteMutation.mutate(
+    deleteTransformerMutation.mutate(
 
-      deletingServiceCenter.id
+      deletingTransformer.id
 
     );
+
 
   };
 
@@ -492,17 +652,22 @@ export default function ServiceCenterPage() {
 
   const saving =
 
-    createMutation.isPending ||
+    createTransformerMutation.isPending ||
 
-    updateMutation.isPending;
+    updateTransformerMutation.isPending;
 
 
   const deleting =
 
-    deleteMutation.isPending;
+    deleteTransformerMutation.isPending;
 
+
+  // =========================
+  // UI
+  // =========================
 
   return (
+
 
     <Box>
 
@@ -535,7 +700,7 @@ export default function ServiceCenterPage() {
 
           >
 
-            Service Centers
+            Transformers
 
           </Typography>
 
@@ -548,8 +713,7 @@ export default function ServiceCenterPage() {
 
           >
 
-            Manage service centers
-            across your service network.
+            Manage distribution transformers.
 
           </Typography>
 
@@ -562,12 +726,16 @@ export default function ServiceCenterPage() {
           variant="contained"
 
           startIcon={
+
             <AddIcon />
+
           }
+
 
           onClick={() => {
 
-            setEditingServiceCenter(
+
+            setEditingTransformer(
               null
             );
 
@@ -576,17 +744,17 @@ export default function ServiceCenterPage() {
               true
             );
 
+
           }}
 
         >
 
-          Add Service Center
+          Add Transformer
 
         </Button>
 
 
       </Stack>
-
 
 
       {/* ========================= */}
@@ -599,21 +767,22 @@ export default function ServiceCenterPage() {
 
         size="small"
 
-        placeholder="
-          Search service center
-          by name or code...
-        "
+        placeholder="Search transformer by name or code..."
 
 
         value={
+
           search
+
         }
 
 
         onChange={(e) =>
 
           setSearch(
+
             e.target.value
+
           )
 
         }
@@ -621,7 +790,9 @@ export default function ServiceCenterPage() {
 
         InputProps={{
 
+
           startAdornment: (
+
 
             <InputAdornment
               position="start"
@@ -631,17 +802,20 @@ export default function ServiceCenterPage() {
 
             </InputAdornment>
 
+
           ),
+
 
         }}
 
 
         sx={{
+
           mb: 2,
+
         }}
 
       />
-
 
 
       {/* ========================= */}
@@ -665,8 +839,7 @@ export default function ServiceCenterPage() {
 
           sx={{
 
-            overflowX:
-              "auto",
+            overflowX: "auto",
 
           }}
 
@@ -677,8 +850,7 @@ export default function ServiceCenterPage() {
 
             style={{
 
-              width:
-                "100%",
+              width: "100%",
 
               borderCollapse:
                 "collapse",
@@ -688,7 +860,9 @@ export default function ServiceCenterPage() {
           >
 
 
-            {/* TABLE HEADER */}
+            {/* ===================== */}
+            {/* HEADER */}
+            {/* ===================== */}
 
             <thead>
 
@@ -698,6 +872,7 @@ export default function ServiceCenterPage() {
                 style={{
 
                   background:
+
                     "#F8FAFC",
 
                 }}
@@ -708,78 +883,60 @@ export default function ServiceCenterPage() {
                 <th
                   style={{
                     padding: 14,
-                    textAlign:
-                      "left",
+                    textAlign: "left",
                   }}
                 >
-
-                  Service Center
-
+                  Transformer
                 </th>
 
 
                 <th
                   style={{
                     padding: 14,
-                    textAlign:
-                      "left",
+                    textAlign: "left",
                   }}
                 >
-
                   Code
-
                 </th>
 
 
                 <th
                   style={{
                     padding: 14,
-                    textAlign:
-                      "left",
+                    textAlign: "left",
                   }}
                 >
-
-                  Service Unit
-
+                  Feeder
                 </th>
 
 
                 <th
                   style={{
                     padding: 14,
-                    textAlign:
-                      "left",
+                    textAlign: "left",
                   }}
                 >
-
-                  Business Unit
-
+                  Band
                 </th>
 
 
                 <th
                   style={{
                     padding: 14,
-                    textAlign:
-                      "left",
+                    textAlign: "left",
                   }}
                 >
-
-                  Region
-
+                  Schedule
                 </th>
 
 
                 <th
                   style={{
                     padding: 14,
-                    textAlign:
-                      "left",
+                    textAlign: "left",
                   }}
                 >
-
                   Status
-
                 </th>
 
 
@@ -788,9 +945,7 @@ export default function ServiceCenterPage() {
                     padding: 14,
                   }}
                 >
-
                   Actions
-
                 </th>
 
 
@@ -800,10 +955,9 @@ export default function ServiceCenterPage() {
             </thead>
 
 
-
-            {/* ========================= */}
-            {/* TABLE BODY */}
-            {/* ========================= */}
+            {/* ===================== */}
+            {/* BODY */}
+            {/* ===================== */}
 
             <tbody>
 
@@ -820,8 +974,7 @@ export default function ServiceCenterPage() {
 
                     style={{
 
-                      padding:
-                        40,
+                      padding: 40,
 
                       textAlign:
                         "center",
@@ -830,7 +983,7 @@ export default function ServiceCenterPage() {
 
                   >
 
-                    Loading service centers...
+                    Loading transformers...
 
                   </td>
 
@@ -838,7 +991,7 @@ export default function ServiceCenterPage() {
                 </tr>
 
 
-              ) : serviceCenters.length === 0 ? (
+              ) : transformers.length === 0 ? (
 
 
                 <tr>
@@ -850,8 +1003,7 @@ export default function ServiceCenterPage() {
 
                     style={{
 
-                      padding:
-                        40,
+                      padding: 40,
 
                       textAlign:
                         "center",
@@ -860,7 +1012,7 @@ export default function ServiceCenterPage() {
 
                   >
 
-                    No service centers found.
+                    No transformers found.
 
                   </td>
 
@@ -871,21 +1023,24 @@ export default function ServiceCenterPage() {
               ) : (
 
 
-                serviceCenters.map(
+                transformers.map(
 
-                  (serviceCenter) => (
+                  (transformer) => (
 
 
                     <tr
 
                       key={
-                        serviceCenter.id
+
+                        transformer.id
+
                       }
 
 
                       style={{
 
                         borderTop:
+
                           "1px solid #E5E7EB",
 
                       }}
@@ -893,9 +1048,7 @@ export default function ServiceCenterPage() {
                     >
 
 
-                      {/* ================= */}
-                      {/* SERVICE CENTER */}
-                      {/* ================= */}
+                      {/* TRANSFORMER */}
 
                       <td
                         style={{
@@ -905,11 +1058,15 @@ export default function ServiceCenterPage() {
 
 
                         <Typography
+
                           fontWeight={600}
+
                         >
 
                           {
-                            serviceCenter.name
+
+                            transformer.name
+
                           }
 
                         </Typography>
@@ -924,7 +1081,9 @@ export default function ServiceCenterPage() {
                         >
 
                           {
-                            serviceCenter.address
+
+                            transformer.address
+
                           }
 
                         </Typography>
@@ -933,10 +1092,7 @@ export default function ServiceCenterPage() {
                       </td>
 
 
-
-                      {/* ================= */}
                       {/* CODE */}
-                      {/* ================= */}
 
                       <td
                         style={{
@@ -948,7 +1104,9 @@ export default function ServiceCenterPage() {
                         <Chip
 
                           label={
-                            serviceCenter.code
+
+                            transformer.code
+
                           }
 
                           size="small"
@@ -959,10 +1117,7 @@ export default function ServiceCenterPage() {
                       </td>
 
 
-
-                      {/* ================= */}
-                      {/* SERVICE UNIT */}
-                      {/* ================= */}
+                      {/* FEEDER */}
 
                       <td
                         style={{
@@ -972,13 +1127,14 @@ export default function ServiceCenterPage() {
 
 
                         <Typography
+
                           fontWeight={500}
+
                         >
 
                           {
 
-                            serviceCenter
-                              .service_unit
+                            transformer.feeder
                               ?.name
 
                           }
@@ -996,11 +1152,21 @@ export default function ServiceCenterPage() {
 
                           {
 
-                            serviceCenter
-                              .service_unit
+                            transformer.feeder
                               ?.code
 
                           }
+
+                          {" • "}
+
+                          {
+
+                            transformer.feeder
+                              ?.voltage_level
+
+                          }
+
+                          kV
 
                         </Typography>
 
@@ -1008,10 +1174,7 @@ export default function ServiceCenterPage() {
                       </td>
 
 
-
-                      {/* ================= */}
-                      {/* BUSINESS UNIT */}
-                      {/* ================= */}
+                      {/* BAND */}
 
                       <td
                         style={{
@@ -1019,18 +1182,18 @@ export default function ServiceCenterPage() {
                         }}
                       >
 
+
                         {
-                          serviceCenter
-                            .business_unit
+
+                          transformer.band
+
                         }
+
 
                       </td>
 
 
-
-                      {/* ================= */}
-                      {/* REGION */}
-                      {/* ================= */}
+                      {/* SCHEDULE */}
 
                       <td
                         style={{
@@ -1038,18 +1201,37 @@ export default function ServiceCenterPage() {
                         }}
                       >
 
-                        {
-                          serviceCenter
-                            .region
-                        }
+
+                        <Chip
+
+                          size="small"
+
+                          label={
+
+                            transformer.schedule
+                              ?.toUpperCase()
+
+                          }
+
+
+                          color={
+
+                            transformer.schedule ===
+                            "metered"
+
+                              ? "primary"
+
+                              : "default"
+
+                          }
+
+                        />
+
 
                       </td>
 
 
-
-                      {/* ================= */}
                       {/* STATUS */}
-                      {/* ================= */}
 
                       <td
                         style={{
@@ -1065,8 +1247,7 @@ export default function ServiceCenterPage() {
 
                           label={
 
-                            serviceCenter
-                              .is_active
+                            transformer.is_active
 
                               ? "Active"
 
@@ -1077,8 +1258,7 @@ export default function ServiceCenterPage() {
 
                           color={
 
-                            serviceCenter
-                              .is_active
+                            transformer.is_active
 
                               ? "success"
 
@@ -1092,25 +1272,15 @@ export default function ServiceCenterPage() {
                       </td>
 
 
-
-                      {/* ================= */}
                       {/* ACTIONS */}
-                      {/* ================= */}
 
                       <td
                         style={{
-
-                          padding:
-                            14,
-
-                          textAlign:
-                            "center",
-
+                          padding: 14,
+                          textAlign: "center",
                         }}
                       >
 
-
-                        {/* EDIT */}
 
                         <IconButton
 
@@ -1120,9 +1290,9 @@ export default function ServiceCenterPage() {
                           onClick={() => {
 
 
-                            setEditingServiceCenter(
+                            setEditingTransformer(
 
-                              serviceCenter
+                              transformer
 
                             );
 
@@ -1143,9 +1313,6 @@ export default function ServiceCenterPage() {
                         </IconButton>
 
 
-
-                        {/* DELETE */}
-
                         <IconButton
 
                           size="small"
@@ -1155,9 +1322,9 @@ export default function ServiceCenterPage() {
 
                           onClick={() =>
 
-                            setDeletingServiceCenter(
+                            setDeletingTransformer(
 
-                              serviceCenter
+                              transformer
 
                             )
 
@@ -1182,6 +1349,7 @@ export default function ServiceCenterPage() {
 
                 )
 
+
               )}
 
 
@@ -1197,199 +1365,217 @@ export default function ServiceCenterPage() {
       </Card>
 
 
-
       {/* ========================= */}
       {/* PAGINATION */}
       {/* ========================= */}
 
-      <Box
-
-        sx={{
-
-          display:
-            "flex",
-
-          justifyContent:
-            "space-between",
-
-          alignItems:
-            "center",
-
-          mt:
-            2,
-
-        }}
-
-      >
+      {totalPages > 1 && (
 
 
-        <Typography
+        <Box
 
-          fontSize={13}
+          sx={{
 
-          color="text.secondary"
+            display: "flex",
 
-        >
+            justifyContent:
+              "space-between",
 
-          Showing page {page}
-          {" "}of {totalPages}
+            alignItems:
+              "center",
 
-          {" "}({totalCount} total)
+            mt: 2,
 
-        </Typography>
-
-
-
-        <Stack
-
-          direction="row"
-
-          spacing={1}
+          }}
 
         >
 
 
-          <Button
+          <Typography
 
-            size="small"
+            fontSize={13}
 
-
-            disabled={
-
-              page === 1 ||
-
-              isFetching
-
-            }
-
-
-            onClick={() =>
-
-              setPage(
-
-                (prev) =>
-                  prev - 1
-
-              )
-
-            }
+            color="text.secondary"
 
           >
 
-            Previous
+            Showing page{" "}
 
-          </Button>
+            {page}
 
+            {" "}of{" "}
 
+            {totalPages}
 
-          <Button
+            {" "}({totalCount} total)
 
-            size="small"
-
-
-            disabled={
-
-              page >= totalPages ||
-
-              isFetching
-
-            }
+          </Typography>
 
 
-            onClick={() =>
+          <Stack
 
-              setPage(
+            direction="row"
 
-                (prev) =>
-                  prev + 1
-
-              )
-
-            }
+            spacing={1}
 
           >
 
-            Next
 
-          </Button>
+            <Button
 
-
-        </Stack>
+              size="small"
 
 
-      </Box>
+              disabled={
 
+                page === 1 ||
+
+                isFetching
+
+              }
+
+
+              onClick={() =>
+
+                setPage(
+
+                  (prev) =>
+                    prev - 1
+
+                )
+
+              }
+
+            >
+
+              Previous
+
+            </Button>
+
+
+            <Button
+
+              size="small"
+
+
+              disabled={
+
+                page >= totalPages ||
+
+                isFetching
+
+              }
+
+
+              onClick={() =>
+
+                setPage(
+
+                  (prev) =>
+                    prev + 1
+
+                )
+
+              }
+
+            >
+
+              Next
+
+            </Button>
+
+
+          </Stack>
+
+
+        </Box>
+
+
+      )}
 
 
       {/* ========================= */}
       {/* CREATE / EDIT MODAL */}
       {/* ========================= */}
 
-      <ServiceCenterFormModal
+      <TransformerFormModal
 
         open={
+
           modalOpen
+
         }
 
 
         onClose={() => {
 
-          setModalOpen(
-            false
-          );
+
+          setModalOpen(false);
 
 
-          setEditingServiceCenter(
+          setEditingTransformer(
             null
           );
+
 
         }}
 
 
-        serviceCenter={
-          editingServiceCenter
+        transformer={
+
+          editingTransformer
+
         }
 
 
         loading={
+
           saving
+
         }
 
 
         onSubmit={
+
           handleSubmit
+
         }
 
       />
-
 
 
       {/* ========================= */}
       {/* DELETE DIALOG */}
       {/* ========================= */}
 
-      <DeleteServiceCenterDialog
+      <DeleteTransformerDialog
 
         open={
+
           Boolean(
-            deletingServiceCenter
+            deletingTransformer
           )
+
         }
 
 
-        serviceCenter={
-          deletingServiceCenter
+        transformer={
+
+          deletingTransformer
+
         }
 
 
         loading={
+
           deleting
+
         }
 
 
         onClose={() =>
 
-          setDeletingServiceCenter(
+          setDeletingTransformer(
             null
           )
 
@@ -1397,7 +1583,9 @@ export default function ServiceCenterPage() {
 
 
         onConfirm={
+
           handleDelete
+
         }
 
       />
@@ -1405,6 +1593,8 @@ export default function ServiceCenterPage() {
 
     </Box>
 
+
   );
+
 
 }

@@ -39,10 +39,10 @@ import {
     deleteRegion,
     getRegions,
     updateRegion,
-} from "../../services/crmdService";
+} from "../../../services/crmdService";
 
-import { getErrorMessage } from "../../utils/getErrorMessage";
-import { usePermission } from "../../hooks/usePermission";
+import { getErrorMessage } from "../../../utils/getErrorMessage";
+import { usePermission } from "../../../hooks/usePermission";
 
 export default function RegionPage() {
     const [modalOpen, setModalOpen] = useState(false);

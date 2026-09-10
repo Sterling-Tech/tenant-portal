@@ -180,30 +180,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <Divider />
             <List>
                 {/* Tenant Admin */}
-                    < ListItem disablePadding>
-                        <ListItemButton
-                            selected={location.pathname === '/tenants/admin'}
-                            onClick={() => handleNavigation('/tenants/admin')}
-                            sx={{
-                                '&.Mui-selected': {
-                                    backgroundColor: 'primary.main',
-                                    color: 'white',
-                                    '&:hover': {
-                                        backgroundColor: 'primary.dark',
-                                    },
-                                    '& .MuiListItemIcon-root': {
-                                        color: 'white',
-                                    },
+                < ListItem disablePadding>
+                    <ListItemButton
+                        selected={location.pathname === '/tenants/admin'}
+                        onClick={() => handleNavigation('/tenants/admin')}
+                        sx={{
+                            '&.Mui-selected': {
+                                backgroundColor: 'primary.main',
+                                color: 'white',
+                                '&:hover': {
+                                    backgroundColor: 'primary.dark',
                                 },
-                            }}
-                        >
-                            <ListItemIcon>
-                                <Domain />
-                            </ListItemIcon>
-                            <ListItemText primary="Tenant Admin" />
-                        </ListItemButton>
+                                '& .MuiListItemIcon-root': {
+                                    color: 'white',
+                                },
+                            },
+                        }}
+                    >
+                        <ListItemIcon>
+                            <Domain />
+                        </ListItemIcon>
+                        <ListItemText primary="Tenant Admin" />
+                    </ListItemButton>
 
-                    </ListItem>
+                </ListItem>
 
                 {/* Vendor Management Section - Collapsible */}
                 <ListItem disablePadding>
@@ -585,30 +585,51 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Collapse in={crmdOpen} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
 
-                        <ListItem disablePadding>
-                            <ListItemButton
-                                selected={location.pathname === '/customer/crmd'}
-                                onClick={() => handleNavigation('/customer/crmd')}
-                                sx={{
-                                    pl: 4,
-                                    '&.Mui-selected': {
-                                        backgroundColor: 'primary.main',
-                                        color: 'white',
-                                        '&:hover': {
-                                            backgroundColor: 'primary.dark',
-                                        },
-                                        '& .MuiListItemIcon-root': {
-                                            color: 'white',
-                                        },
+                        <ListItemButton
+                            selected={location.pathname === '/customer/crmd/network'}
+                            onClick={() => handleNavigation('/customer/crmd/network')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
                                     },
-                                }}
-                            >
-                                <ListItemIcon>
-                                    <People />
-                                </ListItemIcon>
-                                <ListItemText primary="Network Configuration" />
-                            </ListItemButton>
-                        </ListItem>
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <People fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Network Configuration" />
+                        </ListItemButton>
+
+                        <ListItemButton
+                            selected={location.pathname === '/customer/crmd/tariff'}
+                            onClick={() => handleNavigation('/customer/crmd/tariff')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <People fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Tariff Configuration" />
+                        </ListItemButton>
                     </List>
                 </Collapse>
 

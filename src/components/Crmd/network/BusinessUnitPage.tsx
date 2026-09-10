@@ -27,9 +27,9 @@ import {
     useQueryClient,
 } from "@tanstack/react-query";
 import Box from "@mui/material/Box/Box";
-import { BusinessUnit, BusinessUnitPayload, createBusinessUnit, deleteBusinessUnit, getBusinessUnits, updateBusinessUnit } from "../../services/crmdService";
+import { BusinessUnit, BusinessUnitPayload, createBusinessUnit, deleteBusinessUnit, getBusinessUnits, updateBusinessUnit } from "../../../services/crmdService";
 import { toast } from "react-toastify";
-import { getErrorMessage } from "../../utils/getErrorMessage";
+import { getErrorMessage } from "../../../utils/getErrorMessage";
 import BusinessUnitFormModal from "./BusinessUnitFormModal";
 import DeleteBusinessUnitDialog from "./DeleteBusinessUnitDialog";
 

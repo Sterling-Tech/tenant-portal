@@ -311,11 +311,7 @@ export interface Parent {
     code: string;
     voltage_level: number;
 }
-export interface Band {
-  id: number;
-  name: string;
-  code: string;
-}
+
 export interface Feeder {
     id: number;
     name: string;
@@ -324,7 +320,6 @@ export interface Feeder {
     parent: Parent | null;
     substation: Substation;
     business_unit: string;
-    // band: Band;
     band: string;
     band_id: number;
     status: "active" | "inactive";
@@ -422,6 +417,110 @@ export const deleteFeeder=(feererId:number)=>{
     return del(`/network/feeder/?feeder_id=${feererId}`)
 }
 
+export interface Feeder2 {
+  id: number;
+  name: string;
+  code: string;
+  voltage_level: number;
+}
+
+export interface Transformer {
+  id: number;
+  name: string;
+  code: string;
+  feeder: Feeder2;
+  band: string;
+  schedule: "lsh" | "metered" | "nlsh";
+  status: "active" | "inactive";
+  address: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface TransformerPayload {
+  name: string;
+  code: string;
+  feeder: number;
+  schedule: "lsh" | "metered" | "nlsh";
+  status: "active" | "inactive";
+  address: string;
+  is_active: boolean;
+}
+export const getTransformers = (
+  search?: string,
+  page: number = 1,
+  pageSize: number = 10,
+  transformerId?: number,
+  feederId?: number,
+  schedule?: "lsh" | "metered" | "nlsh"
+) => {
+
+  const params = new URLSearchParams();
+
+  params.append(
+    "page",
+    String(page)
+  );
+
+  params.append(
+    "page_size",
+    String(pageSize)
+  );
+  if (search?.trim()) {
+
+    params.append(
+      "search",
+      search.trim()
+    );
+
+  }
+  if (transformerId) {
+
+    params.append(
+      "transformer_id",
+      String(transformerId)
+    );
+
+  }
+  if (feederId) {
+
+    params.append(
+      "feeder_id",
+      String(feederId)
+    );
+
+  }
+  if (schedule) {
+
+    params.append(
+      "schedule",
+      schedule
+    );
+
+  }
+  return get<
+    PaginatedResponse<Transformer>
+    | Transformer[]
+  >(
+    `/network/transformer/?${params.toString()}`
+  );
+
+};
+export const getTransformer = (transformerId: number) => {
+    return get<Transformer>(
+        `/network/transformer/?transformer_id=${transformerId}`
+    );
+}
+export const createTransformer = (payload: TransformerPayload) => {
+    return post<Transformer>("/network/transformer/", payload);
+}
+export const updateTransformer = (payload: TransformerPayload, transformerId: number) => {
+    return put<Transformer>(`/network/transformer/?transformer_id=${transformerId}`, payload)
+}
+export const deleteTransformer = (transformerId: number) => {
+    return del(`/network/transformer/?transformer_id=${transformerId}`)
+}
+
 export interface Band {
   id: number;
   name: string;
@@ -431,6 +530,13 @@ export interface Band {
   is_active: boolean;
   feeder_count: number;
   created_at: string;
+}
+export interface BandPayload {
+  name: string;
+  category: string;
+  description: string;
+  baseline_hours: string;
+  is_active: boolean;
 }
 export const getBands = (
   search?: string,
@@ -467,4 +573,188 @@ export const getBands = (
     `/tariff/band/?${params.toString()}`
   );
 
+};
+export const getBand = (bandId: number) => {
+  return get<Band>(
+    `/tariff/band/?band_id=${bandId}`
+  );
+};
+export const createBand = (payload: BandPayload) => {
+  return post<Band>("/tariff/band/", payload);
+};
+export const updateBand = (payload: BandPayload, bandId: number) => {
+  return put<Band>(`/tariff/band/?band_id=${bandId}`, payload);
+};
+export const deleteBand = (bandId: number) => {
+  return del(`/tariff/band/?band_id=${bandId}`);
+};
+
+export interface TariffCategory{
+    id: number;
+    name: string;
+    legacy_name: string;
+    is_active: boolean;
+    created_at: string;
+  }
+export interface TariffCategoryPayload{
+    name: string;
+    legacy_name: string;
+    is_active: boolean;
+  }
+export const getTariffCategories = (
+    search?: string,
+    page: number = 1,
+    pageSize: number = 100
+) => {
+    const params = new URLSearchParams();
+
+    params.append(
+        "page",
+        String(page)
+    );
+    params.append(
+        "page_size",
+        String(pageSize)
+    );
+    if (search?.trim()) {
+        params.append(
+            "search",
+            search.trim()
+        );
+    }
+    return get<
+        PaginatedResponse<TariffCategory> | TariffCategory[]
+    >(
+        `/tariff/category/?${params.toString()}`
+    );
+};
+
+export const getTariffCategory = (categoryId: number) => {
+    return get<TariffCategory>(
+        `/tariff/category/?category_id=${categoryId}`
+    );
+}
+
+export const createTariffCategory = (payload: TariffCategoryPayload) => {
+    return post<TariffCategory>("/tariff/category/", payload);
+}
+export const updateTariffCategory = (payload: TariffCategoryPayload, categoryId: number) => {
+    return put<TariffCategory>(`/tariff/category/?category_id=${categoryId}`, payload)
+}
+export const deleteTariffCategory = (categoryId: number) => {
+    return del(`/tariff/category/?category_id=${categoryId}`)
+}
+
+export interface CloseTariffPayload {
+  effective_to: string;
+}
+export interface Tariff {
+  id: number;
+  name: string;
+  band: Band;
+  category: TariffCategory;
+  metering_type: string;
+  rate: string;
+  tariff_index: string;
+  effective_from: string;
+  effective_to: string | null;
+  is_current: boolean;
+  created_at: string;
+}
+export interface TariffPayload{
+  band: number;
+  category: number;
+  metering_type: number;
+  name: string;
+  rate: string;
+  tariff_index: string;
+  effective_from: string;
+  effective_to?: string | null;
+}
+export const getTariffs = (
+  search?: string,
+  page: number = 1,
+  pageSize: number = 100,
+  bandId?: number,
+  categoryId?: number,
+  meteringTypeId?: number,
+  current?: boolean,
+  tariffId?: number
+) => {
+  const params = new URLSearchParams();
+
+  params.append("page", String(page));
+
+  params.append(
+    "page_size",
+    String(pageSize)
+  );
+
+  if (search?.trim()) {
+    params.append(
+      "search",
+      search.trim()
+    );
+  }
+
+  if (bandId) {
+    params.append(
+      "band_id",
+      String(bandId)
+    );
+  }
+
+  if (categoryId) {
+    params.append(
+      "category_id",
+      String(categoryId)
+    );
+  }
+
+  if (meteringTypeId) {
+    params.append(
+      "metering_type_id",
+      String(meteringTypeId)
+    );
+  }
+
+  if (current !== undefined) {
+    params.append(
+      "current",
+      String(current)
+    );
+  }
+
+  if (tariffId) {
+    params.append(
+      "tariff_id",
+      String(tariffId)
+    );
+  }
+
+  return get<
+    PaginatedResponse<Tariff> | Tariff[]
+  >(`/tariff/?${params.toString()}`);
+};
+export const getTariff = (tariffId: number) => {
+    return get<Tariff>(`/tariff/?tariff_id=${tariffId}`)
+}
+export const createTariff=(payload:TariffPayload)=>{
+    return post<Tariff>('/tariff/',payload)
+}
+export const updateTariff=(payload:TariffPayload,tariffId:number)=>{
+    return put<Tariff>(`/tariff/?tariff_id=${tariffId}`,payload)
+}
+export const deleteTariff=(tariffId:number)=>{
+    return del(`/tariff/?tariff_id=${tariffId}`)
+}
+
+export const closeTariff = (
+  tariffId: number,
+  payload: CloseTariffPayload
+) => {
+  return post<Tariff>(
+    `/tariff/close/?tariff_id=${tariffId}`,
+    payload
+  );
 };

@@ -1,6 +1,5 @@
-import React from "react";
-
 import {
+  Alert,
   Button,
   Dialog,
   DialogActions,
@@ -9,117 +8,92 @@ import {
   Typography,
 } from "@mui/material";
 
-import { BusinessUnit } from "../../services/crmdService";
-
+import { TariffCategory } from "../../../services/crmdService";
 
 interface Props {
-
   open: boolean;
-
-  businessUnit:
-    | BusinessUnit
-    | null;
-
+  category: TariffCategory | null;
   loading: boolean;
-
+  error?: string;
   onClose: () => void;
-
   onConfirm: () => void;
-
 }
 
-
-export default function DeleteBusinessUnitDialog({
-
+export default function DeleteCategoryDialog({
   open,
-
-  businessUnit,
-
+  category,
   loading,
-
+  error,
   onClose,
-
   onConfirm,
-
 }: Props) {
-
   return (
-
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={loading ? undefined : onClose}
+      fullWidth
+      maxWidth="xs"
     >
-
       <DialogTitle>
-
-        Delete Business Unit
-
+        Delete Tariff Category
       </DialogTitle>
 
-
       <DialogContent>
+        {error && (
+          <Alert
+            severity="error"
+            sx={{ mb: 2 }}
+          >
+            {error}
+          </Alert>
+        )}
 
         <Typography>
-
           Are you sure you want to delete{" "}
-
           <strong>
-            {businessUnit?.name}
+            {category?.name}
           </strong>
-
           ?
-
         </Typography>
-
 
         <Typography
-          fontSize={12}
+          variant="body2"
           color="text.secondary"
-          mt={1}
+          sx={{ mt: 1 }}
         >
-
           This action cannot be undone.
-
         </Typography>
 
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mt: 1 }}
+        >
+          If this category is being used by other
+          records, it cannot be deleted. You may
+          need to deactivate it instead.
+        </Typography>
       </DialogContent>
 
-
       <DialogActions>
-
         <Button
-          onClick={onClose}
           disabled={loading}
+          onClick={onClose}
         >
-
           Cancel
-
         </Button>
 
-
         <Button
-
           color="error"
-
           variant="contained"
-
           disabled={loading}
-
           onClick={onConfirm}
-
         >
-
           {loading
             ? "Deleting..."
             : "Delete"}
-
         </Button>
-
       </DialogActions>
-
-
     </Dialog>
-
   );
-
 }

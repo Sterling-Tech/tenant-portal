@@ -8,26 +8,25 @@ import {
 
   DialogContent,
 
-  DialogTitle,
+  DialogContentText,
 
-  Typography,
+  DialogTitle,
 
 } from "@mui/material";
 
-
 import {
 
-  ServiceUnit,
+  Substation,
 
-} from "../../services/crmdService";
+} from "../../../services/crmdService";
 
 
-interface DeleteServiceUnitDialogProps {
+interface Props {
 
   open: boolean;
 
-  serviceUnit:
-    ServiceUnit | null;
+  substation:
+    Substation | null;
 
   loading: boolean;
 
@@ -38,11 +37,12 @@ interface DeleteServiceUnitDialogProps {
 }
 
 
-export default function DeleteServiceUnitDialog({
+export default function
+DeleteSubstationDialog({
 
   open,
 
-  serviceUnit,
+  substation,
 
   loading,
 
@@ -50,38 +50,60 @@ export default function DeleteServiceUnitDialog({
 
   onConfirm,
 
-}: DeleteServiceUnitDialogProps) {
+}: Props) {
 
 
   return (
 
-
     <Dialog
+
       open={open}
-      onClose={loading ? undefined : onClose}
+
+
+      onClose={
+
+        loading
+
+          ? undefined
+
+          : onClose
+
+      }
+
+      maxWidth="xs"
+
+      fullWidth
+
     >
 
 
+      {/* TITLE */}
+
       <DialogTitle>
 
-        Delete Service Unit
+        Delete Substation
 
       </DialogTitle>
 
 
+      {/* CONTENT */}
+
       <DialogContent>
 
 
-        <Typography>
+        <DialogContentText>
 
 
-          Are you sure you want to delete{" "}
+          Are you sure you want
+          to delete
 
 
           <strong>
 
+            {" "}
+
             {
-              serviceUnit?.name
+              substation?.name
             }
 
           </strong>
@@ -90,26 +112,22 @@ export default function DeleteServiceUnitDialog({
           ?
 
 
-        </Typography>
+          <br />
+
+          <br />
 
 
-        <Typography
+          This action cannot
+          be undone.
 
-          mt={1}
 
-          fontSize={13}
-
-          color="text.secondary"
-
-        >
-
-          This action cannot be undone.
-
-        </Typography>
+        </DialogContentText>
 
 
       </DialogContent>
 
+
+      {/* ACTIONS */}
 
       <DialogActions>
 
@@ -139,6 +157,7 @@ export default function DeleteServiceUnitDialog({
 
         >
 
+
           {
 
             loading
@@ -149,6 +168,7 @@ export default function DeleteServiceUnitDialog({
 
           }
 
+
         </Button>
 
 
@@ -156,7 +176,6 @@ export default function DeleteServiceUnitDialog({
 
 
     </Dialog>
-
 
   );
 

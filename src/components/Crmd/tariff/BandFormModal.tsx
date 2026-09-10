@@ -1,98 +1,65 @@
 import {
-
-  Button,
-
-  Dialog,
-
-  DialogActions,
-
-  DialogContent,
-
-  DialogTitle,
-
-  FormControlLabel,
-
-  Stack,
-
-  Switch,
-
-  TextField,
-
-} from "@mui/material";
-
-import {
-
   useEffect,
-
   useState,
-
 } from "react";
 
 import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  Stack,
+  Switch,
+  TextField,
+} from "@mui/material";
 
-  Substation,
-
-  SubstationPayload,
-
-} from "../../services/crmdService";
+import {
+  Band,
+  BandPayload,
+} from "../../../services/crmdService";
 
 
 interface Props {
-
   open: boolean;
 
   onClose: () => void;
 
-  substation:
-    Substation | null;
+  band: Band | null;
 
   loading: boolean;
 
   onSubmit: (
-    payload:
-      SubstationPayload
+    payload: BandPayload
   ) => void;
-
 }
 
 
-export default function
-SubstationFormModal({
+const initialForm: BandPayload = {
+  name: "",
+  category: "",
+  description: "",
+  baseline_hours: "",
+  is_active: true,
+};
 
+
+export default function BandFormModal({
   open,
-
   onClose,
-
-  substation,
-
+  band,
   loading,
-
   onSubmit,
-
 }: Props) {
 
 
-  // =========================
-  // FORM STATE
-  // =========================
-
   const [
-
     form,
-
     setForm,
-
-  ] = useState<SubstationPayload>({
-
-    name: "",
-
-    code: "",
-
-    address: "",
-
-    is_active: true,
-
-  });
+  ] = useState<BandPayload>(
+    initialForm
+  );
 
 
   // =========================
@@ -101,81 +68,56 @@ SubstationFormModal({
 
   useEffect(() => {
 
+    if (!open) return;
 
-    if (substation) {
 
+    if (band) {
 
       setForm({
-
         name:
-          substation.name,
+          band.name ?? "",
 
-        code:
-          substation.code,
+        category:
+          band.category ?? "",
 
-        address:
-          substation.address,
+        description:
+          band.description ?? "",
+
+        baseline_hours:
+          band.baseline_hours ?? "",
 
         is_active:
-          substation.is_active,
-
+          band.is_active,
       });
-
 
     } else {
 
-
-      setForm({
-
-        name: "",
-
-        code: "",
-
-        address: "",
-
-        is_active: true,
-
-      });
-
+      setForm(
+        initialForm
+      );
 
     }
 
-
   }, [
-
-    substation,
-
+    band,
     open,
-
   ]);
 
 
   // =========================
-  // INPUT CHANGE
+  // CHANGE HANDLER
   // =========================
 
   const handleChange = (
-
-    field:
-      keyof SubstationPayload,
-
-    value:
-      string | boolean
-
+    field: keyof BandPayload,
+    value: string | boolean
   ) => {
 
-
     setForm(
-
-      (prev) => ({
-
+      (prev:any) => ({
         ...prev,
-
-        [field]:
-          value,
-
+        [field]: value,
       })
-
     );
 
   };
@@ -189,10 +131,12 @@ SubstationFormModal({
 
 
     if (
-
       !form.name.trim()
-
     ) {
+
+      alert(
+        "Band name is required"
+      );
 
       return;
 
@@ -200,10 +144,12 @@ SubstationFormModal({
 
 
     if (
-
-      !form.code.trim()
-
+      !form.category.trim()
     ) {
+
+      alert(
+        "Band category is required"
+      );
 
       return;
 
@@ -211,10 +157,32 @@ SubstationFormModal({
 
 
     if (
-
-      !form.address.trim()
-
+      !form.baseline_hours.trim()
     ) {
+
+      alert(
+        "Baseline hours is required"
+      );
+
+      return;
+
+    }
+
+
+    const hours =
+      Number(
+        form.baseline_hours
+      );
+
+
+    if (
+      Number.isNaN(hours) ||
+      hours < 0
+    ) {
+
+      alert(
+        "Baseline hours must be a valid positive number"
+      );
 
       return;
 
@@ -222,19 +190,19 @@ SubstationFormModal({
 
 
     onSubmit({
+      ...form,
 
       name:
         form.name.trim(),
 
-      code:
-        form.code.trim(),
+      category:
+        form.category.trim(),
 
-      address:
-        form.address.trim(),
+      description:
+        form.description.trim(),
 
-      is_active:
-        form.is_active,
-
+      baseline_hours:
+        form.baseline_hours.trim(),
     });
 
   };
@@ -243,167 +211,158 @@ SubstationFormModal({
   return (
 
     <Dialog
-
       open={open}
 
       onClose={
-
         loading
-
           ? undefined
-
           : onClose
-
       }
 
       fullWidth
 
       maxWidth="sm"
-
     >
 
 
-      {/* ========================= */}
       {/* TITLE */}
-      {/* ========================= */}
 
       <DialogTitle>
 
-
         {
-
-          substation
-
-            ? "Edit Substation"
-
-            : "Add Substation"
-
+          band
+            ? "Edit Band"
+            : "Create Band"
         }
-
 
       </DialogTitle>
 
 
-      {/* ========================= */}
       {/* CONTENT */}
-      {/* ========================= */}
 
       <DialogContent>
 
 
         <Stack
-
           spacing={2}
-
           mt={1}
-
         >
 
 
           {/* NAME */}
 
           <TextField
-
-            label="Substation Name"
-
-            placeholder="
-              Enter substation name
-            "
-
             fullWidth
 
+            required
+
+            label="Band Name"
+
+            placeholder="e.g. Band A"
 
             value={
               form.name
             }
 
-
             onChange={(e) =>
 
               handleChange(
-
                 "name",
-
                 e.target.value
-
               )
 
             }
-
           />
 
 
-          {/* CODE */}
+          {/* CATEGORY */}
 
           <TextField
-
-            label="Substation Code"
-
-            placeholder="
-              Enter substation code
-            "
-
             fullWidth
 
+            required
+
+            label="Category"
+
+            placeholder="e.g. Residential"
 
             value={
-              form.code
+              form.category
             }
-
 
             onChange={(e) =>
 
               handleChange(
-
-                "code",
-
+                "category",
                 e.target.value
-
               )
 
             }
-
           />
 
 
-          {/* ADDRESS */}
+          {/* DESCRIPTION */}
 
           <TextField
-
-            label="Address"
-
-            placeholder="
-              Enter substation address
-            "
-
             fullWidth
 
             multiline
 
             rows={3}
 
+            label="Description"
+
+            placeholder="Enter band description"
 
             value={
-              form.address
+              form.description
             }
-
 
             onChange={(e) =>
 
               handleChange(
-
-                "address",
-
+                "description",
                 e.target.value
-
               )
 
             }
-
           />
 
 
-          {/* STATUS */}
+          {/* BASELINE HOURS */}
+
+          <TextField
+            fullWidth
+
+            required
+
+            type="number"
+
+            label="Baseline Hours"
+
+            placeholder="e.g. 417.6"
+
+            inputProps={{
+              min: 0,
+              step: "0.01",
+            }}
+
+            value={
+              form.baseline_hours
+            }
+
+            onChange={(e) =>
+
+              handleChange(
+                "baseline_hours",
+                e.target.value
+              )
+
+            }
+          />
+
+
+          {/* ACTIVE */}
 
           <FormControlLabel
 
@@ -415,15 +374,11 @@ SubstationFormModal({
                   form.is_active
                 }
 
-
                 onChange={(e) =>
 
                   handleChange(
-
                     "is_active",
-
                     e.target.checked
-
                   )
 
                 }
@@ -432,16 +387,7 @@ SubstationFormModal({
 
             }
 
-
-            label={
-
-              form.is_active
-
-                ? "Active"
-
-                : "Inactive"
-
-            }
+            label="Active"
 
           />
 
@@ -452,18 +398,16 @@ SubstationFormModal({
       </DialogContent>
 
 
-      {/* ========================= */}
       {/* ACTIONS */}
-      {/* ========================= */}
 
       <DialogActions>
 
 
         <Button
 
-          onClick={onClose}
-
           disabled={loading}
+
+          onClick={onClose}
 
         >
 
@@ -476,29 +420,24 @@ SubstationFormModal({
 
           variant="contained"
 
-          onClick={
-            handleSubmit
-          }
-
           disabled={loading}
+
+          onClick={handleSubmit}
 
         >
 
-
           {
-
             loading
 
               ? "Saving..."
 
-              : substation
+              : band
 
-                ? "Update Substation"
+                ? "Update Band"
 
-                : "Create Substation"
+                : "Create Band"
 
           }
-
 
         </Button>
 

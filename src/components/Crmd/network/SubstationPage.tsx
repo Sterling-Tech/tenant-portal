@@ -1,110 +1,59 @@
 import {
-
   Button,
-
   Card,
-
   Chip,
-
   IconButton,
-
   InputAdornment,
-
   Stack,
-
   TextField,
-
   Typography,
-
 } from "@mui/material";
 
 import Box from "@mui/material/Box";
 
+import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 import {
-
   useEffect,
-
   useState,
-
 } from "react";
 
-
 import {
-
   useMutation,
-
   useQuery,
-
   useQueryClient,
-
 } from "@tanstack/react-query";
 
-
-import SearchIcon from
-  "@mui/icons-material/Search";
-
-import AddIcon from
-  "@mui/icons-material/Add";
-
-import EditIcon from
-  "@mui/icons-material/Edit";
-
-import DeleteIcon from
-  "@mui/icons-material/Delete";
-
+import { toast } from "react-toastify";
 
 import {
+  Substation,
+  SubstationPayload,
+  createSubstation,
+  deleteSubstation,
+  getSubstations,
+  updateSubstation,
+} from "../../../services/crmdService";
 
-  ServiceUnit,
-
-  ServiceUnitPayload,
-
-  createServiceUnit,
-
-  deleteServiceUnit,
-
-  getServiceUnits,
-
-  updateServiceUnit,
-
-} from "../../services/crmdService";
-
-
-import {
-
-  toast
-
-} from "react-toastify";
-
-
-import {
-
-  getErrorMessage
-
-} from "../../utils/getErrorMessage";
-
-
-import ServiceUnitFormModal
-  from "./ServiceUnitFormModal";
-import DeleteServiceUnitDialog from "./DeleteServiceUnitDialog";
-
-
+import { getErrorMessage } from "../../../utils/getErrorMessage";
+import SubstationFormModal from "./SubstationFormModal";
+import DeleteSubstationDialog from "./DeleteSubstationDialog";
 
 const PAGE_SIZE = 10;
 
 
-export default function ServiceUnitPage() {
-
+export default function SubstationPage() {
 
   const queryClient =
     useQueryClient();
 
 
-  // =========================
-  // STATE
-  // =========================
-
+  // ===================================
+  // LOCAL STATE
+  // ===================================
 
   const [search, setSearch] =
     useState("");
@@ -125,46 +74,33 @@ export default function ServiceUnitPage() {
 
 
   const [
-
-    editingServiceUnit,
-
-    setEditingServiceUnit,
-
-  ] = useState<ServiceUnit | null>(
+    editingSubstation,
+    setEditingSubstation,
+  ] = useState<Substation | null>(
     null
   );
 
 
   const [
-
-    deletingServiceUnit,
-
-    setDeletingServiceUnit,
-
-  ] = useState<ServiceUnit | null>(
+    deletingSubstation,
+    setDeletingSubstation,
+  ] = useState<Substation | null>(
     null
   );
 
 
-  // =========================
+  // ===================================
   // DEBOUNCE SEARCH
-  // =========================
-
+  // ===================================
 
   useEffect(() => {
-
 
     const timer =
       setTimeout(() => {
 
-
-        setDebouncedSearch(
-          search
-        );
-
+        setDebouncedSearch(search);
 
         setPage(1);
-
 
       }, 400);
 
@@ -172,33 +108,24 @@ export default function ServiceUnitPage() {
     return () =>
       clearTimeout(timer);
 
-
   }, [search]);
 
 
-  // =========================
-  // FETCH SERVICE UNITS
-  // =========================
-
+  // ===================================
+  // FETCH SUBSTATIONS
+  // ===================================
 
   const {
-
     data,
-
     isLoading,
-
     isFetching,
-
     isError,
-
     error,
-
   } = useQuery({
-
 
     queryKey: [
 
-      "service-units",
+      "substations",
 
       debouncedSearch,
 
@@ -210,8 +137,7 @@ export default function ServiceUnitPage() {
 
 
     queryFn: () =>
-
-      getServiceUnits(
+      getSubstations(
 
         debouncedSearch,
 
@@ -221,32 +147,22 @@ export default function ServiceUnitPage() {
 
       ),
 
-
   });
 
 
-  // =========================
+  // ===================================
   // FETCH ERROR
-  // =========================
-
+  // ===================================
 
   useEffect(() => {
 
-
     if (isError) {
 
-
       toast.error(
-
-        getErrorMessage(
-          error
-        )
-
+        getErrorMessage(error)
       );
 
-
     }
-
 
   }, [
 
@@ -257,13 +173,11 @@ export default function ServiceUnitPage() {
   ]);
 
 
-  // =========================
+  // ===================================
   // NORMALIZE RESPONSE
-  // =========================
+  // ===================================
 
-
-  const serviceUnits =
-
+  const substations =
     Array.isArray(data)
 
       ? data
@@ -272,7 +186,6 @@ export default function ServiceUnitPage() {
 
 
   const totalCount =
-
     Array.isArray(data)
 
       ? data.length
@@ -287,94 +200,66 @@ export default function ServiceUnitPage() {
       1,
 
       Math.ceil(
-
         totalCount /
-
         PAGE_SIZE
-
       )
 
     );
 
 
-  // =========================
-  // CREATE
-  // =========================
+  // ===================================
+  // CREATE SUBSTATION
+  // ===================================
 
-
-  const createServiceUnitMutation =
+  const createSubstationMutation =
 
     useMutation({
 
-
       mutationFn:
-
-        createServiceUnit,
+        createSubstation,
 
 
       onSuccess: () => {
 
-
         toast.success(
-
-          "Service unit created successfully."
-
+          "Substation created successfully."
         );
 
 
-        setModalOpen(
-          false
-        );
+        setModalOpen(false);
 
 
         queryClient.invalidateQueries({
 
           queryKey:
-
-            ["service-units"],
+            ["substations"],
 
         });
 
-
       },
 
 
-      onError: (
+      onError: (error) => {
 
-        error
-
-      ) => {
-
-
-        console.error(
-          error
-        );
+        console.error(error);
 
 
         toast.error(
-
-          getErrorMessage(
-            error
-          )
-
+          getErrorMessage(error)
         );
 
-
       },
-
 
     });
 
 
-  // =========================
-  // UPDATE
-  // =========================
+  // ===================================
+  // UPDATE SUBSTATION
+  // ===================================
 
-
-  const updateServiceUnitMutation =
+  const updateSubstationMutation =
 
     useMutation({
-
 
       mutationFn: ({
 
@@ -385,14 +270,14 @@ export default function ServiceUnitPage() {
       }: {
 
         payload:
-          ServiceUnitPayload;
+          SubstationPayload;
 
         id:
           number;
 
       }) =>
 
-        updateServiceUnit(
+        updateSubstation(
 
           payload,
 
@@ -403,20 +288,15 @@ export default function ServiceUnitPage() {
 
       onSuccess: () => {
 
-
         toast.success(
-
-          "Service unit updated successfully."
-
+          "Substation updated successfully."
         );
 
 
-        setModalOpen(
-          false
-        );
+        setModalOpen(false);
 
 
-        setEditingServiceUnit(
+        setEditingSubstation(
           null
         );
 
@@ -424,263 +304,205 @@ export default function ServiceUnitPage() {
         queryClient.invalidateQueries({
 
           queryKey:
-
-            ["service-units"],
+            ["substations"],
 
         });
 
-
       },
 
 
-      onError: (
+      onError: (error) => {
 
-        error
-
-      ) => {
-
-
-        console.error(
-          error
-        );
+        console.error(error);
 
 
         toast.error(
-
-          getErrorMessage(
-            error
-          )
-
+          getErrorMessage(error)
         );
 
-
       },
-
 
     });
 
 
-  // =========================
-  // DELETE
-  // =========================
+  // ===================================
+  // DELETE SUBSTATION
+  // ===================================
 
-
-  const deleteServiceUnitMutation =
+  const deleteSubstationMutation =
 
     useMutation({
 
-
       mutationFn:
-
-        deleteServiceUnit,
+        deleteSubstation,
 
 
       onSuccess: () => {
 
-
         toast.success(
-
-          "Service unit deleted successfully."
-
+          "Substation deleted successfully."
         );
 
 
-        setDeletingServiceUnit(
+        setDeletingSubstation(
           null
         );
 
 
         /*
-          Move back one page
-          when deleting the
-          only item
+          If we delete the
+          last item on a page,
+          move to previous page.
         */
-
 
         if (
 
-          serviceUnits.length === 1 &&
+          substations.length === 1 &&
 
           page > 1
 
         ) {
 
-
           setPage(
 
             (prev) =>
-
               prev - 1
 
           );
 
-
         } else {
-
 
           queryClient.invalidateQueries({
 
             queryKey:
-
-              ["service-units"],
+              ["substations"],
 
           });
 
-
         }
-
 
       },
 
 
       onError: (
-
         error: any
-
       ) => {
-
 
         const status =
 
           error?.response?.status;
 
 
-        if (
-
-          status === 409
-
-        ) {
-
+        if (status === 409) {
 
           toast.error(
 
-            "This service unit is being used by other records. Please deactivate it instead."
+            "This substation is being used by other records. Please deactivate it instead."
 
           );
-
 
         } else {
 
-
           toast.error(
 
-            getErrorMessage(
-              error
-            )
+            getErrorMessage(error)
 
           );
 
-
         }
 
-
       },
-
 
     });
 
 
-  // =========================
-  // SUBMIT
-  // =========================
-
+  // ===================================
+  // SUBMIT FORM
+  // ===================================
 
   const handleSubmit = (
 
     payload:
-      ServiceUnitPayload
+      SubstationPayload
 
   ) => {
 
 
     if (
-
-      editingServiceUnit
-
+      editingSubstation
     ) {
 
-
-      updateServiceUnitMutation.mutate({
+      updateSubstationMutation.mutate({
 
         payload,
 
         id:
-
-          editingServiceUnit.id,
+          editingSubstation.id,
 
       });
 
-
     } else {
 
-
-      createServiceUnitMutation.mutate(
+      createSubstationMutation.mutate(
 
         payload
 
       );
 
-
     }
-
 
   };
 
 
-  // =========================
+  // ===================================
   // DELETE
-  // =========================
-
+  // ===================================
 
   const handleDelete = () => {
 
-
     if (
-
-      !deletingServiceUnit
-
+      !deletingSubstation
     )
-
       return;
 
 
-    deleteServiceUnitMutation.mutate(
+    deleteSubstationMutation.mutate(
 
-      deletingServiceUnit.id
+      deletingSubstation.id
 
     );
-
 
   };
 
 
-  // =========================
+  // ===================================
   // LOADING STATES
-  // =========================
-
+  // ===================================
 
   const saving =
 
-    createServiceUnitMutation.isPending ||
+    createSubstationMutation.isPending ||
 
-    updateServiceUnitMutation.isPending;
+    updateSubstationMutation.isPending;
 
 
   const deleting =
 
-    deleteServiceUnitMutation.isPending;
+    deleteSubstationMutation.isPending;
 
+
+  // ===================================
+  // RENDER
+  // ===================================
 
   return (
-
 
     <Box>
 
 
-      {/* ========================= */}
+      {/* ============================= */}
       {/* HEADER */}
-      {/* ========================= */}
-
+      {/* ============================= */}
 
       <Stack
 
@@ -706,7 +528,7 @@ export default function ServiceUnitPage() {
 
           >
 
-            Service Units
+            Injection Substations
 
           </Typography>
 
@@ -719,8 +541,8 @@ export default function ServiceUnitPage() {
 
           >
 
-            Manage service units
-            and their business units.
+            Manage injection substations
+            and their locations.
 
           </Typography>
 
@@ -733,26 +555,20 @@ export default function ServiceUnitPage() {
           variant="contained"
 
           startIcon={
-
             <AddIcon />
-
           }
 
 
           onClick={() => {
 
 
-            setEditingServiceUnit(
-
+            setEditingSubstation(
               null
-
             );
 
 
             setModalOpen(
-
               true
-
             );
 
 
@@ -760,7 +576,7 @@ export default function ServiceUnitPage() {
 
         >
 
-          Add Service Unit
+          Add Substation
 
         </Button>
 
@@ -768,10 +584,9 @@ export default function ServiceUnitPage() {
       </Stack>
 
 
-      {/* ========================= */}
+      {/* ============================= */}
       {/* SEARCH */}
-      {/* ========================= */}
-
+      {/* ============================= */}
 
       <TextField
 
@@ -781,24 +596,18 @@ export default function ServiceUnitPage() {
 
 
         placeholder="
-          Search service unit
+          Search substation
           by name or code...
         "
 
 
-        value={
-
-          search
-
-        }
+        value={search}
 
 
         onChange={(e) =>
 
           setSearch(
-
             e.target.value
-
           )
 
         }
@@ -822,18 +631,15 @@ export default function ServiceUnitPage() {
 
 
         sx={{
-
           mb: 2,
-
         }}
 
       />
 
 
-      {/* ========================= */}
+      {/* ============================= */}
       {/* TABLE */}
-      {/* ========================= */}
-
+      {/* ============================= */}
 
       <Card
 
@@ -851,9 +657,7 @@ export default function ServiceUnitPage() {
         <Box
 
           sx={{
-
             overflowX: "auto",
-
           }}
 
         >
@@ -866,7 +670,6 @@ export default function ServiceUnitPage() {
               width: "100%",
 
               borderCollapse:
-
                 "collapse",
 
             }}
@@ -874,8 +677,9 @@ export default function ServiceUnitPage() {
           >
 
 
+            {/* ===================== */}
             {/* TABLE HEADER */}
-
+            {/* ===================== */}
 
             <thead>
 
@@ -885,7 +689,6 @@ export default function ServiceUnitPage() {
                 style={{
 
                   background:
-
                     "#F8FAFC",
 
                 }}
@@ -900,14 +703,13 @@ export default function ServiceUnitPage() {
                     padding: 14,
 
                     textAlign:
-
                       "left",
 
                   }}
 
                 >
 
-                  Service Unit
+                  Substation
 
                 </th>
 
@@ -919,7 +721,6 @@ export default function ServiceUnitPage() {
                     padding: 14,
 
                     textAlign:
-
                       "left",
 
                   }}
@@ -938,14 +739,13 @@ export default function ServiceUnitPage() {
                     padding: 14,
 
                     textAlign:
-
                       "left",
 
                   }}
 
                 >
 
-                  Business Unit
+                  Address
 
                 </th>
 
@@ -957,26 +757,6 @@ export default function ServiceUnitPage() {
                     padding: 14,
 
                     textAlign:
-
-                      "left",
-
-                  }}
-
-                >
-
-                  Region
-
-                </th>
-
-
-                <th
-
-                  style={{
-
-                    padding: 14,
-
-                    textAlign:
-
                       "left",
 
                   }}
@@ -1009,11 +789,14 @@ export default function ServiceUnitPage() {
             </thead>
 
 
+            {/* ===================== */}
             {/* TABLE BODY */}
-
+            {/* ===================== */}
 
             <tbody>
 
+
+              {/* Loading */}
 
               {isLoading ? (
 
@@ -1023,21 +806,21 @@ export default function ServiceUnitPage() {
 
                   <td
 
-                    colSpan={6}
+                    colSpan={5}
+
 
                     style={{
 
                       padding: 40,
 
                       textAlign:
-
                         "center",
 
                     }}
 
                   >
 
-                    Loading service units...
+                    Loading substations...
 
                   </td>
 
@@ -1045,7 +828,7 @@ export default function ServiceUnitPage() {
                 </tr>
 
 
-              ) : serviceUnits.length === 0 ? (
+              ) : substations.length === 0 ? (
 
 
                 <tr>
@@ -1053,21 +836,21 @@ export default function ServiceUnitPage() {
 
                   <td
 
-                    colSpan={6}
+                    colSpan={5}
+
 
                     style={{
 
                       padding: 40,
 
                       textAlign:
-
                         "center",
 
                     }}
 
                   >
 
-                    No service units found.
+                    No substations found.
 
                   </td>
 
@@ -1078,21 +861,17 @@ export default function ServiceUnitPage() {
               ) : (
 
 
-                serviceUnits.map(
+                substations.map(
 
                   (
-
-                    serviceUnit
-
+                    substation
                   ) => (
 
 
                     <tr
 
                       key={
-
-                        serviceUnit.id
-
+                        substation.id
                       }
 
 
@@ -1107,14 +886,16 @@ export default function ServiceUnitPage() {
                     >
 
 
+                      {/* ================= */}
                       {/* NAME */}
-
+                      {/* ================= */}
 
                       <td
 
                         style={{
 
-                          padding: 14,
+                          padding:
+                            14,
 
                         }}
 
@@ -1128,9 +909,7 @@ export default function ServiceUnitPage() {
                         >
 
                           {
-
-                            serviceUnit.name
-
+                            substation.name
                           }
 
                         </Typography>
@@ -1139,14 +918,16 @@ export default function ServiceUnitPage() {
                       </td>
 
 
+                      {/* ================= */}
                       {/* CODE */}
-
+                      {/* ================= */}
 
                       <td
 
                         style={{
 
-                          padding: 14,
+                          padding:
+                            14,
 
                         }}
 
@@ -1156,9 +937,7 @@ export default function ServiceUnitPage() {
                         <Chip
 
                           label={
-
-                            serviceUnit.code
-
+                            substation.code
                           }
 
                           size="small"
@@ -1169,122 +948,38 @@ export default function ServiceUnitPage() {
                       </td>
 
 
-                      {/* BUSINESS UNIT */}
-
-
-                      <td
-
-                        style={{
-
-                          padding: 14,
-
-                        }}
-
-                      >
-
-
-                        <Typography
-
-                          fontWeight={500}
-
-                        >
-
-                          {
-
-                            serviceUnit
-                              .business_unit
-                              ?.name
-
-                          }
-
-                        </Typography>
-
-
-                        <Typography
-
-                          fontSize={11}
-
-                          color="text.secondary"
-
-                        >
-
-                          {
-
-                            serviceUnit
-                              .business_unit
-                              ?.code
-
-                          }
-
-                        </Typography>
-
-
-                      </td>
-
-
-                      {/* REGION */}
-
+                      {/* ================= */}
+                      {/* ADDRESS */}
+                      {/* ================= */}
 
                       <td
 
                         style={{
 
-                          padding: 14,
+                          padding:
+                            14,
 
                         }}
 
                       >
 
-
-                        <Typography
-
-                          fontWeight={500}
-
-                        >
-
-                          {
-
-                            serviceUnit
-                              .business_unit
-                              ?.region
-                              ?.name
-
-                          }
-
-                        </Typography>
-
-
-                        <Typography
-
-                          fontSize={11}
-
-                          color="text.secondary"
-
-                        >
-
-                          {
-
-                            serviceUnit
-                              .business_unit
-                              ?.region
-                              ?.code
-
-                          }
-
-                        </Typography>
-
+                        {
+                          substation.address
+                        }
 
                       </td>
 
 
+                      {/* ================= */}
                       {/* STATUS */}
-
+                      {/* ================= */}
 
                       <td
 
                         style={{
 
-                          padding: 14,
+                          padding:
+                            14,
 
                         }}
 
@@ -1298,8 +993,7 @@ export default function ServiceUnitPage() {
 
                           label={
 
-                            serviceUnit
-                              .is_active
+                            substation.is_active
 
                               ? "Active"
 
@@ -1310,8 +1004,7 @@ export default function ServiceUnitPage() {
 
                           color={
 
-                            serviceUnit
-                              .is_active
+                            substation.is_active
 
                               ? "success"
 
@@ -1325,23 +1018,26 @@ export default function ServiceUnitPage() {
                       </td>
 
 
+                      {/* ================= */}
                       {/* ACTIONS */}
-
+                      {/* ================= */}
 
                       <td
 
                         style={{
 
-                          padding: 14,
+                          padding:
+                            14,
 
                           textAlign:
-
                             "center",
 
                         }}
 
                       >
 
+
+                        {/* EDIT */}
 
                         <IconButton
 
@@ -1351,17 +1047,15 @@ export default function ServiceUnitPage() {
                           onClick={() => {
 
 
-                            setEditingServiceUnit(
+                            setEditingSubstation(
 
-                              serviceUnit
+                              substation
 
                             );
 
 
                             setModalOpen(
-
                               true
-
                             );
 
 
@@ -1370,13 +1064,13 @@ export default function ServiceUnitPage() {
                         >
 
                           <EditIcon
-
                             fontSize="small"
-
                           />
 
                         </IconButton>
 
+
+                        {/* DELETE */}
 
                         <IconButton
 
@@ -1388,20 +1082,19 @@ export default function ServiceUnitPage() {
                           onClick={() =>
 
 
-                            setDeletingServiceUnit(
+                            setDeletingSubstation(
 
-                              serviceUnit
+                              substation
 
                             )
+
 
                           }
 
                         >
 
                           <DeleteIcon
-
                             fontSize="small"
-
                           />
 
                         </IconButton>
@@ -1432,237 +1125,196 @@ export default function ServiceUnitPage() {
       </Card>
 
 
-      {/* ========================= */}
+      {/* ============================= */}
       {/* PAGINATION */}
-      {/* ========================= */}
+      {/* ============================= */}
+
+      <Box
+
+        sx={{
+
+          display:
+            "flex",
+
+          justifyContent:
+            "space-between",
+
+          alignItems:
+            "center",
+
+          mt: 2,
+
+        }}
+
+      >
 
 
-      {
+        <Typography
 
-        totalPages > 1 && (
+          fontSize={13}
+
+          color="text.secondary"
+
+        >
+
+          Showing page{" "}
+
+          {page}
+
+          {" "}of{" "}
+
+          {totalPages}
+
+          {" "}({totalCount} total)
+
+        </Typography>
 
 
-          <Box
+        <Stack
 
-            sx={{
+          direction="row"
 
-              display:
+          spacing={1}
 
-                "flex",
+        >
 
-              justifyContent:
 
-                "space-between",
+          {/* PREVIOUS */}
 
-              alignItems:
+          <Button
 
-                "center",
+            size="small"
 
-              mt: 2,
 
-            }}
+            disabled={
+
+              page === 1 ||
+
+              isFetching
+
+            }
+
+
+            onClick={() =>
+
+              setPage(
+
+                (prev) =>
+                  prev - 1
+
+              )
+
+            }
 
           >
 
+            Previous
 
-            <Typography
+          </Button>
 
-              fontSize={13}
 
-              color="text.secondary"
+          {/* NEXT */}
 
-            >
+          <Button
 
-              Showing page{" "}
+            size="small"
 
-              {page}
 
-              {" "}of{" "}
+            disabled={
 
-              {totalPages}
+              page >= totalPages ||
 
-              {" "}({totalCount} total)
+              isFetching
 
+            }
+            onClick={() =>
 
-            </Typography>
+              setPage(
 
+                (prev) =>
+                  prev + 1
 
-            <Stack
+              )
 
-              direction="row"
+            }
 
-              spacing={1}
+          >
 
-            >
+            Next
 
+          </Button>
 
-              <Button
 
-                size="small"
+        </Stack>
 
 
-                disabled={
+      </Box>
 
-                  page === 1 ||
 
-                  isFetching
+      {/* ============================= */}
+      {/* CREATE / EDIT MODAL */}
+      {/* ============================= */}
 
-                }
+      <SubstationFormModal
 
-
-                onClick={() =>
-
-                  setPage(
-
-                    (prev) =>
-
-                      prev - 1
-
-                  )
-
-                }
-
-              >
-
-                Previous
-
-              </Button>
-
-
-              <Button
-
-                size="small"
-
-
-                disabled={
-
-                  page >= totalPages ||
-
-                  isFetching
-
-                }
-
-
-                onClick={() =>
-
-                  setPage(
-
-                    (prev) =>
-
-                      prev + 1
-
-                  )
-
-                }
-
-              >
-
-                Next
-
-              </Button>
-
-
-            </Stack>
-
-
-          </Box>
-
-
-        )
-
-      }
-
-
-      {/* ========================= */}
-      {/* FORM MODAL */}
-      {/* ========================= */}
-
-
-      <ServiceUnitFormModal
-
-        open={
-
-          modalOpen
-
-        }
+        open={modalOpen}
 
 
         onClose={() => {
 
 
-          setModalOpen(
-
-            false
-
-          );
+          setModalOpen(false);
 
 
-          setEditingServiceUnit(
-
+          setEditingSubstation(
             null
-
           );
 
 
         }}
 
 
-        serviceUnit={
-
-          editingServiceUnit
-
+        substation={
+          editingSubstation
         }
 
 
         loading={
-
           saving
-
         }
 
-
         onSubmit={
-
           handleSubmit
-
         }
 
       />
 
+      {/* ============================= */}
+      {/* DELETE DIALOG */}
+      {/* ============================= */}
 
-      {/* ========================= */}
-      {/* DELETE MODAL */}
-      {/* ========================= */}
-
-
-      <DeleteServiceUnitDialog
+      <DeleteSubstationDialog
 
         open={
-
           Boolean(
-            deletingServiceUnit
+            deletingSubstation
           )
-
         }
 
 
-        serviceUnit={
-
-          deletingServiceUnit
-
+        substation={
+          deletingSubstation
         }
 
 
         loading={
-
           deleting
-
         }
 
 
         onClose={() =>
 
-          setDeletingServiceUnit(
+          setDeletingSubstation(
             null
           )
 
@@ -1670,16 +1322,13 @@ export default function ServiceUnitPage() {
 
 
         onConfirm={
-
           handleDelete
-
         }
 
       />
 
 
     </Box>
-
 
   );
 

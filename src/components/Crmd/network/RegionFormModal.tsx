@@ -12,7 +12,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Region, RegionPayload } from "../../services/crmdService";
+import { Region, RegionPayload } from "../../../services/crmdService";
 
 
 interface RegionFormModalProps {

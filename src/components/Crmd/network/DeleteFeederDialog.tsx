@@ -14,19 +14,19 @@ import {
 
 } from "@mui/material";
 
+
 import {
 
-  Substation,
+  Feeder,
 
-} from "../../services/crmdService";
+} from "../../../services/crmdService";
 
 
 interface Props {
 
   open: boolean;
 
-  substation:
-    Substation | null;
+  feeder: Feeder | null;
 
   loading: boolean;
 
@@ -37,12 +37,11 @@ interface Props {
 }
 
 
-export default function
-DeleteSubstationDialog({
+export default function DeleteFeederDialog({
 
   open,
 
-  substation,
+  feeder,
 
   loading,
 
@@ -55,38 +54,27 @@ DeleteSubstationDialog({
 
   return (
 
+
     <Dialog
 
       open={open}
 
-
       onClose={
-
         loading
-
           ? undefined
-
           : onClose
-
       }
-
-      maxWidth="xs"
-
-      fullWidth
 
     >
 
 
-      {/* TITLE */}
-
       <DialogTitle>
 
-        Delete Substation
+        Delete Feeder
 
       </DialogTitle>
 
 
-      {/* CONTENT */}
 
       <DialogContent>
 
@@ -94,16 +82,14 @@ DeleteSubstationDialog({
         <DialogContentText>
 
 
-          Are you sure you want
-          to delete
+          Are you sure you want to
+          delete{" "}
 
 
           <strong>
 
-            {" "}
-
             {
-              substation?.name
+              feeder?.name
             }
 
           </strong>
@@ -117,8 +103,7 @@ DeleteSubstationDialog({
           <br />
 
 
-          This action cannot
-          be undone.
+          This action cannot be undone.
 
 
         </DialogContentText>
@@ -127,16 +112,15 @@ DeleteSubstationDialog({
       </DialogContent>
 
 
-      {/* ACTIONS */}
 
       <DialogActions>
 
 
         <Button
 
-          onClick={onClose}
-
           disabled={loading}
+
+          onClick={onClose}
 
         >
 
@@ -145,18 +129,18 @@ DeleteSubstationDialog({
         </Button>
 
 
+
         <Button
 
           variant="contained"
 
           color="error"
 
-          onClick={onConfirm}
-
           disabled={loading}
 
-        >
+          onClick={onConfirm}
 
+        >
 
           {
 
@@ -168,7 +152,6 @@ DeleteSubstationDialog({
 
           }
 
-
         </Button>
 
 
@@ -176,6 +159,7 @@ DeleteSubstationDialog({
 
 
     </Dialog>
+
 
   );
 

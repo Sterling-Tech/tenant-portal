@@ -1,59 +1,110 @@
 import {
+
   Button,
+
   Card,
+
   Chip,
+
   IconButton,
+
   InputAdornment,
+
   Stack,
+
   TextField,
+
   Typography,
+
 } from "@mui/material";
 
 import Box from "@mui/material/Box";
 
-import SearchIcon from "@mui/icons-material/Search";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 
 import {
+
   useEffect,
+
   useState,
+
 } from "react";
 
+
 import {
+
   useMutation,
+
   useQuery,
+
   useQueryClient,
+
 } from "@tanstack/react-query";
 
-import { toast } from "react-toastify";
+
+import SearchIcon from
+  "@mui/icons-material/Search";
+
+import AddIcon from
+  "@mui/icons-material/Add";
+
+import EditIcon from
+  "@mui/icons-material/Edit";
+
+import DeleteIcon from
+  "@mui/icons-material/Delete";
+
 
 import {
-  Substation,
-  SubstationPayload,
-  createSubstation,
-  deleteSubstation,
-  getSubstations,
-  updateSubstation,
-} from "../../services/crmdService";
 
-import { getErrorMessage } from "../../utils/getErrorMessage";
-import SubstationFormModal from "./SubstationFormModal";
-import DeleteSubstationDialog from "./DeleteSubstationDialog";
+  ServiceUnit,
+
+  ServiceUnitPayload,
+
+  createServiceUnit,
+
+  deleteServiceUnit,
+
+  getServiceUnits,
+
+  updateServiceUnit,
+
+} from "../../../services/crmdService";
+
+
+import {
+
+  toast
+
+} from "react-toastify";
+
+
+import {
+
+  getErrorMessage
+
+} from "../../../utils/getErrorMessage";
+
+
+import ServiceUnitFormModal
+  from "./ServiceUnitFormModal";
+import DeleteServiceUnitDialog from "./DeleteServiceUnitDialog";
+
+
 
 const PAGE_SIZE = 10;
 
 
-export default function SubstationPage() {
+export default function ServiceUnitPage() {
+
 
   const queryClient =
     useQueryClient();
 
 
-  // ===================================
-  // LOCAL STATE
-  // ===================================
+  // =========================
+  // STATE
+  // =========================
+
 
   const [search, setSearch] =
     useState("");
@@ -74,33 +125,46 @@ export default function SubstationPage() {
 
 
   const [
-    editingSubstation,
-    setEditingSubstation,
-  ] = useState<Substation | null>(
+
+    editingServiceUnit,
+
+    setEditingServiceUnit,
+
+  ] = useState<ServiceUnit | null>(
     null
   );
 
 
   const [
-    deletingSubstation,
-    setDeletingSubstation,
-  ] = useState<Substation | null>(
+
+    deletingServiceUnit,
+
+    setDeletingServiceUnit,
+
+  ] = useState<ServiceUnit | null>(
     null
   );
 
 
-  // ===================================
+  // =========================
   // DEBOUNCE SEARCH
-  // ===================================
+  // =========================
+
 
   useEffect(() => {
+
 
     const timer =
       setTimeout(() => {
 
-        setDebouncedSearch(search);
+
+        setDebouncedSearch(
+          search
+        );
+
 
         setPage(1);
+
 
       }, 400);
 
@@ -108,24 +172,33 @@ export default function SubstationPage() {
     return () =>
       clearTimeout(timer);
 
+
   }, [search]);
 
 
-  // ===================================
-  // FETCH SUBSTATIONS
-  // ===================================
+  // =========================
+  // FETCH SERVICE UNITS
+  // =========================
+
 
   const {
+
     data,
+
     isLoading,
+
     isFetching,
+
     isError,
+
     error,
+
   } = useQuery({
+
 
     queryKey: [
 
-      "substations",
+      "service-units",
 
       debouncedSearch,
 
@@ -137,7 +210,8 @@ export default function SubstationPage() {
 
 
     queryFn: () =>
-      getSubstations(
+
+      getServiceUnits(
 
         debouncedSearch,
 
@@ -147,22 +221,32 @@ export default function SubstationPage() {
 
       ),
 
+
   });
 
 
-  // ===================================
+  // =========================
   // FETCH ERROR
-  // ===================================
+  // =========================
+
 
   useEffect(() => {
 
+
     if (isError) {
 
+
       toast.error(
-        getErrorMessage(error)
+
+        getErrorMessage(
+          error
+        )
+
       );
 
+
     }
+
 
   }, [
 
@@ -173,11 +257,13 @@ export default function SubstationPage() {
   ]);
 
 
-  // ===================================
+  // =========================
   // NORMALIZE RESPONSE
-  // ===================================
+  // =========================
 
-  const substations =
+
+  const serviceUnits =
+
     Array.isArray(data)
 
       ? data
@@ -186,6 +272,7 @@ export default function SubstationPage() {
 
 
   const totalCount =
+
     Array.isArray(data)
 
       ? data.length
@@ -200,66 +287,94 @@ export default function SubstationPage() {
       1,
 
       Math.ceil(
+
         totalCount /
+
         PAGE_SIZE
+
       )
 
     );
 
 
-  // ===================================
-  // CREATE SUBSTATION
-  // ===================================
+  // =========================
+  // CREATE
+  // =========================
 
-  const createSubstationMutation =
+
+  const createServiceUnitMutation =
 
     useMutation({
 
+
       mutationFn:
-        createSubstation,
+
+        createServiceUnit,
 
 
       onSuccess: () => {
 
+
         toast.success(
-          "Substation created successfully."
+
+          "Service unit created successfully."
+
         );
 
 
-        setModalOpen(false);
+        setModalOpen(
+          false
+        );
 
 
         queryClient.invalidateQueries({
 
           queryKey:
-            ["substations"],
+
+            ["service-units"],
 
         });
 
+
       },
 
 
-      onError: (error) => {
+      onError: (
 
-        console.error(error);
+        error
+
+      ) => {
+
+
+        console.error(
+          error
+        );
 
 
         toast.error(
-          getErrorMessage(error)
+
+          getErrorMessage(
+            error
+          )
+
         );
 
+
       },
+
 
     });
 
 
-  // ===================================
-  // UPDATE SUBSTATION
-  // ===================================
+  // =========================
+  // UPDATE
+  // =========================
 
-  const updateSubstationMutation =
+
+  const updateServiceUnitMutation =
 
     useMutation({
+
 
       mutationFn: ({
 
@@ -270,14 +385,14 @@ export default function SubstationPage() {
       }: {
 
         payload:
-          SubstationPayload;
+          ServiceUnitPayload;
 
         id:
           number;
 
       }) =>
 
-        updateSubstation(
+        updateServiceUnit(
 
           payload,
 
@@ -288,15 +403,20 @@ export default function SubstationPage() {
 
       onSuccess: () => {
 
+
         toast.success(
-          "Substation updated successfully."
+
+          "Service unit updated successfully."
+
         );
 
 
-        setModalOpen(false);
+        setModalOpen(
+          false
+        );
 
 
-        setEditingSubstation(
+        setEditingServiceUnit(
           null
         );
 
@@ -304,205 +424,263 @@ export default function SubstationPage() {
         queryClient.invalidateQueries({
 
           queryKey:
-            ["substations"],
+
+            ["service-units"],
 
         });
 
-      },
-
-
-      onError: (error) => {
-
-        console.error(error);
-
-
-        toast.error(
-          getErrorMessage(error)
-        );
-
-      },
-
-    });
-
-
-  // ===================================
-  // DELETE SUBSTATION
-  // ===================================
-
-  const deleteSubstationMutation =
-
-    useMutation({
-
-      mutationFn:
-        deleteSubstation,
-
-
-      onSuccess: () => {
-
-        toast.success(
-          "Substation deleted successfully."
-        );
-
-
-        setDeletingSubstation(
-          null
-        );
-
-
-        /*
-          If we delete the
-          last item on a page,
-          move to previous page.
-        */
-
-        if (
-
-          substations.length === 1 &&
-
-          page > 1
-
-        ) {
-
-          setPage(
-
-            (prev) =>
-              prev - 1
-
-          );
-
-        } else {
-
-          queryClient.invalidateQueries({
-
-            queryKey:
-              ["substations"],
-
-          });
-
-        }
 
       },
 
 
       onError: (
-        error: any
+
+        error
+
       ) => {
+
+
+        console.error(
+          error
+        );
+
+
+        toast.error(
+
+          getErrorMessage(
+            error
+          )
+
+        );
+
+
+      },
+
+
+    });
+
+
+  // =========================
+  // DELETE
+  // =========================
+
+
+  const deleteServiceUnitMutation =
+
+    useMutation({
+
+
+      mutationFn:
+
+        deleteServiceUnit,
+
+
+      onSuccess: () => {
+
+
+        toast.success(
+
+          "Service unit deleted successfully."
+
+        );
+
+
+        setDeletingServiceUnit(
+          null
+        );
+
+
+        /*
+          Move back one page
+          when deleting the
+          only item
+        */
+
+
+        if (
+
+          serviceUnits.length === 1 &&
+
+          page > 1
+
+        ) {
+
+
+          setPage(
+
+            (prev) =>
+
+              prev - 1
+
+          );
+
+
+        } else {
+
+
+          queryClient.invalidateQueries({
+
+            queryKey:
+
+              ["service-units"],
+
+          });
+
+
+        }
+
+
+      },
+
+
+      onError: (
+
+        error: any
+
+      ) => {
+
 
         const status =
 
           error?.response?.status;
 
 
-        if (status === 409) {
+        if (
+
+          status === 409
+
+        ) {
+
 
           toast.error(
 
-            "This substation is being used by other records. Please deactivate it instead."
+            "This service unit is being used by other records. Please deactivate it instead."
 
           );
+
 
         } else {
 
+
           toast.error(
 
-            getErrorMessage(error)
+            getErrorMessage(
+              error
+            )
 
           );
 
+
         }
 
+
       },
+
 
     });
 
 
-  // ===================================
-  // SUBMIT FORM
-  // ===================================
+  // =========================
+  // SUBMIT
+  // =========================
+
 
   const handleSubmit = (
 
     payload:
-      SubstationPayload
+      ServiceUnitPayload
 
   ) => {
 
 
     if (
-      editingSubstation
+
+      editingServiceUnit
+
     ) {
 
-      updateSubstationMutation.mutate({
+
+      updateServiceUnitMutation.mutate({
 
         payload,
 
         id:
-          editingSubstation.id,
+
+          editingServiceUnit.id,
 
       });
 
+
     } else {
 
-      createSubstationMutation.mutate(
+
+      createServiceUnitMutation.mutate(
 
         payload
 
       );
 
+
     }
+
 
   };
 
 
-  // ===================================
+  // =========================
   // DELETE
-  // ===================================
+  // =========================
+
 
   const handleDelete = () => {
 
+
     if (
-      !deletingSubstation
+
+      !deletingServiceUnit
+
     )
+
       return;
 
 
-    deleteSubstationMutation.mutate(
+    deleteServiceUnitMutation.mutate(
 
-      deletingSubstation.id
+      deletingServiceUnit.id
 
     );
+
 
   };
 
 
-  // ===================================
+  // =========================
   // LOADING STATES
-  // ===================================
+  // =========================
+
 
   const saving =
 
-    createSubstationMutation.isPending ||
+    createServiceUnitMutation.isPending ||
 
-    updateSubstationMutation.isPending;
+    updateServiceUnitMutation.isPending;
 
 
   const deleting =
 
-    deleteSubstationMutation.isPending;
+    deleteServiceUnitMutation.isPending;
 
-
-  // ===================================
-  // RENDER
-  // ===================================
 
   return (
+
 
     <Box>
 
 
-      {/* ============================= */}
+      {/* ========================= */}
       {/* HEADER */}
-      {/* ============================= */}
+      {/* ========================= */}
+
 
       <Stack
 
@@ -528,7 +706,7 @@ export default function SubstationPage() {
 
           >
 
-            Injection Substations
+            Service Units
 
           </Typography>
 
@@ -541,8 +719,8 @@ export default function SubstationPage() {
 
           >
 
-            Manage injection substations
-            and their locations.
+            Manage service units
+            and their business units.
 
           </Typography>
 
@@ -555,20 +733,26 @@ export default function SubstationPage() {
           variant="contained"
 
           startIcon={
+
             <AddIcon />
+
           }
 
 
           onClick={() => {
 
 
-            setEditingSubstation(
+            setEditingServiceUnit(
+
               null
+
             );
 
 
             setModalOpen(
+
               true
+
             );
 
 
@@ -576,7 +760,7 @@ export default function SubstationPage() {
 
         >
 
-          Add Substation
+          Add Service Unit
 
         </Button>
 
@@ -584,9 +768,10 @@ export default function SubstationPage() {
       </Stack>
 
 
-      {/* ============================= */}
+      {/* ========================= */}
       {/* SEARCH */}
-      {/* ============================= */}
+      {/* ========================= */}
+
 
       <TextField
 
@@ -596,18 +781,24 @@ export default function SubstationPage() {
 
 
         placeholder="
-          Search substation
+          Search service unit
           by name or code...
         "
 
 
-        value={search}
+        value={
+
+          search
+
+        }
 
 
         onChange={(e) =>
 
           setSearch(
+
             e.target.value
+
           )
 
         }
@@ -631,15 +822,18 @@ export default function SubstationPage() {
 
 
         sx={{
+
           mb: 2,
+
         }}
 
       />
 
 
-      {/* ============================= */}
+      {/* ========================= */}
       {/* TABLE */}
-      {/* ============================= */}
+      {/* ========================= */}
+
 
       <Card
 
@@ -657,7 +851,9 @@ export default function SubstationPage() {
         <Box
 
           sx={{
+
             overflowX: "auto",
+
           }}
 
         >
@@ -670,6 +866,7 @@ export default function SubstationPage() {
               width: "100%",
 
               borderCollapse:
+
                 "collapse",
 
             }}
@@ -677,9 +874,8 @@ export default function SubstationPage() {
           >
 
 
-            {/* ===================== */}
             {/* TABLE HEADER */}
-            {/* ===================== */}
+
 
             <thead>
 
@@ -689,6 +885,7 @@ export default function SubstationPage() {
                 style={{
 
                   background:
+
                     "#F8FAFC",
 
                 }}
@@ -703,13 +900,14 @@ export default function SubstationPage() {
                     padding: 14,
 
                     textAlign:
+
                       "left",
 
                   }}
 
                 >
 
-                  Substation
+                  Service Unit
 
                 </th>
 
@@ -721,6 +919,7 @@ export default function SubstationPage() {
                     padding: 14,
 
                     textAlign:
+
                       "left",
 
                   }}
@@ -739,13 +938,14 @@ export default function SubstationPage() {
                     padding: 14,
 
                     textAlign:
+
                       "left",
 
                   }}
 
                 >
 
-                  Address
+                  Business Unit
 
                 </th>
 
@@ -757,6 +957,26 @@ export default function SubstationPage() {
                     padding: 14,
 
                     textAlign:
+
+                      "left",
+
+                  }}
+
+                >
+
+                  Region
+
+                </th>
+
+
+                <th
+
+                  style={{
+
+                    padding: 14,
+
+                    textAlign:
+
                       "left",
 
                   }}
@@ -789,14 +1009,11 @@ export default function SubstationPage() {
             </thead>
 
 
-            {/* ===================== */}
             {/* TABLE BODY */}
-            {/* ===================== */}
+
 
             <tbody>
 
-
-              {/* Loading */}
 
               {isLoading ? (
 
@@ -806,21 +1023,21 @@ export default function SubstationPage() {
 
                   <td
 
-                    colSpan={5}
-
+                    colSpan={6}
 
                     style={{
 
                       padding: 40,
 
                       textAlign:
+
                         "center",
 
                     }}
 
                   >
 
-                    Loading substations...
+                    Loading service units...
 
                   </td>
 
@@ -828,7 +1045,7 @@ export default function SubstationPage() {
                 </tr>
 
 
-              ) : substations.length === 0 ? (
+              ) : serviceUnits.length === 0 ? (
 
 
                 <tr>
@@ -836,21 +1053,21 @@ export default function SubstationPage() {
 
                   <td
 
-                    colSpan={5}
-
+                    colSpan={6}
 
                     style={{
 
                       padding: 40,
 
                       textAlign:
+
                         "center",
 
                     }}
 
                   >
 
-                    No substations found.
+                    No service units found.
 
                   </td>
 
@@ -861,17 +1078,21 @@ export default function SubstationPage() {
               ) : (
 
 
-                substations.map(
+                serviceUnits.map(
 
                   (
-                    substation
+
+                    serviceUnit
+
                   ) => (
 
 
                     <tr
 
                       key={
-                        substation.id
+
+                        serviceUnit.id
+
                       }
 
 
@@ -886,16 +1107,14 @@ export default function SubstationPage() {
                     >
 
 
-                      {/* ================= */}
                       {/* NAME */}
-                      {/* ================= */}
+
 
                       <td
 
                         style={{
 
-                          padding:
-                            14,
+                          padding: 14,
 
                         }}
 
@@ -909,7 +1128,9 @@ export default function SubstationPage() {
                         >
 
                           {
-                            substation.name
+
+                            serviceUnit.name
+
                           }
 
                         </Typography>
@@ -918,16 +1139,14 @@ export default function SubstationPage() {
                       </td>
 
 
-                      {/* ================= */}
                       {/* CODE */}
-                      {/* ================= */}
+
 
                       <td
 
                         style={{
 
-                          padding:
-                            14,
+                          padding: 14,
 
                         }}
 
@@ -937,7 +1156,9 @@ export default function SubstationPage() {
                         <Chip
 
                           label={
-                            substation.code
+
+                            serviceUnit.code
+
                           }
 
                           size="small"
@@ -948,38 +1169,122 @@ export default function SubstationPage() {
                       </td>
 
 
-                      {/* ================= */}
-                      {/* ADDRESS */}
-                      {/* ================= */}
+                      {/* BUSINESS UNIT */}
+
 
                       <td
 
                         style={{
 
-                          padding:
-                            14,
+                          padding: 14,
 
                         }}
 
                       >
 
-                        {
-                          substation.address
-                        }
+
+                        <Typography
+
+                          fontWeight={500}
+
+                        >
+
+                          {
+
+                            serviceUnit
+                              .business_unit
+                              ?.name
+
+                          }
+
+                        </Typography>
+
+
+                        <Typography
+
+                          fontSize={11}
+
+                          color="text.secondary"
+
+                        >
+
+                          {
+
+                            serviceUnit
+                              .business_unit
+                              ?.code
+
+                          }
+
+                        </Typography>
+
 
                       </td>
 
 
-                      {/* ================= */}
-                      {/* STATUS */}
-                      {/* ================= */}
+                      {/* REGION */}
+
 
                       <td
 
                         style={{
 
-                          padding:
-                            14,
+                          padding: 14,
+
+                        }}
+
+                      >
+
+
+                        <Typography
+
+                          fontWeight={500}
+
+                        >
+
+                          {
+
+                            serviceUnit
+                              .business_unit
+                              ?.region
+                              ?.name
+
+                          }
+
+                        </Typography>
+
+
+                        <Typography
+
+                          fontSize={11}
+
+                          color="text.secondary"
+
+                        >
+
+                          {
+
+                            serviceUnit
+                              .business_unit
+                              ?.region
+                              ?.code
+
+                          }
+
+                        </Typography>
+
+
+                      </td>
+
+
+                      {/* STATUS */}
+
+
+                      <td
+
+                        style={{
+
+                          padding: 14,
 
                         }}
 
@@ -993,7 +1298,8 @@ export default function SubstationPage() {
 
                           label={
 
-                            substation.is_active
+                            serviceUnit
+                              .is_active
 
                               ? "Active"
 
@@ -1004,7 +1310,8 @@ export default function SubstationPage() {
 
                           color={
 
-                            substation.is_active
+                            serviceUnit
+                              .is_active
 
                               ? "success"
 
@@ -1018,26 +1325,23 @@ export default function SubstationPage() {
                       </td>
 
 
-                      {/* ================= */}
                       {/* ACTIONS */}
-                      {/* ================= */}
+
 
                       <td
 
                         style={{
 
-                          padding:
-                            14,
+                          padding: 14,
 
                           textAlign:
+
                             "center",
 
                         }}
 
                       >
 
-
-                        {/* EDIT */}
 
                         <IconButton
 
@@ -1047,15 +1351,17 @@ export default function SubstationPage() {
                           onClick={() => {
 
 
-                            setEditingSubstation(
+                            setEditingServiceUnit(
 
-                              substation
+                              serviceUnit
 
                             );
 
 
                             setModalOpen(
+
                               true
+
                             );
 
 
@@ -1064,13 +1370,13 @@ export default function SubstationPage() {
                         >
 
                           <EditIcon
+
                             fontSize="small"
+
                           />
 
                         </IconButton>
 
-
-                        {/* DELETE */}
 
                         <IconButton
 
@@ -1082,19 +1388,20 @@ export default function SubstationPage() {
                           onClick={() =>
 
 
-                            setDeletingSubstation(
+                            setDeletingServiceUnit(
 
-                              substation
+                              serviceUnit
 
                             )
-
 
                           }
 
                         >
 
                           <DeleteIcon
+
                             fontSize="small"
+
                           />
 
                         </IconButton>
@@ -1125,196 +1432,237 @@ export default function SubstationPage() {
       </Card>
 
 
-      {/* ============================= */}
+      {/* ========================= */}
       {/* PAGINATION */}
-      {/* ============================= */}
-
-      <Box
-
-        sx={{
-
-          display:
-            "flex",
-
-          justifyContent:
-            "space-between",
-
-          alignItems:
-            "center",
-
-          mt: 2,
-
-        }}
-
-      >
+      {/* ========================= */}
 
 
-        <Typography
+      {
 
-          fontSize={13}
-
-          color="text.secondary"
-
-        >
-
-          Showing page{" "}
-
-          {page}
-
-          {" "}of{" "}
-
-          {totalPages}
-
-          {" "}({totalCount} total)
-
-        </Typography>
+        totalPages > 1 && (
 
 
-        <Stack
+          <Box
 
-          direction="row"
+            sx={{
 
-          spacing={1}
+              display:
 
-        >
+                "flex",
 
+              justifyContent:
 
-          {/* PREVIOUS */}
+                "space-between",
 
-          <Button
+              alignItems:
 
-            size="small"
+                "center",
 
+              mt: 2,
 
-            disabled={
-
-              page === 1 ||
-
-              isFetching
-
-            }
-
-
-            onClick={() =>
-
-              setPage(
-
-                (prev) =>
-                  prev - 1
-
-              )
-
-            }
+            }}
 
           >
 
-            Previous
 
-          </Button>
+            <Typography
 
+              fontSize={13}
 
-          {/* NEXT */}
+              color="text.secondary"
 
-          <Button
+            >
 
-            size="small"
+              Showing page{" "}
 
+              {page}
 
-            disabled={
+              {" "}of{" "}
 
-              page >= totalPages ||
+              {totalPages}
 
-              isFetching
-
-            }
-            onClick={() =>
-
-              setPage(
-
-                (prev) =>
-                  prev + 1
-
-              )
-
-            }
-
-          >
-
-            Next
-
-          </Button>
+              {" "}({totalCount} total)
 
 
-        </Stack>
+            </Typography>
 
 
-      </Box>
+            <Stack
+
+              direction="row"
+
+              spacing={1}
+
+            >
 
 
-      {/* ============================= */}
-      {/* CREATE / EDIT MODAL */}
-      {/* ============================= */}
+              <Button
 
-      <SubstationFormModal
+                size="small"
 
-        open={modalOpen}
+
+                disabled={
+
+                  page === 1 ||
+
+                  isFetching
+
+                }
+
+
+                onClick={() =>
+
+                  setPage(
+
+                    (prev) =>
+
+                      prev - 1
+
+                  )
+
+                }
+
+              >
+
+                Previous
+
+              </Button>
+
+
+              <Button
+
+                size="small"
+
+
+                disabled={
+
+                  page >= totalPages ||
+
+                  isFetching
+
+                }
+
+
+                onClick={() =>
+
+                  setPage(
+
+                    (prev) =>
+
+                      prev + 1
+
+                  )
+
+                }
+
+              >
+
+                Next
+
+              </Button>
+
+
+            </Stack>
+
+
+          </Box>
+
+
+        )
+
+      }
+
+
+      {/* ========================= */}
+      {/* FORM MODAL */}
+      {/* ========================= */}
+
+
+      <ServiceUnitFormModal
+
+        open={
+
+          modalOpen
+
+        }
 
 
         onClose={() => {
 
 
-          setModalOpen(false);
+          setModalOpen(
+
+            false
+
+          );
 
 
-          setEditingSubstation(
+          setEditingServiceUnit(
+
             null
+
           );
 
 
         }}
 
 
-        substation={
-          editingSubstation
+        serviceUnit={
+
+          editingServiceUnit
+
         }
 
 
         loading={
+
           saving
+
         }
 
+
         onSubmit={
+
           handleSubmit
+
         }
 
       />
 
-      {/* ============================= */}
-      {/* DELETE DIALOG */}
-      {/* ============================= */}
 
-      <DeleteSubstationDialog
+      {/* ========================= */}
+      {/* DELETE MODAL */}
+      {/* ========================= */}
+
+
+      <DeleteServiceUnitDialog
 
         open={
+
           Boolean(
-            deletingSubstation
+            deletingServiceUnit
           )
+
         }
 
 
-        substation={
-          deletingSubstation
+        serviceUnit={
+
+          deletingServiceUnit
+
         }
 
 
         loading={
+
           deleting
+
         }
 
 
         onClose={() =>
 
-          setDeletingSubstation(
+          setDeletingServiceUnit(
             null
           )
 
@@ -1322,13 +1670,16 @@ export default function SubstationPage() {
 
 
         onConfirm={
+
           handleDelete
+
         }
 
       />
 
 
     </Box>
+
 
   );
 

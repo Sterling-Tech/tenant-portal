@@ -17,16 +17,16 @@ import {
 
 import {
 
-  Feeder,
+  Band,
 
-} from "../../services/crmdService";
+} from "../../../services/crmdService";
 
 
 interface Props {
 
   open: boolean;
 
-  feeder: Feeder | null;
+  band: Band | null;
 
   loading: boolean;
 
@@ -37,11 +37,11 @@ interface Props {
 }
 
 
-export default function DeleteFeederDialog({
+export default function DeleteBandDialog({
 
   open,
 
-  feeder,
+  band,
 
   loading,
 
@@ -54,26 +54,21 @@ export default function DeleteFeederDialog({
 
   return (
 
-
     <Dialog
-
       open={open}
-
       onClose={
         loading
           ? undefined
           : onClose
       }
-
     >
 
 
       <DialogTitle>
 
-        Delete Feeder
+        Delete Band
 
       </DialogTitle>
-
 
 
       <DialogContent>
@@ -82,15 +77,14 @@ export default function DeleteFeederDialog({
         <DialogContentText>
 
 
-          Are you sure you want to
-          delete{" "}
+          Are you sure you want to delete
 
+
+          {" "}
 
           <strong>
 
-            {
-              feeder?.name
-            }
+            {band?.name}
 
           </strong>
 
@@ -98,19 +92,46 @@ export default function DeleteFeederDialog({
           ?
 
 
-          <br />
-
-          <br />
-
-
-          This action cannot be undone.
-
-
         </DialogContentText>
 
 
-      </DialogContent>
+        {
 
+          (band?.feeder_count ?? 0) > 0 && (
+
+            <DialogContentText
+              sx={{
+                mt: 2,
+                color: "warning.main",
+              }}
+            >
+
+              This band is currently used by{" "}
+
+              <strong>
+
+                {
+                  band?.feeder_count
+                }
+
+              </strong>
+
+              {" "}
+
+              feeder(s).
+
+              Deletion may fail.
+
+              Consider deactivating the band instead.
+
+            </DialogContentText>
+
+          )
+
+        }
+
+
+      </DialogContent>
 
 
       <DialogActions>
@@ -129,12 +150,11 @@ export default function DeleteFeederDialog({
         </Button>
 
 
-
         <Button
 
-          variant="contained"
-
           color="error"
+
+          variant="contained"
 
           disabled={loading}
 
@@ -143,13 +163,11 @@ export default function DeleteFeederDialog({
         >
 
           {
-
             loading
 
               ? "Deleting..."
 
               : "Delete"
-
           }
 
         </Button>
@@ -159,7 +177,6 @@ export default function DeleteFeederDialog({
 
 
     </Dialog>
-
 
   );
 

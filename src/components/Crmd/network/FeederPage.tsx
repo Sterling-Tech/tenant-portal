@@ -40,9 +40,9 @@ import {
   deleteFeeder,
   getFeeders,
   updateFeeder,
-} from "../../services/crmdService";
+} from "../../../services/crmdService";
 
-import { getErrorMessage } from "../../utils/getErrorMessage";
+import { getErrorMessage } from "../../../utils/getErrorMessage";
 import FeederFormModal from "./FeederFormModal";
 import DeleteFeederDialog from "./DeleteFeederDialog";
 

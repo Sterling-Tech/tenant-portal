@@ -48,7 +48,7 @@ import {
    getBands,
    Band,
 
-} from "../../services/crmdService";
+} from "../../../services/crmdService";
 
 
 interface Props {

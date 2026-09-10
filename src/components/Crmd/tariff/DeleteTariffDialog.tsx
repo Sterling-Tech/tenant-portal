@@ -1,84 +1,165 @@
-import React from "react";
+import {
+
+  Button,
+
+  Dialog,
+
+  DialogActions,
+
+  DialogContent,
+
+  DialogTitle,
+
+  Typography,
+
+} from "@mui/material";
+
 
 import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Typography,
-} from "@mui/material";
-import { Region } from "../../services/crmdService";
 
+  Tariff,
+
+} from "../../../services/crmdService";
 
 
 interface Props {
+
   open: boolean;
 
-  region: Region | null;
+  tariff: Tariff | null;
 
-  loading?: boolean;
+  loading: boolean;
 
   onClose: () => void;
 
   onConfirm: () => void;
+
 }
 
-export default function DeleteRegionDialog({
+
+export default function DeleteTariffDialog({
+
   open,
-  region,
-  loading = false,
+
+  tariff,
+
+  loading,
+
   onClose,
+
   onConfirm,
+
 }: Props) {
+
+
   return (
+
     <Dialog
+
       open={open}
-      onClose={onClose}
-      maxWidth="xs"
+
+      onClose={
+        loading
+          ? undefined
+          : onClose
+      }
+
       fullWidth
+
+      maxWidth="sm"
+
     >
+
+
       <DialogTitle>
-        Delete Region
+
+        Delete Tariff
+
       </DialogTitle>
 
+
       <DialogContent>
+
+
         <Typography>
-          Are you sure you want to delete{" "}
+
+          Are you sure you want to delete
+
+          {" "}
+
           <strong>
-            {region?.name}
+
+            {tariff?.name}
+
           </strong>
+
           ?
+
         </Typography>
+
 
         <Typography
-          fontSize={13}
-          color="text.secondary"
-          mt={1}
+
+          color="error"
+
+          mt={2}
+
         >
+
           This action cannot be undone.
+
         </Typography>
+
+
       </DialogContent>
 
+
       <DialogActions>
-        <Button
-          onClick={onClose}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
+
 
         <Button
-          color="error"
-          variant="contained"
-          onClick={onConfirm}
+
           disabled={loading}
+
+          onClick={onClose}
+
         >
-          {loading
-            ? "Deleting..."
-            : "Delete"}
+
+          Cancel
+
         </Button>
+
+
+        <Button
+
+          color="error"
+
+          variant="contained"
+
+          disabled={loading}
+
+          onClick={onConfirm}
+
+        >
+
+          {
+
+            loading
+
+              ? "Deleting..."
+
+              : "Delete"
+
+          }
+
+        </Button>
+
+
       </DialogActions>
+
+
     </Dialog>
+
   );
+
 }
