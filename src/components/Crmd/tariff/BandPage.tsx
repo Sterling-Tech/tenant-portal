@@ -36,6 +36,8 @@ import {
 
   TextField,
 
+  Tooltip,
+
   Typography,
 
 } from "@mui/material";
@@ -57,137 +59,25 @@ import {
 
 } from "../../../services/crmdService";
 
-
 import BandFormModal from "./BandFormModal";
-
 import BandTable from "./BandTable";
-
 import DeleteBandDialog from "./DeleteBandDialog";
-
-
+import { usePermission } from "../../../hooks/usePermission";
 const PAGE_SIZE = 10;
-
-
 export default function BandPage() {
 
+  const [bands, setBands] = useState<Band[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
-  // =========================
-  // STATE
-  // =========================
-
-
-  const [
-
-    bands,
-
-    setBands,
-
-  ] = useState<Band[]>([]);
-
-
-  const [
-
-    loading,
-
-    setLoading,
-
-  ] = useState(false);
-
-
-  const [
-
-    saving,
-
-    setSaving,
-
-  ] = useState(false);
-
-
-  const [
-
-    error,
-
-    setError,
-
-  ] = useState<string | null>(
-      null
-    );
-
-
-  const [
-
-    search,
-
-    setSearch,
-
-  ] = useState("");
-
-
-  const [
-
-    debouncedSearch,
-
-    setDebouncedSearch,
-
-  ] = useState("");
-
-
-  const [
-
-    page,
-
-    setPage,
-
-  ] = useState(1);
-
-
-  const [
-
-    total,
-
-    setTotal,
-
-  ] = useState(0);
-
-
-  // =========================
-  // MODAL STATE
-  // =========================
-
-
-  const [
-
-    formOpen,
-
-    setFormOpen,
-
-  ] = useState(false);
-
-
-  const [
-
-    deleteOpen,
-
-    setDeleteOpen,
-
-  ] = useState(false);
-
-
-  const [
-
-    selectedBand,
-
-    setSelectedBand,
-
-  ] = useState<
-    Band | null
-  >(null);
-
-
-  // =========================
-  // SEARCH DEBOUNCE
-  // =========================
-
+  const [formOpen, setFormOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedBand, setSelectedBand] = useState<Band | null>(null);
 
   useEffect(() => {
 
@@ -625,7 +515,7 @@ export default function BandPage() {
 
     );
 
-
+  const { can } = usePermission()
   return (
 
     <Box>
@@ -682,26 +572,32 @@ export default function BandPage() {
 
         </Box>
 
-
-        <Button
-
-          variant="contained"
-
-          startIcon={
-            <Add />
+        <Tooltip
+          title={
+            can("manage_tariff_config")
+              ? ""
+              : "You don't have permission to perform this action."
           }
-
-          onClick={
-            handleCreate
-          }
-
         >
+          <span>
+            <Button
+              disabled={!can("manage_tariff_config")}
+              variant="contained"
+              startIcon={
+                <Add />
+              }
+              onClick={
+                handleCreate
+              }
 
-          Add Band
+            >
 
-        </Button>
+              Add Band
 
+            </Button>
 
+          </span>
+        </Tooltip>
       </Stack>
 
 

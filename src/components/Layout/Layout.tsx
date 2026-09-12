@@ -630,6 +630,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </ListItemIcon>
                             <ListItemText primary="Tariff Configuration" />
                         </ListItemButton>
+                        <ListItemButton
+                            selected={location.pathname === '/customer/crmd/meter'}
+                            onClick={() => handleNavigation('/customer/crmd/meter')}
+                            sx={{
+                                pl: 4,
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <People fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Meter Configuration" />
+                        </ListItemButton>
                     </List>
                 </Collapse>
 

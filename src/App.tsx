@@ -27,9 +27,9 @@ import MapRefund from './pages/Customer/MapRefund';
 import GroupManagement from './pages/Roles/Roles';
 import FundingRequest from './pages/Vendors/FundingRequest'
 import Ringfencing from './pages/Ringfencing/Ringfencing';
-import CrmdHome from './pages/Crmd/NetworkConfig';
 import NetworkConfig from './pages/Crmd/NetworkConfig';
 import TariffConfig from './pages/Crmd/TariffConfig';
+import MeterConfig from './pages/Crmd/MeterConfig';
 // Enhanced theme
 const theme = createTheme({
     palette: {
@@ -154,6 +154,16 @@ const App: React.FC = () => {
                                     <ProtectedRoute>
                                         <Layout>
                                             <TariffConfig />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/customer/crmd/meter"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <MeterConfig />
                                         </Layout>
                                     </ProtectedRoute>
                                 }

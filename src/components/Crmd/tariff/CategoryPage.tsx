@@ -23,6 +23,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 
@@ -48,6 +49,7 @@ import {
   TariffCategoryPayload,
   updateTariffCategory,
 } from "../../../services/crmdService";
+import { usePermission } from "../../../hooks/usePermission";
 
 
 const PAGE_SIZE = 10;
@@ -77,13 +79,13 @@ export default function TariffCategoryPage() {
   ] = useState(false);
 
   const [closeDialogOpen, setCloseDialogOpen] =
-  useState(false);
+    useState(false);
 
-const [tariffToClose, setTariffToClose] =
-  useState<Tariff | null>(null);
+  const [tariffToClose, setTariffToClose] =
+    useState<Tariff | null>(null);
 
-const [closing, setClosing] =
-  useState(false);
+  const [closing, setClosing] =
+    useState(false);
 
   // =========================
   // SEARCH STATE
@@ -316,53 +318,21 @@ const [closing, setClosing] =
 
     ]);
 
-
-  // =========================
-  // LOAD DATA
-  // =========================
-
   useEffect(() => {
-
     loadCategories();
-
   }, [loadCategories]);
-
-
-  // =========================
-  // CREATE
-  // =========================
-
   const handleCreate = () => {
-
     setSelectedCategory(null);
-
     setModalOpen(true);
-
   };
-
-
-  // =========================
-  // EDIT
-  // =========================
 
   const handleEdit = (
-
     category: TariffCategory
-
   ) => {
-
     setSelectedCategory(category);
-
     setModalOpen(true);
-
     handleCloseMenu();
-
   };
-
-
-  // =========================
-  // FORM SUBMIT
-  // =========================
 
   const handleSubmit =
     async (
@@ -370,183 +340,87 @@ const [closing, setClosing] =
     ) => {
 
       try {
-
         setSaving(true);
-
-
-        // =====================
-        // UPDATE
-        // =====================
-
         if (selectedCategory) {
-
           await updateTariffCategory(
-
             payload,
-
             selectedCategory.id
-
           );
-
-
           setSnackbar({
-
             open: true,
-
             message:
               "Tariff category updated successfully",
-
             severity:
               "success",
-
           });
 
         }
-
-        // =====================
-        // CREATE
-        // =====================
-
         else {
-
           await createTariffCategory(
             payload
           );
-
-
           setSnackbar({
-
             open: true,
-
             message:
               "Tariff category created successfully",
-
             severity:
-              "success",
-
+              "success"
           });
-
         }
-
-
         setModalOpen(false);
-
         setSelectedCategory(null);
-
-
         await loadCategories();
-
-
       } catch (error: any) {
-
         console.error(
           "Failed to save tariff category",
           error
         );
-
-
         setSnackbar({
-
           open: true,
-
           message:
             "Failed to save tariff category",
-
           severity:
             "error",
 
         });
-
-
       } finally {
-
         setSaving(false);
-
       }
 
     };
 
-
-  // =========================
-  // OPEN DELETE DIALOG
-  // =========================
-
   const handleOpenDeleteDialog = (
-
     category: TariffCategory
-
   ) => {
-
     setCategoryToDelete(category);
-
     setDeleteError("");
-
     setDeleteDialogOpen(true);
-
     handleCloseMenu();
-
   };
 
-
-  // =========================
-  // CLOSE DELETE DIALOG
-  // =========================
-
   const handleCloseDeleteDialog = () => {
-
     if (deleteLoading) {
       return;
     }
-
-
     setDeleteDialogOpen(false);
-
     setCategoryToDelete(null);
-
     setDeleteError("");
 
   };
 
-
-  // =========================
-  // CONFIRM DELETE
-  // =========================
-
   const handleConfirmDelete =
     async () => {
-
       if (!categoryToDelete) {
         return;
       }
-
-
       try {
-
         setDeleteLoading(true);
-
         setDeleteError("");
-
-
         await deleteTariffCategory(
-
           categoryToDelete.id
-
         );
-
-
-        // =====================
-        // CLOSE DIALOG
-        // =====================
-
         setDeleteDialogOpen(false);
-
         setCategoryToDelete(null);
-
-
-        // =====================
-        // SUCCESS MESSAGE
-        // =====================
-
         setSnackbar({
 
           open: true,
@@ -558,11 +432,6 @@ const [closing, setClosing] =
             "success",
 
         });
-
-
-        // =====================
-        // HANDLE LAST ITEM
-        // =====================
 
         if (
 
@@ -577,30 +446,19 @@ const [closing, setClosing] =
           );
 
         }
-
         else {
 
           await loadCategories();
 
         }
-
-
       } catch (error: any) {
 
         console.error(
           "Failed to delete tariff category",
           error
         );
-
-
         let message =
           "Failed to delete tariff category";
-
-
-        // =====================
-        // HANDLE 409 ERROR
-        // =====================
-
         if (
 
           error?.response?.status === 409
@@ -612,11 +470,6 @@ const [closing, setClosing] =
 
         }
 
-
-        // =====================
-        // HANDLE BACKEND ERRORS
-        // =====================
-
         else if (
 
           error?.response?.data
@@ -625,14 +478,11 @@ const [closing, setClosing] =
 
           const data =
             error.response.data;
-
-
           if (
             typeof data === "string"
           ) {
 
             message = data;
-
           }
 
           else if (
@@ -640,7 +490,6 @@ const [closing, setClosing] =
           ) {
 
             message = data.detail;
-
           }
 
           else {
@@ -651,10 +500,7 @@ const [closing, setClosing] =
           }
 
         }
-
-
         setDeleteError(message);
-
 
       } finally {
 
@@ -663,11 +509,6 @@ const [closing, setClosing] =
       }
 
     };
-
-
-  // =========================
-  // OPEN ACTION MENU
-  // =========================
 
   const handleOpenMenu = (
 
@@ -682,16 +523,10 @@ const [closing, setClosing] =
     setMenuAnchor(
       event.currentTarget
     );
-
-
     setMenuCategory(category);
 
   };
 
-
-  // =========================
-  // CLOSE ACTION MENU
-  // =========================
 
   const handleCloseMenu = () => {
 
@@ -701,39 +536,21 @@ const [closing, setClosing] =
 
   };
 
-
-  // =========================
-  // PAGINATION
-  // =========================
-
   const totalPages =
     Math.ceil(
       count / PAGE_SIZE
     );
 
 
-  // =========================
-  // RENDER
-  // =========================
-
+  const { can } = usePermission()
   return (
-
     <Box>
-
-
-      {/* ===================== */}
-      {/* HEADER */}
-      {/* ===================== */}
-
       <Stack
-
         direction={{
           xs: "column",
           sm: "row",
         }}
-
         justifyContent="space-between"
-
         alignItems={{
           xs: "stretch",
           sm: "center",
@@ -791,21 +608,24 @@ const [closing, setClosing] =
           </Button>
 
 
-
-          <Button
-
-            variant="contained"
-
-            startIcon={<Add />}
-
-            onClick={handleCreate}
-
+          <Tooltip
+            title={
+              can("manage_tariff_config")
+                ? ""
+                : "You don't have permission to perform this action."
+            }
           >
-
-            Add Category
-
-          </Button>
-
+            <span>
+              <Button
+                disabled={!can("manage_tariff_config")}
+                variant="contained"
+                startIcon={<Add />}
+                onClick={handleCreate}
+              >
+                Add Category
+              </Button>
+            </span>
+          </Tooltip>
         </Stack>
 
       </Stack>
@@ -1094,9 +914,9 @@ const [closing, setClosing] =
 
                             ? new Date(
 
-                                category.created_at
+                              category.created_at
 
-                              ).toLocaleDateString()
+                            ).toLocaleDateString()
 
                             : "-"
 
@@ -1274,78 +1094,94 @@ const [closing, setClosing] =
 
 
         {/* EDIT */}
-
-        <MenuItem
-
-          onClick={() => {
-
-            if (menuCategory) {
-
-              handleEdit(
-                menuCategory
-              );
-
-            }
-
-          }}
-
+        <Tooltip
+          title={
+            can("manage_tariff_config")
+              ? ""
+              : "You don't have permission to perform this action."
+          }
         >
+          <span>
+            <MenuItem
+              disabled={!can("manage_tariff_config")}
+              onClick={() => {
 
-          <Edit
+                if (menuCategory) {
 
-            fontSize="small"
+                  handleEdit(
+                    menuCategory
+                  );
 
-            sx={{
-              mr: 1,
-            }}
+                }
 
-          />
+              }}
 
-          Edit
+            >
 
-        </MenuItem>
+              <Edit
 
+                fontSize="small"
 
+                sx={{
+                  mr: 1,
+                }}
+
+              />
+
+              Edit
+
+            </MenuItem>
+          </span>
+        </Tooltip>
 
         {/* DELETE */}
 
-        <MenuItem
-
-          onClick={() => {
-
-            if (menuCategory) {
-
-              handleOpenDeleteDialog(
-
-                menuCategory
-
-              );
-
-            }
-
-          }}
-
-          sx={{
-            color:
-              "error.main",
-          }}
-
+        <Tooltip
+          title={
+            can("manage_tariff_config")
+              ? ""
+              : "You don't have permission to perform this action."
+          }
         >
+          <span>
+            <MenuItem
+              disabled={!can("manage_tariff_config")}
+              onClick={() => {
 
-          <Delete
+                if (menuCategory) {
 
-            fontSize="small"
+                  handleOpenDeleteDialog(
 
-            sx={{
-              mr: 1,
-            }}
+                    menuCategory
 
-          />
+                  );
 
-          Delete
+                }
 
-        </MenuItem>
+              }}
 
+              sx={{
+                color:
+                  "error.main",
+              }}
+
+            >
+
+              <Delete
+
+                fontSize="small"
+
+                sx={{
+                  mr: 1,
+                }}
+
+              />
+
+              Delete
+
+            </MenuItem>
+          </span>
+        </Tooltip>
 
       </Menu>
 

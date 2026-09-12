@@ -41,149 +41,47 @@ import {
 } from "@mui/material";
 
 
-import SearchIcon
-  from "@mui/icons-material/Search";
-
-import AddIcon
-  from "@mui/icons-material/Add";
-
-import EditIcon
-  from "@mui/icons-material/Edit";
-
-import DeleteIcon
-  from "@mui/icons-material/Delete";
-
-
+import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
-
   Transformer,
-
   TransformerPayload,
-
   createTransformer,
-
   deleteTransformer,
-
   getTransformers,
-
   updateTransformer,
-
 } from "../../../services/crmdService";
-
-
-import {
-  toast
-} from "react-toastify";
-
-
-import {
-  getErrorMessage
-} from "../../../utils/getErrorMessage";
+import {toast} from "react-toastify";
+import {getErrorMessage} from "../../../utils/getErrorMessage";
 import TransformerFormModal from "./TransformerFormModal";
 import DeleteTransformerDialog from "./DeleteTransformerDialog";
+import { usePermission } from "../../../hooks/usePermission";
 
 const PAGE_SIZE = 10;
 
-
 export default function TransformerPage() {
 
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch ] = useState("");
+  const [page, setPage ] = useState(1);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingTransformer, setEditingTransformer] = useState<Transformer | null>(null);
+  const [deletingTransformer, setDeletingTransformer ] = useState<Transformer | null>(null);
 
-  // =========================
-  // REACT QUERY
-  // =========================
-
-  const queryClient =
-    useQueryClient();
-
-
-  // =========================
-  // LOCAL STATE
-  // =========================
-
-  const [
-
-    search,
-
-    setSearch,
-
-  ] = useState("");
-
-
-  const [
-
-    debouncedSearch,
-
-    setDebouncedSearch,
-
-  ] = useState("");
-
-
-  const [
-
-    page,
-
-    setPage,
-
-  ] = useState(1);
-
-
-  const [
-
-    modalOpen,
-
-    setModalOpen,
-
-  ] = useState(false);
-
-
-  const [
-
-    editingTransformer,
-
-    setEditingTransformer,
-
-  ] = useState<
-    Transformer | null
-  >(null);
-
-
-  const [
-
-    deletingTransformer,
-
-    setDeletingTransformer,
-
-  ] = useState<
-    Transformer | null
-  >(null);
-
-
-  // =========================
-  // DEBOUNCE SEARCH
-  // =========================
 
   useEffect(() => {
-
-
     const timer =
       setTimeout(() => {
-
-
         setDebouncedSearch(
           search
         );
-
-
         setPage(1);
-
-
       }, 400);
-
-
     return () =>
       clearTimeout(timer);
-
-
   }, [search]);
 
 
@@ -661,7 +559,7 @@ export default function TransformerPage() {
 
     deleteTransformerMutation.isPending;
 
-
+const {can} = usePermission()
   // =========================
   // UI
   // =========================
@@ -730,25 +628,16 @@ export default function TransformerPage() {
             <AddIcon />
 
           }
-
-
           onClick={() => {
-
-
             setEditingTransformer(
               null
             );
-
-
             setModalOpen(
               true
             );
-
-
           }}
 
         >
-
           Add Transformer
 
         </Button>

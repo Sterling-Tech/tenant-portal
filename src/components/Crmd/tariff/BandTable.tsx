@@ -14,6 +14,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
 } from "@mui/material";
 
 import {
@@ -23,6 +24,7 @@ import {
 import {
   Band,
 } from "../../../services/crmdService";
+import { usePermission } from "../../../hooks/usePermission";
 
 
 interface Props {
@@ -132,7 +134,7 @@ export default function BandTable({
 
   };
 
-
+  const { can } = usePermission()
   return (
 
     <TableContainer
@@ -354,24 +356,43 @@ export default function BandTable({
 
       >
 
-
-        <MenuItem
-          onClick={handleEdit}
+        <Tooltip
+          title={
+            can("manage_tariff_config")
+              ? ""
+              : "You don't have permission to perform this action."
+          }
         >
+          <span>
+            <MenuItem
+              disabled={!can("manage_tariff_config")}
+              onClick={handleEdit}
+            >
 
-          Edit
+              Edit
 
-        </MenuItem>
+            </MenuItem>
+          </span>
+        </Tooltip>
 
-
-        <MenuItem
-          onClick={handleDelete}
+        <Tooltip
+          title={
+            can("manage_tariff_config")
+              ? ""
+              : "You don't have permission to perform this action."
+          }
         >
+          <span>
+            <MenuItem
+              disabled={!can("manage_tariff_config")}
+              onClick={handleDelete}
+            >
 
-          Delete
+              Delete
 
-        </MenuItem>
-
+            </MenuItem>
+          </span>
+        </Tooltip>
 
       </Menu>
 

@@ -8,6 +8,7 @@ import {
     Pagination,
     Stack,
     TextField,
+    Tooltip,
     Typography,
 } from "@mui/material";
 
@@ -32,6 +33,7 @@ import { toast } from "react-toastify";
 import { getErrorMessage } from "../../../utils/getErrorMessage";
 import BusinessUnitFormModal from "./BusinessUnitFormModal";
 import DeleteBusinessUnitDialog from "./DeleteBusinessUnitDialog";
+import { usePermission } from "../../../hooks/usePermission";
 
 const PAGE_SIZE = 10;
 
@@ -392,7 +394,7 @@ export default function BusinessUnitPage() {
     const deleting =
         deleteBusinessUnitMutation.isPending;
 
-
+    const { can } = usePermission();
 
     return (
         <Box>
@@ -446,36 +448,47 @@ export default function BusinessUnitPage() {
 
                 </Box>
 
-
-                <Button
-
-                    variant="contained"
-
-                    startIcon={
-                        <AddIcon />
+                <Tooltip
+                    title={
+                        can("manage_network_config")
+                            ? ""
+                            : "You don't have permission to perform this action."
                     }
-
-                    onClick={() => {
-
-
-                        setEditingBusinessUnit(
-                            null
-                        );
-
-
-                        setModalOpen(
-                            true
-                        );
-
-
-                    }}
-
                 >
+                    <span>
 
-                    Add Business Unit
 
-                </Button>
 
+                        <Button
+                            disabled={!can("manage_network_config")}
+                            variant="contained"
+
+                            startIcon={
+                                <AddIcon />
+                            }
+
+                            onClick={() => {
+
+
+                                setEditingBusinessUnit(
+                                    null
+                                );
+
+
+                                setModalOpen(
+                                    true
+                                );
+
+
+                            }}
+
+                        >
+
+                            Add Business Unit
+
+                        </Button>
+                    </span>
+                </Tooltip>
 
             </Stack>
 
@@ -918,64 +931,75 @@ export default function BusinessUnitPage() {
                                                 }}
                                             >
 
-
-                                                <IconButton
-
-                                                    size="small"
-
-
-                                                    onClick={() => {
-
-
-                                                        setEditingBusinessUnit(
-
-                                                            businessUnit
-
-                                                        );
-
-
-                                                        setModalOpen(
-                                                            true
-                                                        );
-
-
-                                                    }}
-
-                                                >
-
-                                                    <EditIcon
-                                                        fontSize="small"
-                                                    />
-
-                                                </IconButton>
-
-
-                                                <IconButton
-
-                                                    size="small"
-
-                                                    color="error"
-
-
-                                                    onClick={() =>
-
-                                                        setDeletingBusinessUnit(
-
-                                                            businessUnit
-
-                                                        )
-
+                                                <Tooltip
+                                                    title={
+                                                        can("manage_network_config")
+                                                            ? ""
+                                                            : "You don't have permission to perform this action."
                                                     }
-
                                                 >
+                                                    <span>
+                                                        <IconButton
+                                                            size="small"
+                                                            disabled={!can("manage_network_config")}
+                                                            onClick={() => {
 
-                                                    <DeleteIcon
-                                                        fontSize="small"
-                                                    />
 
-                                                </IconButton>
+                                                                setEditingBusinessUnit(
+
+                                                                    businessUnit
+
+                                                                );
 
 
+                                                                setModalOpen(
+                                                                    true
+                                                                );
+
+
+                                                            }}
+
+                                                        >
+
+                                                            <EditIcon
+                                                                fontSize="small"
+                                                            />
+
+                                                        </IconButton>
+                                                    </span>
+                                                </Tooltip>
+
+                                                <Tooltip
+                                                    title={
+                                                        can("manage_network_config")
+                                                            ? ""
+                                                            : "You don't have permission to perform this action."
+                                                    }
+                                                >
+                                                    <span>
+                                                        <IconButton
+                                                            size="small"
+                                                            disabled={!can("manage_network_config")}
+                                                            color="error"
+                                                            onClick={() =>
+                                                                setDeletingBusinessUnit(
+
+                                                                    businessUnit
+
+                                                                )
+
+                                                            }
+
+                                                        >
+
+                                                            <DeleteIcon
+                                                                fontSize="small"
+                                                            />
+
+                                                        </IconButton>
+
+                                                    </span>
+                                                </Tooltip>
                                             </td>
 
 

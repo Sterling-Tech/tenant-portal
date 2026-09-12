@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import {
     Add, Delete, Edit, MoreVert, Refresh, Search,
 } from "@mui/icons-material";
@@ -22,6 +22,7 @@ import {
     TableHead,
     TableRow,
     TextField,
+    Tooltip,
     Typography,
 } from "@mui/material";
 
@@ -40,6 +41,7 @@ import DeleteTariffDialog from "./DeleteTariffDialog";
 import CloseTariffDialog from "./CloseTariffDialog";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../../utils/getErrorMessage";
+import { usePermission } from "../../../hooks/usePermission";
 
 export default function TariffPage() {
 
@@ -100,142 +102,59 @@ export default function TariffPage() {
 
         };
 
-
-    // =========================
-    // INITIAL LOAD
-    // =========================
-
-
     useEffect(() => {
-
-
         loadTariffs();
-
-
     }, []);
 
-
-    // =========================
-    // SEARCH
-    // =========================
-
-
     useEffect(() => {
-
-
         const timeout =
-
             setTimeout(
-
                 () => {
-
                     loadTariffs();
-
                 },
-
                 500
-
             );
-
-
         return () =>
-
             clearTimeout(
                 timeout
             );
-
-
     }, [search]);
 
-
-    // =========================
-    // CREATE
-    // =========================
-
-
     const handleCreate = () => {
-
-
         setSelectedTariff(
             null
         );
-
-
         setFormOpen(
             true
         );
-
-
     };
 
-
-    // =========================
-    // EDIT
-    // =========================
-
-
     const handleEdit = (
-
         tariff: Tariff
-
     ) => {
-
-
         setSelectedTariff(
             tariff
         );
-
-
         setFormOpen(
             true
         );
-
-
     };
-
-
-    // =========================
-    // SUBMIT
-    // =========================
-
-
     const handleSubmit =
         async (
-
             payload: TariffPayload
-
         ) => {
-
-
             try {
-
-
                 setSaving(true);
-
-
                 if (
-
                     selectedTariff
-
                 ) {
-
-
                     await updateTariff(
-
                         payload,
-
                         selectedTariff.id
-
                     );
-
-
                 } else {
-
-
                     await createTariff(
-
                         payload
-
                     );
 
 
@@ -245,27 +164,15 @@ export default function TariffPage() {
                 setFormOpen(
                     false
                 );
-
-
                 setSelectedTariff(
                     null
                 );
-
-
                 loadTariffs();
-
-
             } catch (error: any) {
-
-
                 console.error(
-
                     "Failed to save tariff",
-
                     error
-
                 );
-
                 toast.error(getErrorMessage(error) || "Failed to save tariff");
                 // alert(
 
@@ -278,102 +185,46 @@ export default function TariffPage() {
                 //     "Failed to save tariff"
 
                 // );
-
-
             } finally {
-
-
                 setSaving(false);
-
-
             }
-
-
         };
 
-
-    // =========================
-    // OPEN DELETE
-    // =========================
-
-
     const handleOpenDelete = (
-
         tariff: Tariff
-
     ) => {
-
-
         setTariffToDelete(
             tariff
         );
-
-
         setDeleteOpen(
             true
         );
-
-
     };
-
-
-    // =========================
-    // DELETE
-    // =========================
-
 
     const handleDelete =
         async () => {
-
-
             if (
-
                 !tariffToDelete
-
             ) {
-
                 return;
-
             }
-
-
             try {
-
-
                 setDeleting(true);
-
-
                 await deleteTariff(
-
                     tariffToDelete.id
-
                 );
-
-
                 setDeleteOpen(
                     false
                 );
-
-
                 setTariffToDelete(
                     null
                 );
-
-
                 loadTariffs();
-
-
             } catch (error: any) {
-
-
                 console.error(
-
                     "Failed to delete tariff",
-
                     error
-
                 );
-
                 toast.error(getErrorMessage(error) || "Failed to delete tariff");
                 // alert(
 
@@ -389,94 +240,52 @@ export default function TariffPage() {
 
 
             } finally {
-
-
                 setDeleting(false);
-
-
             }
-
-
         };
 
-    // =========================
-    // OPEN ACTION MENU
-    // =========================
-
     const handleOpenActionMenu = (
-
         event: React.MouseEvent<HTMLElement>,
-
         tariff: Tariff
-
     ) => {
-
         setActionAnchorEl(
             event.currentTarget
         );
-
         setSelectedActionTariff(
             tariff
         );
-
     };
 
-
-    // =========================
-    // CLOSE ACTION MENU
-    // =========================
-
     const handleCloseActionMenu = () => {
-
         setActionAnchorEl(
             null
         );
-
     };
 
-
-    // =========================
-    // EDIT FROM MENU
-    // =========================
-
     const handleMenuEdit = () => {
-
         if (!selectedActionTariff) {
             return;
         }
-
         handleEdit(
             selectedActionTariff
         );
-
         handleCloseActionMenu();
-
     };
 
-
-    // =========================
-    // DELETE FROM MENU
-    // =========================
-
     const handleMenuDelete = () => {
-
         if (!selectedActionTariff) {
             return;
         }
-
         handleOpenDelete(
             selectedActionTariff
         );
-
         handleCloseActionMenu();
-
     };
 
     const handleOpenCloseDialog = (
         tariff: Tariff
     ) => {
         setTariffToClose(tariff);
-
         setCloseDialogOpen(true);
     };
 
@@ -486,10 +295,8 @@ export default function TariffPage() {
         if (!tariffToClose) {
             return;
         }
-
         try {
             setClosing(true);
-
             await closeTariff(
                 tariffToClose.id,
                 {
@@ -522,16 +329,11 @@ export default function TariffPage() {
         }
     };
 
+    const { can } = usePermission();
+
     return (
 
         <Box>
-
-
-            {/* ===================== */}
-            {/* HEADER */}
-            {/* ===================== */}
-
-
             <Stack
 
                 direction={{
@@ -617,25 +419,28 @@ export default function TariffPage() {
 
                     </Button>
 
-
-                    <Button
-
-                        variant="contained"
-
-                        startIcon={
-                            <Add />
+                    <Tooltip
+                        title={
+                            can("manage_tariff_config")
+                                ? ""
+                                : "You don't have permission to perform this action."
                         }
-
-                        onClick={
-                            handleCreate
-                        }
-
                     >
-
-                        Publish Tariff
-
-                    </Button>
-
+                        <span>
+                            <Button
+                                disabled={!can("manage_tariff_config")}
+                                variant="contained"
+                                startIcon={
+                                    <Add />
+                                }
+                                onClick={
+                                    handleCreate
+                                }
+                            >
+                                Publish Tariff
+                            </Button>
+                        </span>
+                    </Tooltip>
 
                 </Stack>
 
@@ -1133,57 +938,74 @@ export default function TariffPage() {
                 }
 
             >
-
-                <MenuItem
-
-                    onClick={
-                        handleMenuEdit
+                <Tooltip
+                    title={
+                        can("manage_tariff_config")
+                            ? ""
+                            : "You don't have permission to perform this action."
                     }
-
                 >
+                    <span>
+                        <MenuItem
+                            disabled={!can("manage_tariff_config")}
+                            onClick={
+                                handleMenuEdit
+                            }
 
-                    <Edit
+                        >
 
-                        fontSize="small"
+                            <Edit
 
-                        style={{
-                            marginRight: 8,
-                        }}
+                                fontSize="small"
 
-                    />
+                                style={{
+                                    marginRight: 8,
+                                }}
 
-                    Edit
+                            />
 
-                </MenuItem>
+                            Edit
+
+                        </MenuItem>
+                    </span>
+                </Tooltip>
 
 
-                <MenuItem
-
-                    onClick={
-                        handleMenuDelete
+                <Tooltip
+                    title={
+                        can("manage_tariff_config")
+                            ? ""
+                            : "You don't have permission to perform this action."
                     }
-
-                    sx={{
-                        color: "error.main",
-                    }}
-
                 >
+                    <span>
+                        <MenuItem
+                            disabled={!can("manage_tariff_config")}
+                            onClick={
+                                handleMenuDelete
+                            }
 
-                    <Delete
+                            sx={{
+                                color: "error.main",
+                            }}
+                        >
 
-                        fontSize="small"
+                            <Delete
 
-                        style={{
-                            marginRight: 8,
-                        }}
+                                fontSize="small"
 
-                    />
+                                style={{
+                                    marginRight: 8,
+                                }}
 
-                    Delete
+                            />
 
-                </MenuItem>
+                            Delete
 
+                        </MenuItem>
 
+                    </span>
+                </Tooltip>
                 <MenuItem
                     onClick={() => {
                         if (selectedActionTariff) {
@@ -1278,41 +1100,41 @@ export default function TariffPage() {
                 }
 
             />
-<CloseTariffDialog
+            <CloseTariffDialog
 
-  open={
-    closeDialogOpen
-  }
+                open={
+                    closeDialogOpen
+                }
 
-  tariff={
-    tariffToClose
-  }
+                tariff={
+                    tariffToClose
+                }
 
-  loading={
-    closing
-  }
+                loading={
+                    closing
+                }
 
-  onClose={() => {
+                onClose={() => {
 
-    if (!closing) {
+                    if (!closing) {
 
-      setCloseDialogOpen(
-        false
-      );
+                        setCloseDialogOpen(
+                            false
+                        );
 
-      setTariffToClose(
-        null
-      );
+                        setTariffToClose(
+                            null
+                        );
 
-    }
+                    }
 
-  }}
+                }}
 
-  onConfirm={
-    handleCloseTariff
-  }
+                onConfirm={
+                    handleCloseTariff
+                }
 
-/>
+            />
 
         </Box>
 
