@@ -1,180 +1,80 @@
 import {
-
   Button,
-
   Card,
-
   Chip,
-
+  Menu,
+  MenuItem,
   IconButton,
-
   InputAdornment,
-
   Stack,
-
   TextField,
-
+  Tooltip,
   Typography,
-
 } from "@mui/material";
 
 import Box from "@mui/material/Box";
-
-
 import {
-
   useEffect,
-
   useState,
-
 } from "react";
 
 
 import {
-
   useMutation,
-
   useQuery,
-
   useQueryClient,
-
 } from "@tanstack/react-query";
 
 
-import SearchIcon from
-  "@mui/icons-material/Search";
-
-import AddIcon from
-  "@mui/icons-material/Add";
-
-import EditIcon from
-  "@mui/icons-material/Edit";
-
-import DeleteIcon from
-  "@mui/icons-material/Delete";
-
+import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 import {
-
   ServiceUnit,
-
   ServiceUnitPayload,
-
   createServiceUnit,
-
   deleteServiceUnit,
-
   getServiceUnits,
-
   updateServiceUnit,
-
 } from "../../../services/crmdService";
 
+import {toast} from "react-toastify";
 
-import {
-
-  toast
-
-} from "react-toastify";
-
-
-import {
-
-  getErrorMessage
-
-} from "../../../utils/getErrorMessage";
-
-
-import ServiceUnitFormModal
-  from "./ServiceUnitFormModal";
+import {getErrorMessage} from "../../../utils/getErrorMessage";
+import ServiceUnitFormModal from "./ServiceUnitFormModal";
 import DeleteServiceUnitDialog from "./DeleteServiceUnitDialog";
-
-
+import { usePermission } from "../../../hooks/usePermission";
 
 const PAGE_SIZE = 10;
-
-
 export default function ServiceUnitPage() {
+  const queryClient = useQueryClient();
 
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingServiceUnit, setEditingServiceUnit] = useState<ServiceUnit | null>(null);
+  const [deletingServiceUnit, setDeletingServiceUnit] = useState<ServiceUnit | null>(null);
 
-  const queryClient =
-    useQueryClient();
-
-
-  // =========================
-  // STATE
-  // =========================
-
-
-  const [search, setSearch] =
-    useState("");
-
-
-  const [
-    debouncedSearch,
-    setDebouncedSearch,
-  ] = useState("");
-
-
-  const [page, setPage] =
-    useState(1);
-
-
-  const [modalOpen, setModalOpen] =
-    useState(false);
-
-
-  const [
-
-    editingServiceUnit,
-
-    setEditingServiceUnit,
-
-  ] = useState<ServiceUnit | null>(
-    null
-  );
-
-
-  const [
-
-    deletingServiceUnit,
-
-    setDeletingServiceUnit,
-
-  ] = useState<ServiceUnit | null>(
-    null
-  );
-
-
+  const [actionAnchorEl, setActionAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedActionServiceUnit, setSelectedActionServiceUnit] = useState<ServiceUnit | null>(null);
+  const actionMenuOpen = Boolean(actionAnchorEl);
   // =========================
   // DEBOUNCE SEARCH
   // =========================
 
 
   useEffect(() => {
-
-
-    const timer =
-      setTimeout(() => {
-
-
-        setDebouncedSearch(
-          search
-        );
-
-
+    const timer = setTimeout(() => {
+        setDebouncedSearch(search);
         setPage(1);
-
-
       }, 400);
 
-
-    return () =>
-      clearTimeout(timer);
-
-
+    return () => clearTimeout(timer);
   }, [search]);
-
 
   // =========================
   // FETCH SERVICE UNITS
@@ -195,33 +95,20 @@ export default function ServiceUnitPage() {
 
   } = useQuery({
 
-
     queryKey: [
-
       "service-units",
-
       debouncedSearch,
-
       page,
-
       PAGE_SIZE,
-
     ],
 
 
     queryFn: () =>
-
       getServiceUnits(
-
         debouncedSearch,
-
         page,
-
         PAGE_SIZE
-
       ),
-
-
   });
 
 
@@ -659,18 +546,45 @@ export default function ServiceUnitPage() {
   // =========================
 
 
-  const saving =
+  const saving = createServiceUnitMutation.isPending || updateServiceUnitMutation.isPending;
+  const deleting = deleteServiceUnitMutation.isPending;
 
-    createServiceUnitMutation.isPending ||
+  const handleOpenActionMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    serviceUnit: ServiceUnit
+) => {
+    setActionAnchorEl(event.currentTarget);
+    setSelectedActionServiceUnit(serviceUnit);
+};
 
-    updateServiceUnitMutation.isPending;
+const handleCloseActionMenu = () => {
+    setActionAnchorEl(null);
+    setSelectedActionServiceUnit(null);
+};
 
+const handleEditServiceUnit = () => {
+    if (!selectedActionServiceUnit) return;
 
-  const deleting =
+    setEditingServiceUnit(
+        selectedActionServiceUnit
+    );
 
-    deleteServiceUnitMutation.isPending;
+    setModalOpen(true);
 
+    handleCloseActionMenu();
+};
 
+const handleDeleteServiceUnit = () => {
+    if (!selectedActionServiceUnit) return;
+
+    setDeletingServiceUnit(
+        selectedActionServiceUnit
+    );
+
+    handleCloseActionMenu();
+};
+
+const {can} = usePermission();
   return (
 
 
@@ -1328,7 +1242,7 @@ export default function ServiceUnitPage() {
                       {/* ACTIONS */}
 
 
-                      <td
+                      {/* <td
 
                         style={{
 
@@ -1407,8 +1321,41 @@ export default function ServiceUnitPage() {
                         </IconButton>
 
 
-                      </td>
+                      </td> */}
+{/* Actions */}
 
+<td
+    style={{
+        padding: 14,
+        textAlign: "center",
+        width: 80,
+    }}
+>
+    <Tooltip
+        title={
+            can("manage_network_config")
+                ? "Actions"
+                : "You don't have permission to perform this action."
+        }
+    >
+        <span>
+            <IconButton
+                size="small"
+                disabled={
+                    !can("manage_network_config")
+                }
+                onClick={(event) =>
+                    handleOpenActionMenu(
+                        event,
+                        serviceUnit
+                    )
+                }
+            >
+                <MoreVertIcon fontSize="small" />
+            </IconButton>
+        </span>
+    </Tooltip>
+</td>
 
                     </tr>
 
@@ -1428,6 +1375,36 @@ export default function ServiceUnitPage() {
 
         </Box>
 
+              <Menu
+    anchorEl={actionAnchorEl}
+    open={actionMenuOpen}
+    onClose={handleCloseActionMenu}
+>
+    <MenuItem
+        onClick={handleEditServiceUnit}
+    >
+        <EditIcon
+            fontSize="small"
+            sx={{ mr: 1 }}
+        />
+
+        Edit
+    </MenuItem>
+
+    <MenuItem
+        onClick={handleDeleteServiceUnit}
+        sx={{
+            color: "error.main",
+        }}
+    >
+        <DeleteIcon
+            fontSize="small"
+            sx={{ mr: 1 }}
+        />
+
+        Delete
+    </MenuItem>
+</Menu>
 
       </Card>
 

@@ -88,7 +88,7 @@ export default function MeterFormModal({
 
       longitude: "",
 
-      reason: "",
+      reason: "new_connection",
 
       reading: "",
 
@@ -698,7 +698,7 @@ export default function MeterFormModal({
             fullWidth
 
             label="SGC"
-
+            placeholder="SGC"
             value={form.sgc}
 
             onChange={(event) =>
@@ -808,7 +808,7 @@ export default function MeterFormModal({
             fullWidth
 
             label="Phases"
-
+            placeholder="Single"
             value={form.phases}
 
             onChange={(event) =>
@@ -834,7 +834,7 @@ export default function MeterFormModal({
             label="Multiplicity"
 
             value={form.multiplicity}
-
+            placeholder="-3550346.1284"
             onChange={(event) =>
 
               handleChange(
@@ -856,7 +856,7 @@ export default function MeterFormModal({
             type="number"
 
             label="Number of Digits"
-
+            placeholder="2147483647"
             value={form.number_of_digits}
 
             onChange={(event) =>
@@ -882,7 +882,7 @@ export default function MeterFormModal({
             label="Initial Reading"
 
             value={form.initial_reading}
-
+            placeholder="-8672485"
             onChange={(event) =>
 
               handleChange(
@@ -1038,7 +1038,7 @@ export default function MeterFormModal({
             fullWidth
 
             label="Latitude"
-
+            placeholder="9"
             value={form.latitude}
 
             onChange={(event) =>
@@ -1060,7 +1060,7 @@ export default function MeterFormModal({
             fullWidth
 
             label="Longitude"
-
+            placeholder="-8743"
             value={form.longitude}
 
             onChange={(event) =>
@@ -1082,9 +1082,8 @@ export default function MeterFormModal({
             fullWidth
 
             label="Reason"
-
+            placeholder="new_connection"
             value={form.reason}
-
             onChange={(event) =>
 
               handleChange(
@@ -1108,7 +1107,7 @@ export default function MeterFormModal({
             label="Reading"
 
             value={form.reading}
-
+            placeholder="-676513244"
             onChange={(event) =>
 
               handleChange(

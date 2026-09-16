@@ -60,6 +60,8 @@ import {
 
   TextField,
 
+  Tooltip,
+
   Typography,
 
 } from "@mui/material";
@@ -88,6 +90,9 @@ import MeterFormModal
 
 import DeleteMeterDialog
   from "./DeleteMeterDialog";
+import { toast } from "react-toastify";
+import { getErrorMessage } from "../../../utils/getErrorMessage";
+import { usePermission } from "../../../hooks/usePermission";
 
 
 export default function MeterPage() {
@@ -341,26 +346,18 @@ export default function MeterPage() {
         if (selectedMeter) {
 
           await updateMeter(
-
             payload,
-
             selectedMeter.id
-
           );
 
         } else {
-
           await createMeter(
             payload
           );
 
         }
-
-
         setFormOpen(false);
-
         setSelectedMeter(null);
-
         loadMeters();
 
       } catch (error: any) {
@@ -369,20 +366,14 @@ export default function MeterPage() {
           "Failed to save meter",
           error
         );
-
-
         alert(
-
           error?.response
             ?.data
             ?.detail
-
           ||
-
           "Failed to save meter"
-
         );
-
+        toast.error(getErrorMessage(error));
       } finally {
 
         setSaving(false);
@@ -397,15 +388,10 @@ export default function MeterPage() {
   // =========================
 
   const handleOpenDelete = (
-
     meter: Meter
-
   ) => {
-
     setMeterToDelete(meter);
-
     setDeleteOpen(true);
-
   };
 
 
@@ -415,142 +401,75 @@ export default function MeterPage() {
 
   const handleDelete =
     async () => {
-
       if (!meterToDelete) {
-
         return;
-
       }
-
-
       try {
-
         setDeleting(true);
-
-
         await deleteMeter(
-
           meterToDelete.id
-
         );
-
-
         setDeleteOpen(false);
-
         setMeterToDelete(null);
-
         loadMeters();
-
       } catch (error: any) {
-
         console.error(
           "Failed to delete meter",
           error
         );
 
-
         alert(
-
           error?.response
             ?.data
             ?.detail
-
           ||
-
           "Failed to delete meter"
-
         );
-
+        toast.error(getErrorMessage(error));
       } finally {
-
         setDeleting(false);
-
       }
-
     };
 
-
-  // =========================
-  // OPEN ACTION MENU
-  // =========================
-
   const handleOpenActionMenu = (
-
-    event:
-      React.MouseEvent<HTMLElement>,
-
+    event: React.MouseEvent<HTMLElement>,
     meter: Meter
 
   ) => {
-
     setActionAnchorEl(
       event.currentTarget
     );
-
     setSelectedActionMeter(
       meter
     );
-
   };
-
-
-  // =========================
-  // CLOSE ACTION MENU
-  // =========================
 
   const handleCloseActionMenu = () => {
-
     setActionAnchorEl(null);
-
   };
-
-
-  // =========================
-  // EDIT FROM MENU
-  // =========================
 
   const handleMenuEdit = () => {
 
     if (!selectedActionMeter) {
-
       return;
-
     }
-
-
     handleEdit(
       selectedActionMeter
     );
-
-
     handleCloseActionMenu();
-
   };
 
-
-  // =========================
-  // DELETE FROM MENU
-  // =========================
-
   const handleMenuDelete = () => {
-
     if (!selectedActionMeter) {
-
       return;
-
     }
-
-
     handleOpenDelete(
       selectedActionMeter
     );
-
-
     handleCloseActionMenu();
-
   };
 
-
+  const { can } = usePermission()
   return (
 
     <Box>
@@ -645,26 +564,28 @@ export default function MeterPage() {
 
           </Button>
 
-
-          <Button
-
-            variant="contained"
-
-            startIcon={
-              <Add />
+          <Tooltip
+            title={
+              can("manage_meters")
+                ? ""
+                : "You don't have permission to perform this action."
             }
-
-            onClick={
-              handleCreate
-            }
-
           >
-
-            Create Meter
-
-          </Button>
-
-
+            <span>
+              <Button
+                disabled={!can("manage_meters")}
+                variant="contained"
+                startIcon={
+                  <Add />
+                }
+                onClick={
+                  handleCreate
+                }
+              >
+                Create Meter
+              </Button>
+            </span>
+          </Tooltip>
         </Stack>
 
 
@@ -902,7 +823,7 @@ export default function MeterPage() {
 
                               {
                                 meter.customer_name
-                                  || "-"
+                                || "-"
                               }
 
                             </TableCell>
@@ -940,7 +861,7 @@ export default function MeterPage() {
                                 color={
 
                                   meter.status ===
-                                  "active"
+                                    "active"
 
                                     ? "success"
 
@@ -1023,9 +944,9 @@ export default function MeterPage() {
 
                                   ? new Date(
 
-                                      meter.installation_date
+                                    meter.installation_date
 
-                                    ).toLocaleDateString()
+                                  ).toLocaleDateString()
 
                                   : "-"
 
@@ -1104,56 +1025,58 @@ export default function MeterPage() {
 
       >
 
-
-        <MenuItem
-
-          onClick={
-            handleMenuEdit
+        <Tooltip
+          title={
+            can("manage_meters")
+              ? ""
+              : "You don't have permission to perform this action."
           }
-
         >
+          <span>
+            <MenuItem
+              disabled={!can("manage_meters")}
+              onClick={
+                handleMenuEdit
+              }
+            >
+              <Edit
+                fontSize="small"
+                sx={{
+                  mr: 1,
+                }}
+              />
+              Edit
+            </MenuItem>
+          </span>
+        </Tooltip>
 
-          <Edit
-
-            fontSize="small"
-
-            sx={{
-              mr: 1,
-            }}
-
-          />
-
-          Edit
-
-        </MenuItem>
-
-
-        <MenuItem
-
-          onClick={
-            handleMenuDelete
+        <Tooltip
+          title={
+            can("manage_meters")
+              ? ""
+              : "You don't have permission to perform this action."
           }
-
-          sx={{
-            color: "error.main",
-          }}
-
         >
-
-          <Delete
-
-            fontSize="small"
-
-            sx={{
-              mr: 1,
-            }}
-
-          />
-
-          Delete
-
-        </MenuItem>
-
+          <span>
+            <MenuItem
+              disabled={!can("manage_meters")}
+              onClick={
+                handleMenuDelete
+              }
+              sx={{
+                color: "error.main",
+              }}
+            >
+              <Delete
+                fontSize="small"
+                sx={{
+                  mr: 1,
+                }}
+              />
+              Delete
+            </MenuItem>
+          </span>
+        </Tooltip>
 
       </Menu>
 

@@ -1,43 +1,22 @@
-import {
+import { useEffect, useState } from "react";
 
-  useEffect,
 
-  useState,
-
-} from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 
 import {
-
-  useMutation,
-
-  useQuery,
-
-  useQueryClient,
-
-} from "@tanstack/react-query";
-
-
-import {
-
   Box,
-
   Button,
-
   Card,
-
   Chip,
-
+  Menu,
+  MenuItem,
   IconButton,
-
   InputAdornment,
-
   Stack,
-
   TextField,
-
+  Tooltip,
   Typography,
-
 } from "@mui/material";
 
 
@@ -45,6 +24,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+
 import {
   Transformer,
   TransformerPayload,
@@ -53,8 +34,8 @@ import {
   getTransformers,
   updateTransformer,
 } from "../../../services/crmdService";
-import {toast} from "react-toastify";
-import {getErrorMessage} from "../../../utils/getErrorMessage";
+import { toast } from "react-toastify";
+import { getErrorMessage } from "../../../utils/getErrorMessage";
 import TransformerFormModal from "./TransformerFormModal";
 import DeleteTransformerDialog from "./DeleteTransformerDialog";
 import { usePermission } from "../../../hooks/usePermission";
@@ -65,12 +46,15 @@ export default function TransformerPage() {
 
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch ] = useState("");
-  const [page, setPage ] = useState(1);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTransformer, setEditingTransformer] = useState<Transformer | null>(null);
-  const [deletingTransformer, setDeletingTransformer ] = useState<Transformer | null>(null);
+  const [deletingTransformer, setDeletingTransformer] = useState<Transformer | null>(null);
 
+  const [actionAnchorEl, setActionAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedActionTransformer, setSelectedActionTransformer] = useState<Transformer | null>(null);
+  const actionMenuOpen = Boolean(actionAnchorEl);
 
   useEffect(() => {
     const timer =
@@ -90,46 +74,25 @@ export default function TransformerPage() {
   // =========================
 
   const {
-
     data,
-
     isLoading,
-
     isFetching,
-
     isError,
-
     error,
-
   } = useQuery({
-
-
     queryKey: [
-
       "transformers",
-
       debouncedSearch,
-
       page,
-
       PAGE_SIZE,
-
     ],
 
-
     queryFn: () =>
-
       getTransformers(
-
         debouncedSearch,
-
         page,
-
         PAGE_SIZE
-
       ),
-
-
   });
 
 
@@ -138,29 +101,16 @@ export default function TransformerPage() {
   // =========================
 
   useEffect(() => {
-
-
     if (isError) {
-
-
       toast.error(
-
         getErrorMessage(
           error
         )
-
       );
-
-
     }
-
-
   }, [
-
     isError,
-
     error,
-
   ]);
 
 
@@ -284,10 +234,10 @@ export default function TransformerPage() {
       }: {
 
         payload:
-          TransformerPayload;
+        TransformerPayload;
 
         id:
-          number;
+        number;
 
       }) =>
 
@@ -549,31 +499,49 @@ export default function TransformerPage() {
   // =========================
 
   const saving =
-
     createTransformerMutation.isPending ||
-
     updateTransformerMutation.isPending;
+  const deleting = deleteTransformerMutation.isPending;
 
+  const handleOpenActionMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    transformer: Transformer
+  ) => {
+    setActionAnchorEl(event.currentTarget);
+    setSelectedActionTransformer(transformer);
+  };
 
-  const deleting =
+  const handleCloseActionMenu = () => {
+    setActionAnchorEl(null);
+    setSelectedActionTransformer(null);
+  };
 
-    deleteTransformerMutation.isPending;
+  const handleEditTransformer = () => {
+    if (!selectedActionTransformer) return;
 
-const {can} = usePermission()
-  // =========================
-  // UI
-  // =========================
+    setEditingTransformer(
+      selectedActionTransformer
+    );
+
+    setModalOpen(true);
+
+    handleCloseActionMenu();
+  };
+
+  const handleDeleteTransformer = () => {
+    if (!selectedActionTransformer) return;
+
+    setDeletingTransformer(
+      selectedActionTransformer
+    );
+
+    handleCloseActionMenu();
+  };
+
+  const { can } = usePermission()
 
   return (
-
-
     <Box>
-
-
-      {/* ========================= */}
-      {/* HEADER */}
-      {/* ========================= */}
-
       <Stack
 
         direction="row"
@@ -1106,7 +1074,7 @@ const {can} = usePermission()
                           color={
 
                             transformer.schedule ===
-                            "metered"
+                              "metered"
 
                               ? "primary"
 
@@ -1161,73 +1129,39 @@ const {can} = usePermission()
                       </td>
 
 
-                      {/* ACTIONS */}
+                      {/* Actions */}
 
                       <td
                         style={{
                           padding: 14,
                           textAlign: "center",
+                          width: 80,
                         }}
                       >
-
-
-                        <IconButton
-
-                          size="small"
-
-
-                          onClick={() => {
-
-
-                            setEditingTransformer(
-
-                              transformer
-
-                            );
-
-
-                            setModalOpen(
-                              true
-                            );
-
-
-                          }}
-
-                        >
-
-                          <EditIcon
-                            fontSize="small"
-                          />
-
-                        </IconButton>
-
-
-                        <IconButton
-
-                          size="small"
-
-                          color="error"
-
-
-                          onClick={() =>
-
-                            setDeletingTransformer(
-
-                              transformer
-
-                            )
-
+                        <Tooltip
+                          title={
+                            can("manage_network_config")
+                              ? "Actions"
+                              : "You don't have permission to perform this action."
                           }
-
                         >
-
-                          <DeleteIcon
-                            fontSize="small"
-                          />
-
-                        </IconButton>
-
-
+                          <span>
+                            <IconButton
+                              size="small"
+                              disabled={
+                                !can("manage_network_config")
+                              }
+                              onClick={(event) =>
+                                handleOpenActionMenu(
+                                  event,
+                                  transformer
+                                )
+                              }
+                            >
+                              <MoreVertIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
                       </td>
 
 
@@ -1250,7 +1184,36 @@ const {can} = usePermission()
 
         </Box>
 
+        <Menu
+          anchorEl={actionAnchorEl}
+          open={actionMenuOpen}
+          onClose={handleCloseActionMenu}
+        >
+          <MenuItem
+            onClick={handleEditTransformer}
+          >
+            <EditIcon
+              fontSize="small"
+              sx={{ mr: 1 }}
+            />
 
+            Edit
+          </MenuItem>
+
+          <MenuItem
+            onClick={handleDeleteTransformer}
+            sx={{
+              color: "error.main",
+            }}
+          >
+            <DeleteIcon
+              fontSize="small"
+              sx={{ mr: 1 }}
+            />
+
+            Delete
+          </MenuItem>
+        </Menu>
       </Card>
 
 

@@ -2,9 +2,12 @@ import {
   Button,
   Card,
   Chip,
+  Menu,
+  MenuItem,
   IconButton,
   InputAdornment,
   Stack,
+  Tooltip,
   TextField,
   Typography,
 } from "@mui/material";
@@ -15,6 +18,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 import {
   useEffect,
@@ -41,73 +45,33 @@ import {
 import { getErrorMessage } from "../../../utils/getErrorMessage";
 import SubstationFormModal from "./SubstationFormModal";
 import DeleteSubstationDialog from "./DeleteSubstationDialog";
+import { usePermission } from "../../../hooks/usePermission";
 
 const PAGE_SIZE = 10;
 
 
 export default function SubstationPage() {
 
-  const queryClient =
-    useQueryClient();
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingSubstation, setEditingSubstation] = useState<Substation | null>(null);
+  const [deletingSubstation, setDeletingSubstation] = useState<Substation | null>(null);
 
-
-  // ===================================
-  // LOCAL STATE
-  // ===================================
-
-  const [search, setSearch] =
-    useState("");
-
-
-  const [
-    debouncedSearch,
-    setDebouncedSearch,
-  ] = useState("");
-
-
-  const [page, setPage] =
-    useState(1);
-
-
-  const [modalOpen, setModalOpen] =
-    useState(false);
-
-
-  const [
-    editingSubstation,
-    setEditingSubstation,
-  ] = useState<Substation | null>(
-    null
-  );
-
-
-  const [
-    deletingSubstation,
-    setDeletingSubstation,
-  ] = useState<Substation | null>(
-    null
-  );
-
-
-  // ===================================
-  // DEBOUNCE SEARCH
-  // ===================================
+  const [actionAnchorEl, setActionAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedActionSubstation, setSelectedActionSubstation] = useState<Substation | null>(null);
+  const actionMenuOpen = Boolean(actionAnchorEl);
 
   useEffect(() => {
-
     const timer =
       setTimeout(() => {
-
         setDebouncedSearch(search);
-
         setPage(1);
-
       }, 400);
-
-
     return () =>
       clearTimeout(timer);
-
   }, [search]);
 
 
@@ -122,29 +86,18 @@ export default function SubstationPage() {
     isError,
     error,
   } = useQuery({
-
     queryKey: [
-
       "substations",
-
       debouncedSearch,
-
       page,
-
       PAGE_SIZE,
-
     ],
-
 
     queryFn: () =>
       getSubstations(
-
         debouncedSearch,
-
         page,
-
         PAGE_SIZE
-
       ),
 
   });
@@ -155,9 +108,7 @@ export default function SubstationPage() {
   // ===================================
 
   useEffect(() => {
-
     if (isError) {
-
       toast.error(
         getErrorMessage(error)
       );
@@ -167,9 +118,7 @@ export default function SubstationPage() {
   }, [
 
     isError,
-
     error,
-
   ]);
 
 
@@ -212,38 +161,21 @@ export default function SubstationPage() {
   // ===================================
 
   const createSubstationMutation =
-
     useMutation({
-
       mutationFn:
         createSubstation,
-
-
       onSuccess: () => {
-
         toast.success(
           "Substation created successfully."
         );
-
-
         setModalOpen(false);
-
-
         queryClient.invalidateQueries({
-
           queryKey:
             ["substations"],
-
         });
-
       },
-
-
       onError: (error) => {
-
         console.error(error);
-
-
         toast.error(
           getErrorMessage(error)
         );
@@ -258,64 +190,42 @@ export default function SubstationPage() {
   // ===================================
 
   const updateSubstationMutation =
-
     useMutation({
-
       mutationFn: ({
-
         payload,
-
         id,
-
       }: {
-
         payload:
-          SubstationPayload;
-
+        SubstationPayload;
         id:
-          number;
-
+        number;
       }) =>
-
         updateSubstation(
-
           payload,
-
           id
-
         ),
 
 
       onSuccess: () => {
-
         toast.success(
           "Substation updated successfully."
         );
-
-
         setModalOpen(false);
-
-
         setEditingSubstation(
           null
         );
 
 
         queryClient.invalidateQueries({
-
           queryKey:
             ["substations"],
-
         });
 
       },
 
 
       onError: (error) => {
-
         console.error(error);
-
-
         toast.error(
           getErrorMessage(error)
         );
@@ -330,25 +240,16 @@ export default function SubstationPage() {
   // ===================================
 
   const deleteSubstationMutation =
-
     useMutation({
-
       mutationFn:
         deleteSubstation,
-
-
       onSuccess: () => {
-
         toast.success(
           "Substation deleted successfully."
         );
-
-
         setDeletingSubstation(
           null
         );
-
-
         /*
           If we delete the
           last item on a page,
@@ -356,49 +257,30 @@ export default function SubstationPage() {
         */
 
         if (
-
           substations.length === 1 &&
-
           page > 1
-
         ) {
-
           setPage(
-
             (prev) =>
               prev - 1
-
           );
-
         } else {
-
           queryClient.invalidateQueries({
-
             queryKey:
               ["substations"],
-
           });
 
         }
 
       },
-
-
       onError: (
         error: any
       ) => {
-
         const status =
-
           error?.response?.status;
-
-
         if (status === 409) {
-
           toast.error(
-
             "This substation is being used by other records. Please deactivate it instead."
-
           );
 
         } else {
@@ -431,22 +313,15 @@ export default function SubstationPage() {
     if (
       editingSubstation
     ) {
-
       updateSubstationMutation.mutate({
-
         payload,
-
         id:
           editingSubstation.id,
-
       });
 
     } else {
-
       createSubstationMutation.mutate(
-
         payload
-
       );
 
     }
@@ -459,51 +334,66 @@ export default function SubstationPage() {
   // ===================================
 
   const handleDelete = () => {
-
     if (
       !deletingSubstation
     )
       return;
-
-
     deleteSubstationMutation.mutate(
-
       deletingSubstation.id
 
     );
 
   };
 
-
   // ===================================
   // LOADING STATES
   // ===================================
 
   const saving =
-
     createSubstationMutation.isPending ||
-
     updateSubstationMutation.isPending;
-
-
   const deleting =
-
     deleteSubstationMutation.isPending;
 
+  const handleOpenActionMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    substation: Substation
+  ) => {
+    setActionAnchorEl(event.currentTarget);
+    setSelectedActionSubstation(substation);
+  };
 
-  // ===================================
-  // RENDER
-  // ===================================
+  const handleCloseActionMenu = () => {
+    setActionAnchorEl(null);
+    setSelectedActionSubstation(null);
+  };
+
+  const handleEditSubstation = () => {
+    if (!selectedActionSubstation) return;
+
+    setEditingSubstation(
+      selectedActionSubstation
+    );
+
+    setModalOpen(true);
+
+    handleCloseActionMenu();
+  };
+
+  const handleDeleteSubstation = () => {
+    if (!selectedActionSubstation) return;
+
+    setDeletingSubstation(
+      selectedActionSubstation
+    );
+
+    handleCloseActionMenu();
+  };
+
+  const { can } = usePermission();
 
   return (
-
     <Box>
-
-
-      {/* ============================= */}
-      {/* HEADER */}
-      {/* ============================= */}
-
       <Stack
 
         direction="row"
@@ -515,11 +405,7 @@ export default function SubstationPage() {
         mb={3}
 
       >
-
-
         <Box>
-
-
           <Typography
 
             variant="h5"
@@ -531,7 +417,6 @@ export default function SubstationPage() {
             Injection Substations
 
           </Typography>
-
 
           <Typography
 
@@ -549,7 +434,6 @@ export default function SubstationPage() {
 
         </Box>
 
-
         <Button
 
           variant="contained"
@@ -558,19 +442,15 @@ export default function SubstationPage() {
             <AddIcon />
           }
 
-
           onClick={() => {
-
 
             setEditingSubstation(
               null
             );
 
-
             setModalOpen(
               true
             );
-
 
           }}
 
@@ -579,7 +459,6 @@ export default function SubstationPage() {
           Add Substation
 
         </Button>
-
 
       </Stack>
 
@@ -593,19 +472,12 @@ export default function SubstationPage() {
         fullWidth
 
         size="small"
-
-
         placeholder="
           Search substation
           by name or code...
         "
-
-
         value={search}
-
-
         onChange={(e) =>
-
           setSearch(
             e.target.value
           )
@@ -614,22 +486,15 @@ export default function SubstationPage() {
 
 
         InputProps={{
-
           startAdornment: (
-
             <InputAdornment
               position="start"
             >
-
               <SearchIcon />
-
             </InputAdornment>
-
           ),
 
         }}
-
-
         sx={{
           mb: 2,
         }}
@@ -662,40 +527,27 @@ export default function SubstationPage() {
 
         >
 
-
           <table
-
             style={{
-
               width: "100%",
-
               borderCollapse:
                 "collapse",
-
             }}
-
           >
-
 
             {/* ===================== */}
             {/* TABLE HEADER */}
             {/* ===================== */}
 
             <thead>
-
-
               <tr
-
                 style={{
-
                   background:
                     "#F8FAFC",
 
                 }}
 
               >
-
-
                 <th
 
                   style={{
@@ -712,8 +564,6 @@ export default function SubstationPage() {
                   Substation
 
                 </th>
-
-
                 <th
 
                   style={{
@@ -730,8 +580,6 @@ export default function SubstationPage() {
                   Code
 
                 </th>
-
-
                 <th
 
                   style={{
@@ -1018,90 +866,41 @@ export default function SubstationPage() {
                       </td>
 
 
-                      {/* ================= */}
-                      {/* ACTIONS */}
-                      {/* ================= */}
+
+                      {/* Actions */}
 
                       <td
-
                         style={{
-
-                          padding:
-                            14,
-
-                          textAlign:
-                            "center",
-
+                          padding: 14,
+                          textAlign: "center",
+                          width: 80,
                         }}
-
                       >
-
-
-                        {/* EDIT */}
-
-                        <IconButton
-
-                          size="small"
-
-
-                          onClick={() => {
-
-
-                            setEditingSubstation(
-
-                              substation
-
-                            );
-
-
-                            setModalOpen(
-                              true
-                            );
-
-
-                          }}
-
-                        >
-
-                          <EditIcon
-                            fontSize="small"
-                          />
-
-                        </IconButton>
-
-
-                        {/* DELETE */}
-
-                        <IconButton
-
-                          size="small"
-
-                          color="error"
-
-
-                          onClick={() =>
-
-
-                            setDeletingSubstation(
-
-                              substation
-
-                            )
-
-
+                        <Tooltip
+                          title={
+                            can("manage_network_config")
+                              ? "Actions"
+                              : "You don't have permission to perform this action."
                           }
-
                         >
-
-                          <DeleteIcon
-                            fontSize="small"
-                          />
-
-                        </IconButton>
-
-
+                          <span>
+                            <IconButton
+                              size="small"
+                              disabled={
+                                !can("manage_network_config")
+                              }
+                              onClick={(event) =>
+                                handleOpenActionMenu(
+                                  event,
+                                  substation
+                                )
+                              }
+                            >
+                              <MoreVertIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
                       </td>
-
 
                     </tr>
 
@@ -1120,7 +919,36 @@ export default function SubstationPage() {
 
 
         </Box>
+        <Menu
+          anchorEl={actionAnchorEl}
+          open={actionMenuOpen}
+          onClose={handleCloseActionMenu}
+        >
+          <MenuItem
+            onClick={handleEditSubstation}
+          >
+            <EditIcon
+              fontSize="small"
+              sx={{ mr: 1 }}
+            />
 
+            Edit
+          </MenuItem>
+
+          <MenuItem
+            onClick={handleDeleteSubstation}
+            sx={{
+              color: "error.main",
+            }}
+          >
+            <DeleteIcon
+              fontSize="small"
+              sx={{ mr: 1 }}
+            />
+
+            Delete
+          </MenuItem>
+        </Menu>
 
       </Card>
 

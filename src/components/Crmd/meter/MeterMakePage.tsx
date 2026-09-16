@@ -58,6 +58,8 @@ import {
 
   TextField,
 
+  Tooltip,
+
   Typography,
 
 } from "@mui/material";
@@ -80,186 +82,42 @@ import {
 } from "../../../services/crmdService";
 import MeterMakeFormModal from "./MeterMakeFormModal";
 import DeleteMeterMakeDialog from "./DeleteMeterMakeDialog";
+import { toast } from "react-toastify";
+import { getErrorMessage } from "../../../utils/getErrorMessage";
+import { usePermission } from "../../../hooks/usePermission";
 
 export default function MeterMakePage() {
-
-
-  // =========================
-  // STATE
-  // =========================
-
-  const [
-
-    meterMakes,
-
-    setMeterMakes,
-
-  ] = useState<MeterMake[]>([]);
-
-
-  const [
-
-    loading,
-
-    setLoading,
-
-  ] = useState(false);
-
-
-  const [
-
-    search,
-
-    setSearch,
-
-  ] = useState("");
-
-
-  const [
-
-    formOpen,
-
-    setFormOpen,
-
-  ] = useState(false);
-
-
-  const [
-
-    selectedMeterMake,
-
-    setSelectedMeterMake,
-
-  ] = useState<MeterMake | null>(
-
-    null
-
-  );
-
-
-  const [
-
-    saving,
-
-    setSaving,
-
-  ] = useState(false);
-
-
-  const [
-
-    deleteOpen,
-
-    setDeleteOpen,
-
-  ] = useState(false);
-
-
-  const [
-
-    deleting,
-
-    setDeleting,
-
-  ] = useState(false);
-
-
-  const [
-
-    meterMakeToDelete,
-
-    setMeterMakeToDelete,
-
-  ] = useState<MeterMake | null>(
-
-    null
-
-  );
-
-
-  // =========================
-  // ACTION MENU
-  // =========================
-
-  const [
-
-    actionAnchorEl,
-
-    setActionAnchorEl,
-
-  ] = useState<HTMLElement | null>(
-
-    null
-
-  );
-
-
-  const [
-
-    selectedActionMeterMake,
-
-    setSelectedActionMeterMake,
-
-  ] = useState<MeterMake | null>(
-
-    null
-
-  );
-
-
-  const actionMenuOpen =
-
-    Boolean(
-      actionAnchorEl
-    );
-
-
-  // =========================
-  // LOAD METER MAKES
-  // =========================
+  const [meterMakes, setMeterMakes] = useState<MeterMake[]>([]);
+  const [loading, setLoading,] = useState(false);
+  const [search, setSearch] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
+  const [selectedMeterMake, setSelectedMeterMake] = useState<MeterMake | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [meterMakeToDelete, setMeterMakeToDelete] = useState<MeterMake | null>(null);
+
+  const [actionAnchorEl, setActionAnchorEl] = useState<HTMLElement | null>(null);
+  const [selectedActionMeterMake, setSelectedActionMeterMake] = useState<MeterMake | null>(null);
+  const actionMenuOpen = Boolean(actionAnchorEl);
 
   const loadMeterMakes =
     async () => {
-
-
       try {
-
-
         setLoading(true);
-
-
-        const response =
-
-          await getMeterMakes(
-
-            search,
-
-            1,
-
-            100
-
-          );
-
+        const response = await getMeterMakes(search, 1, 100);
 
         const data =
-
           Array.isArray(
             response
           )
-
             ? response
 
             : response?.results ?? [];
-
-
         setMeterMakes(
           data
         );
-
-
       } catch (error) {
-
-
         console.error(
 
           "Failed to load meter makes",
@@ -267,69 +125,26 @@ export default function MeterMakePage() {
           error
 
         );
-
-
       } finally {
-
-
         setLoading(false);
-
-
       }
-
-
     };
 
-
-  // =========================
-  // INITIAL LOAD
-  // =========================
-
   useEffect(() => {
-
-
     loadMeterMakes();
-
-
   }, []);
 
-
-  // =========================
-  // SEARCH
-  // =========================
-
   useEffect(() => {
-
-
-    const timeout =
-
-      setTimeout(
-
-        () => {
-
-
-          loadMeterMakes();
-
-
-        },
-
-        500
-
-      );
-
-
+    const timeout = setTimeout(() => {
+      loadMeterMakes();
+    },
+      500
+    );
     return () =>
-
       clearTimeout(
         timeout
       );
-
-
-  }, [
-
-    search,
-
-  ]);
+  }, [search]);
 
 
   // =========================
@@ -337,50 +152,19 @@ export default function MeterMakePage() {
   // =========================
 
   const handleCreate = () => {
-
-
-    setSelectedMeterMake(
-
-      null
-
-    );
-
-
-    setFormOpen(
-
-      true
-
-    );
-
-
+    setSelectedMeterMake(null);
+    setFormOpen(true);
   };
-
 
   // =========================
   // EDIT
   // =========================
 
   const handleEdit = (
-
     meterMake: MeterMake
-
   ) => {
-
-
-    setSelectedMeterMake(
-
-      meterMake
-
-    );
-
-
-    setFormOpen(
-
-      true
-
-    );
-
-
+    setSelectedMeterMake(meterMake);
+    setFormOpen(true);
   };
 
 
@@ -390,107 +174,49 @@ export default function MeterMakePage() {
 
   const handleSubmit =
     async (
-
       payload: MeterMakePayload
-
     ) => {
-
-
       try {
-
-
         setSaving(true);
-
-
         if (
-
           selectedMeterMake
-
         ) {
-
-
           await updateMeterMake(
-
             payload,
-
             selectedMeterMake.id
-
           );
-
 
         } else {
-
-
           await createMeterMake(
-
             payload
-
           );
-
-
         }
-
-
-        setFormOpen(
-
-          false
-
-        );
-
-
-        setSelectedMeterMake(
-
-          null
-
-        );
-
-
+        setFormOpen(false);
+        setSelectedMeterMake(null);
         await loadMeterMakes();
-
-
       } catch (error: any) {
-
-
         console.error(
-
           "Failed to save meter make",
-
           error
-
         );
 
 
         const message =
-
           error?.response
             ?.data
-            ?.detail
-
-          ||
-
+            ?.detail ||
           error?.response
             ?.data
-            ?.message
-
-          ||
-
+            ?.message ||
           "Failed to save meter make";
-
-
         alert(
           message
         );
-
+        toast.error(getErrorMessage(error));
 
       } finally {
-
-
         setSaving(false);
-
-
       }
-
-
     };
 
 
@@ -504,21 +230,10 @@ export default function MeterMakePage() {
 
   ) => {
 
-
     setMeterMakeToDelete(
-
       meterMake
-
     );
-
-
-    setDeleteOpen(
-
-      true
-
-    );
-
-
+    setDeleteOpen(true);
   };
 
 
@@ -528,94 +243,36 @@ export default function MeterMakePage() {
 
   const handleDelete =
     async () => {
-
-
       if (
-
         !meterMakeToDelete
-
       ) {
-
-
         return;
-
-
       }
-
-
       try {
-
-
         setDeleting(true);
-
-
         await deleteMeterMake(
-
           meterMakeToDelete.id
-
         );
-
-
-        setDeleteOpen(
-
-          false
-
-        );
-
-
-        setMeterMakeToDelete(
-
-          null
-
-        );
-
-
+        setDeleteOpen(false);
+        setMeterMakeToDelete(null);
         await loadMeterMakes();
-
-
       } catch (error: any) {
-
-
-        console.error(
-
-          "Failed to delete meter make",
-
-          error
-
-        );
-
-
-        const message =
-
-          error?.response
-            ?.data
-            ?.detail
-
+        console.error("Failed to delete meter make", error);
+        const message = error?.response
+          ?.data
+          ?.detail
           ||
-
           error?.response
             ?.data
             ?.message
-
           ||
-
           "Failed to delete meter make";
-
-
-        alert(
-          message
-        );
-
+        alert(message);
+        toast.error(getErrorMessage(error));
 
       } finally {
-
-
         setDeleting(false);
-
-
       }
-
-
     };
 
 
@@ -624,80 +281,31 @@ export default function MeterMakePage() {
   // =========================
 
   const handleOpenActionMenu = (
-
-    event:
-      React.MouseEvent<HTMLElement>,
-
-    meterMake:
-      MeterMake
+    event: React.MouseEvent<HTMLElement>,
+    meterMake: MeterMake
 
   ) => {
+    setActionAnchorEl(event.currentTarget);
 
-
-    setActionAnchorEl(
-
-      event.currentTarget
-
-    );
-
-
-    setSelectedActionMeterMake(
-
-      meterMake
-
-    );
-
-
+    setSelectedActionMeterMake(meterMake);
   };
-
-
-  // =========================
-  // CLOSE ACTION MENU
-  // =========================
 
   const handleCloseActionMenu = () => {
-
-
-    setActionAnchorEl(
-
-      null
-
-    );
-
-
+    setActionAnchorEl(null);
   };
 
-
-  // =========================
-  // EDIT FROM MENU
-  // =========================
-
   const handleMenuEdit = () => {
-
-
     if (
-
       !selectedActionMeterMake
-
     ) {
-
-
       return;
-
-
     }
 
-
     handleEdit(
-
       selectedActionMeterMake
-
     );
 
-
     handleCloseActionMenu();
-
-
   };
 
 
@@ -706,43 +314,24 @@ export default function MeterMakePage() {
   // =========================
 
   const handleMenuDelete = () => {
-
-
     if (
 
       !selectedActionMeterMake
 
     ) {
-
-
       return;
-
-
     }
-
-
     handleOpenDelete(
-
       selectedActionMeterMake
-
     );
-
-
     handleCloseActionMenu();
-
-
   };
 
+  const { can } = usePermission();
 
   return (
 
     <Box>
-
-
-      {/* ===================== */}
-      {/* HEADER */}
-      {/* ===================== */}
-
       <Stack
 
         direction={{
@@ -832,26 +421,33 @@ export default function MeterMakePage() {
 
           </Button>
 
-
-          <Button
-
-            variant="contained"
-
-            startIcon={
-              <Add />
+          <Tooltip
+            title={
+              can("manage_meters")
+                ? ""
+                : "You don't have permission to perform this action."
             }
-
-            onClick={
-              handleCreate
-            }
-
           >
+            <span>
+              <Button
+                disabled={!can("manage_meters")}
+                variant="contained"
 
-            Add Meter Make
+                startIcon={
+                  <Add />
+                }
 
-          </Button>
+                onClick={
+                  handleCreate
+                }
 
+              >
 
+                Add Meter Make
+
+              </Button>
+            </span>
+          </Tooltip>
         </Stack>
 
 
@@ -1091,9 +687,9 @@ export default function MeterMakePage() {
 
                                   ? new Date(
 
-                                      meterMake.created_at
+                                    meterMake.created_at
 
-                                    ).toLocaleString()
+                                  ).toLocaleString()
 
                                   : "-"
 
@@ -1180,73 +776,58 @@ export default function MeterMakePage() {
 
 
         {/* EDIT */}
-
-        <MenuItem
-
-          onClick={
-            handleMenuEdit
+        <Tooltip
+          title={
+            can("manage_meters")
+              ? ""
+              : "You don't have permission to perform this action."
           }
-
         >
-
-
-          <Edit
-
-            fontSize="small"
-
-            sx={{
-
-              mr: 1,
-
-            }}
-
-          />
-
-
-          Edit
-
-
-        </MenuItem>
-
+          <span>
+            <MenuItem
+              disabled={!can("manage_meters")}
+              onClick={handleMenuEdit}
+            >
+              <Edit
+                fontSize="small"
+                sx={{
+                  mr: 1,
+                }}
+              />
+              Edit
+            </MenuItem>
+          </span>
+        </Tooltip>
 
         {/* DELETE */}
-
-        <MenuItem
-
-          onClick={
-            handleMenuDelete
+        <Tooltip
+          title={
+            can("manage_meters")
+              ? ""
+              : "You don't have permission to perform this action."
           }
-
-          sx={{
-
-            color:
-
-              "error.main",
-
-          }}
-
         >
-
-
-          <Delete
-
-            fontSize="small"
-
-            sx={{
-
-              mr: 1,
-
-            }}
-
-          />
-
-
-          Delete
-
-
-        </MenuItem>
-
-
+          <span>
+            <MenuItem
+              disabled={!can("manage_meters")}
+              onClick={
+                handleMenuDelete
+              }
+              sx={{
+                color:
+                  "error.main",
+              }}
+            >
+              <Delete
+                fontSize="small"
+                sx={{
+                  mr: 1,
+                }}
+              />
+              Delete
+            </MenuItem>
+          </span>
+        </Tooltip>
       </Menu>
 
 
@@ -1255,52 +836,20 @@ export default function MeterMakePage() {
       {/* ===================== */}
 
       <MeterMakeFormModal
-
-        open={
-          formOpen
-        }
-
+        open={formOpen}
         onClose={() => {
-
-
           if (
-
-            !saving
-
+           !saving
           ) {
-
-
-            setFormOpen(
-
-              false
-
-            );
-
-
-            setSelectedMeterMake(
-
-              null
-
-            );
-
-
+            setFormOpen( false);
+            setSelectedMeterMake(null);
           }
-
-
         }}
-
-        meterMake={
-          selectedMeterMake
-        }
-
-        loading={
-          saving
-        }
-
+        meterMake={ selectedMeterMake}
+        loading={saving}
         onSubmit={
           handleSubmit
         }
-
       />
 
 
@@ -1309,54 +858,33 @@ export default function MeterMakePage() {
       {/* ===================== */}
 
       <DeleteMeterMakeDialog
-
         open={
           deleteOpen
         }
-
         meterMake={
           meterMakeToDelete
         }
-
         loading={
           deleting
         }
-
         onClose={() => {
-
-
           if (
 
             !deleting
 
           ) {
-
-
             setDeleteOpen(
-
               false
-
             );
-
-
             setMeterMakeToDelete(
-
               null
-
             );
-
-
           }
-
-
         }}
-
         onConfirm={
           handleDelete
         }
-
       />
-
 
     </Box>
 

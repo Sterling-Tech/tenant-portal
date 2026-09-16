@@ -2,35 +2,25 @@ import {
   Button,
   Card,
   Chip,
+  Menu,
   IconButton,
   InputAdornment,
   MenuItem,
+  Tooltip,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 
 import Box from "@mui/material/Box";
-
 import SearchIcon from "@mui/icons-material/Search";
-
 import AddIcon from "@mui/icons-material/Add";
-
 import EditIcon from "@mui/icons-material/Edit";
-
 import DeleteIcon from "@mui/icons-material/Delete";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 
-import {
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 
 import {
@@ -45,152 +35,65 @@ import {
 import { getErrorMessage } from "../../../utils/getErrorMessage";
 import FeederFormModal from "./FeederFormModal";
 import DeleteFeederDialog from "./DeleteFeederDialog";
+import { usePermission } from "../../../hooks/usePermission";
 
 const PAGE_SIZE = 10;
 
-
 export default function FeederPage() {
+  const queryClient = useQueryClient();
 
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [voltageLevel, setVoltageLevel] = useState<number | "">("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingFeeder, setEditingFeeder] = useState<Feeder | null>(null);
+  const [deletingFeeder, setDeletingFeeder] = useState<Feeder | null>(null);
 
-  const queryClient =
-    useQueryClient();
-
-
-  // =========================
-  // STATES
-  // =========================
-
-
-  const [search, setSearch] =
-    useState("");
-
-
-  const [
-    debouncedSearch,
-    setDebouncedSearch,
-  ] = useState("");
-
-
-  const [page, setPage] =
-    useState(1);
-
-
-  const [
-    voltageLevel,
-    setVoltageLevel,
-  ] = useState<
-    number | ""
-  >("");
-
-
-  const [
-    modalOpen,
-    setModalOpen,
-  ] = useState(false);
-
-
-  const [
-    editingFeeder,
-    setEditingFeeder,
-  ] = useState<
-    Feeder | null
-  >(null);
-
-
-  const [
-    deletingFeeder,
-    setDeletingFeeder,
-  ] = useState<
-    Feeder | null
-  >(null);
-
-
-  // =========================
-  // DEBOUNCE SEARCH
-  // =========================
-
+  const [actionAnchorEl, setActionAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedActionFeeder, setSelectedActionFeeder] = useState<Feeder | null>(null);
+  const actionMenuOpen = Boolean(actionAnchorEl);
 
   useEffect(() => {
-
-
     const timer =
       setTimeout(() => {
-
-
         setDebouncedSearch(
           search
         );
-
-
         setPage(1);
-
-
       }, 400);
-
 
     return () =>
       clearTimeout(timer);
-
-
   }, [search]);
 
 
-
-  // =========================
-  // FETCH FEEDERS
-  // =========================
-
-
   const {
-
     data,
-
     isLoading,
-
     isFetching,
-
     isError,
-
     error,
-
   } = useQuery({
-
-
     queryKey: [
-
       "feeders",
-
       debouncedSearch,
-
       page,
-
       PAGE_SIZE,
-
       voltageLevel,
-
     ],
 
 
     queryFn: () =>
-
       getFeeders(
-
         debouncedSearch,
-
         page,
-
         PAGE_SIZE,
-
         undefined,
-
         undefined,
-
         undefined,
-
         undefined,
-
         undefined,
-
         voltageLevel || undefined
 
       ),
@@ -206,22 +109,15 @@ export default function FeederPage() {
 
 
   useEffect(() => {
-
-
     if (isError) {
-
-
       toast.error(
-
         getErrorMessage(
           error
         )
 
       );
 
-
     }
-
 
   }, [
 
@@ -256,14 +152,9 @@ export default function FeederPage() {
 
       : data?.count ?? 0;
 
-
-
   const totalPages =
-
     Math.max(
-
       1,
-
       Math.ceil(
         totalCount /
         PAGE_SIZE
@@ -282,52 +173,25 @@ export default function FeederPage() {
 
     useMutation({
 
-
       mutationFn:
-
         createFeeder,
-
-
       onSuccess: () => {
-
-
         toast.success(
-
           "Feeder created successfully."
-
         );
-
-
         setModalOpen(false);
-
-
         queryClient.invalidateQueries({
-
           queryKey:
             ["feeders"],
-
         });
-
-
       },
-
-
       onError: (error) => {
-
-
         console.error(error);
-
-
         toast.error(
-
           getErrorMessage(error)
 
         );
-
-
       },
-
-
     });
 
 
@@ -340,198 +204,94 @@ export default function FeederPage() {
   const updateFeederMutation =
 
     useMutation({
-
-
       mutationFn: ({
-
         payload,
-
         id,
-
       }: {
-
         payload:
-          FeederPayload;
-
+        FeederPayload;
         id:
-          number;
-
+        number;
       }) =>
-
         updateFeeder(
-
           payload,
-
           id
-
         ),
-
-
-
       onSuccess: () => {
-
-
         toast.success(
-
           "Feeder updated successfully."
-
         );
-
-
         setModalOpen(false);
-
-
         setEditingFeeder(
           null
         );
-
-
         queryClient.invalidateQueries({
-
           queryKey:
             ["feeders"],
-
         });
-
-
       },
-
-
       onError: (error) => {
-
-
         console.error(error);
-
-
         toast.error(
-
           getErrorMessage(error)
-
         );
-
-
       },
-
-
     });
-
-
 
   // =========================
   // DELETE FEEDER
   // =========================
-
-
   const deleteFeederMutation =
-
     useMutation({
-
-
       mutationFn:
-
         deleteFeeder,
-
-
       onSuccess: () => {
-
-
         toast.success(
-
           "Feeder deleted successfully."
-
         );
-
-
         setDeletingFeeder(
           null
         );
-
-
 
         /*
           If the last item on
           the current page was deleted,
           go back one page.
         */
-
-
         if (
-
           feeders.length === 1 &&
-
           page > 1
-
         ) {
-
-
           setPage(
-
             (prev) =>
               prev - 1
-
           );
-
-
         } else {
-
-
           queryClient.invalidateQueries({
-
             queryKey:
               ["feeders"],
-
           });
-
-
         }
-
-
       },
-
-
       onError: (
-
         error: any
-
       ) => {
-
-
         const status =
-
           error?.response
             ?.status;
-
-
-
         if (
-
           status === 409
-
         ) {
-
-
           toast.error(
-
             "This feeder is being used by other records. Please deactivate it instead."
-
           );
-
-
         } else {
-
-
           toast.error(
-
             getErrorMessage(
               error
             )
-
           );
-
-
         }
-
-
       },
 
 
@@ -620,25 +380,49 @@ export default function FeederPage() {
 
 
   const saving =
+    createFeederMutation.isPending ||
+    updateFeederMutation.isPending;
 
-    createFeederMutation
-      .isPending ||
+  const deleting = deleteFeederMutation.isPending;
 
-    updateFeederMutation
-      .isPending;
+  const handleOpenActionMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    feeder: Feeder
+  ) => {
+    setActionAnchorEl(event.currentTarget);
+    setSelectedActionFeeder(feeder);
+  };
 
+  const handleCloseActionMenu = () => {
+    setActionAnchorEl(null);
+    setSelectedActionFeeder(null);
+  };
 
+  const handleEditFeeder = () => {
+    if (!selectedActionFeeder) return;
 
-  const deleting =
+    setEditingFeeder(
+      selectedActionFeeder
+    );
 
-    deleteFeederMutation
-      .isPending;
+    setModalOpen(true);
 
+    handleCloseActionMenu();
+  };
+
+  const handleDeleteFeeder = () => {
+    if (!selectedActionFeeder) return;
+
+    setDeletingFeeder(
+      selectedActionFeeder
+    );
+
+    handleCloseActionMenu();
+  };
+  const { can } = usePermission()
 
 
   return (
-
-
     <Box>
 
 
@@ -1428,81 +1212,39 @@ export default function FeederPage() {
 
 
 
-                      {/* ================= */}
-                      {/* ACTIONS */}
-                      {/* ================= */}
-
+                      {/* Actions */}
 
                       <td
                         style={{
-
                           padding: 14,
-
-                          textAlign:
-                            "center",
-
+                          textAlign: "center",
+                          width: 80,
                         }}
                       >
-
-
-                        <IconButton
-
-                          size="small"
-
-
-                          onClick={() => {
-
-
-                            setEditingFeeder(
-
-                              feeder
-
-                            );
-
-
-                            setModalOpen(
-                              true
-                            );
-
-
-                          }}
-
-                        >
-
-                          <EditIcon
-                            fontSize="small"
-                          />
-
-                        </IconButton>
-
-
-
-                        <IconButton
-
-                          size="small"
-
-                          color="error"
-
-
-                          onClick={() =>
-
-                            setDeletingFeeder(
-
-                              feeder
-
-                            )
-
+                        <Tooltip
+                          title={
+                            can("manage_network_config")
+                              ? "Actions"
+                              : "You don't have permission to perform this action."
                           }
-
                         >
-
-                          <DeleteIcon
-                            fontSize="small"
-                          />
-
-                        </IconButton>
-
-
+                          <span>
+                            <IconButton
+                              size="small"
+                              disabled={
+                                !can("manage_network_config")
+                              }
+                              onClick={(event) =>
+                                handleOpenActionMenu(
+                                  event,
+                                  feeder
+                                )
+                              }
+                            >
+                              <MoreVertIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
                       </td>
 
 
@@ -1524,6 +1266,36 @@ export default function FeederPage() {
 
         </Box>
 
+        <Menu
+          anchorEl={actionAnchorEl}
+          open={actionMenuOpen}
+          onClose={handleCloseActionMenu}
+        >
+          <MenuItem
+            onClick={handleEditFeeder}
+          >
+            <EditIcon
+              fontSize="small"
+              sx={{ mr: 1 }}
+            />
+
+            Edit
+          </MenuItem>
+
+          <MenuItem
+            onClick={handleDeleteFeeder}
+            sx={{
+              color: "error.main",
+            }}
+          >
+            <DeleteIcon
+              fontSize="small"
+              sx={{ mr: 1 }}
+            />
+
+            Delete
+          </MenuItem>
+        </Menu>
 
       </Card>
 

@@ -5,6 +5,8 @@ import {
     Chip,
     IconButton,
     InputAdornment,
+    Menu,
+    MenuItem,
     Pagination,
     Stack,
     TextField,
@@ -16,6 +18,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 import {
     useEffect,
@@ -47,31 +50,17 @@ export default function BusinessUnitPage() {
     // Local State
     // =========================
 
-    const [search, setSearch] =
-        useState("");
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [modalOpen, setModalOpen] = useState(false);
 
-    const [debouncedSearch, setDebouncedSearch] =
-        useState("");
+    const [actionAnchorEl, setActionAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedActionBusinessUnit, setSelectedActionBusinessUnit] = useState<BusinessUnit | null>(null);
+    const actionMenuOpen = Boolean(actionAnchorEl);
 
-    const [page, setPage] =
-        useState(1);
-
-    const [modalOpen, setModalOpen] =
-        useState(false);
-
-    const [
-        editingBusinessUnit,
-        setEditingBusinessUnit,
-    ] = useState<BusinessUnit | null>(
-        null
-    );
-
-    const [
-        deletingBusinessUnit,
-        setDeletingBusinessUnit,
-    ] = useState<BusinessUnit | null>(
-        null
-    );
+    const [editingBusinessUnit, setEditingBusinessUnit] = useState<BusinessUnit | null>(null);
+    const [deletingBusinessUnit, setDeletingBusinessUnit] = useState<BusinessUnit | null>(null);
 
 
     // =========================
@@ -394,7 +383,44 @@ export default function BusinessUnitPage() {
     const deleting =
         deleteBusinessUnitMutation.isPending;
 
+
+    const handleOpenActionMenu = (
+        event: React.MouseEvent<HTMLElement>,
+        businessUnit: BusinessUnit
+    ) => {
+        setActionAnchorEl(event.currentTarget);
+        setSelectedActionBusinessUnit(businessUnit);
+    };
+
+    const handleCloseActionMenu = () => {
+        setActionAnchorEl(null);
+        setSelectedActionBusinessUnit(null);
+    };
+
+    const handleEditBusinessUnit = () => {
+        if (!selectedActionBusinessUnit) return;
+
+        setEditingBusinessUnit(
+            selectedActionBusinessUnit
+        );
+
+        setModalOpen(true);
+
+        handleCloseActionMenu();
+    };
+
+    const handleDeleteBusinessUnit = () => {
+        if (!selectedActionBusinessUnit) return;
+
+        setDeletingBusinessUnit(
+            selectedActionBusinessUnit
+        );
+
+        handleCloseActionMenu();
+    };
+
     const { can } = usePermission();
+
 
     return (
         <Box>
@@ -926,78 +952,32 @@ export default function BusinessUnitPage() {
                                             <td
                                                 style={{
                                                     padding: 14,
-                                                    textAlign:
-                                                        "center",
+                                                    textAlign: "center",
+                                                    width: 80,
                                                 }}
                                             >
-
                                                 <Tooltip
                                                     title={
                                                         can("manage_network_config")
-                                                            ? ""
+                                                            ? "Actions"
                                                             : "You don't have permission to perform this action."
                                                     }
                                                 >
                                                     <span>
                                                         <IconButton
                                                             size="small"
-                                                            disabled={!can("manage_network_config")}
-                                                            onClick={() => {
-
-
-                                                                setEditingBusinessUnit(
-
-                                                                    businessUnit
-
-                                                                );
-
-
-                                                                setModalOpen(
-                                                                    true
-                                                                );
-
-
-                                                            }}
-
-                                                        >
-
-                                                            <EditIcon
-                                                                fontSize="small"
-                                                            />
-
-                                                        </IconButton>
-                                                    </span>
-                                                </Tooltip>
-
-                                                <Tooltip
-                                                    title={
-                                                        can("manage_network_config")
-                                                            ? ""
-                                                            : "You don't have permission to perform this action."
-                                                    }
-                                                >
-                                                    <span>
-                                                        <IconButton
-                                                            size="small"
-                                                            disabled={!can("manage_network_config")}
-                                                            color="error"
-                                                            onClick={() =>
-                                                                setDeletingBusinessUnit(
-
-                                                                    businessUnit
-
-                                                                )
-
+                                                            disabled={
+                                                                !can("manage_network_config")
                                                             }
-
+                                                            onClick={(event) =>
+                                                                handleOpenActionMenu(
+                                                                    event,
+                                                                    businessUnit
+                                                                )
+                                                            }
                                                         >
-
-                                                            <DeleteIcon
-                                                                fontSize="small"
-                                                            />
-
+                                                            <MoreVertIcon fontSize="small" />
                                                         </IconButton>
-
                                                     </span>
                                                 </Tooltip>
                                             </td>
@@ -1021,7 +1001,37 @@ export default function BusinessUnitPage() {
 
                 </Box>
 
+                <Menu
+                    anchorEl={actionAnchorEl}
+                    open={actionMenuOpen}
+                    onClose={handleCloseActionMenu}
+                >
+                    <MenuItem
+                        onClick={handleEditBusinessUnit}
+                    >
+                        <EditIcon
+                            fontSize="small"
+                            sx={{ mr: 1 }}
+                        />
 
+                        Edit
+                    </MenuItem>
+
+                    <MenuItem
+                        onClick={handleDeleteBusinessUnit}
+                        sx={{
+                            color: "error.main",
+                        }}
+                    >
+                        <DeleteIcon
+                            fontSize="small"
+                            sx={{ mr: 1 }}
+                        />
+
+                        Delete
+                    </MenuItem>
+                    
+                </Menu>
             </Card>
 
 

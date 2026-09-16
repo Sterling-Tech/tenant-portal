@@ -43,6 +43,13 @@ import {
 
 import { getErrorMessage } from "../../../utils/getErrorMessage";
 import { usePermission } from "../../../hooks/usePermission";
+import {
+    Add,
+    Delete,
+    Edit,
+    MoreVert,
+    Search,
+} from "@mui/icons-material";
 
 export default function RegionPage() {
     const [modalOpen, setModalOpen] = useState(false);
@@ -58,6 +65,9 @@ export default function RegionPage() {
     const [totalCount, setTotalCount] = useState(0);
     const [nextPage, setNextPage] = useState<string | null>(null);
     const [previousPage, setPreviousPage] = useState<string | null>(null);
+
+    const [actionAnchorEl, setActionAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedActionRegion, setSelectedActionRegion] = useState<Region | null>(null);
 
     // -------------------------
     // Fetch Regions
@@ -231,6 +241,40 @@ export default function RegionPage() {
 
         }
 
+    };
+
+    // =========================
+    // ACTION MENU
+    // =========================
+
+    const handleOpenActionMenu = (
+        event: React.MouseEvent<HTMLElement>,
+        region: Region
+    ) => {
+        setActionAnchorEl(event.currentTarget);
+        setSelectedActionRegion(region);
+    };
+
+    const handleCloseActionMenu = () => {
+        setActionAnchorEl(null);
+        setSelectedActionRegion(null);
+    };
+
+    const handleMenuEdit = () => {
+        if (!selectedActionRegion) return;
+
+        setEditingRegion(selectedActionRegion);
+        setModalOpen(true);
+
+        handleCloseActionMenu();
+    };
+
+    const handleMenuDelete = () => {
+        if (!selectedActionRegion) return;
+
+        setDeletingRegion(selectedActionRegion);
+
+        handleCloseActionMenu();
     };
 
     const totalPages = Math.ceil(
@@ -584,15 +628,11 @@ export default function RegionPage() {
 
                                             </td>
 
-
                                             {/* Actions */}
-
                                             <td
                                                 style={{
-                                                    padding:
-                                                        "14px",
-                                                    textAlign:
-                                                        "center",
+                                                    padding: "14px",
+                                                    textAlign: "center",
                                                 }}
                                             >
                                                 <Tooltip
@@ -606,57 +646,15 @@ export default function RegionPage() {
                                                         <IconButton
                                                             size="small"
                                                             disabled={!can("manage_network_config")}
-                                                            onClick={() => {
-
-                                                                setEditingRegion(
-                                                                    region
-                                                                );
-
-                                                                setModalOpen(
-                                                                    true
-                                                                );
-
-                                                            }}
-                                                        >
-
-                                                            <EditIcon
-                                                                fontSize="small"
-                                                            />
-
-                                                        </IconButton>
-
-                                                    </span>
-                                                </Tooltip>
-
-                                                <Tooltip
-                                                    title={
-                                                        can("manage_network_config")
-                                                            ? ""
-                                                            : "You don't have permission to perform this action."
-                                                    }
-                                                >
-                                                    <span>
-                                                        <IconButton
-                                                            size="small"
-                                                            disabled={!can("manage_network_config")}
-                                                            color="error"
-
-                                                            onClick={() =>
-                                                                setDeletingRegion(
-                                                                    region
-                                                                )
+                                                            onClick={(event) =>
+                                                                handleOpenActionMenu(event, region)
                                                             }
                                                         >
-
-                                                            <DeleteIcon
-                                                                fontSize="small"
-                                                            />
-
+                                                            <MoreVert fontSize="small" />
                                                         </IconButton>
                                                     </span>
                                                 </Tooltip>
                                             </td>
-
                                         </tr>
 
                                     )
@@ -669,6 +667,41 @@ export default function RegionPage() {
                     </table>
 
                 </Box>
+
+                {/* ===================== */}
+                {/* ACTION MENU */}
+                {/* ===================== */}
+
+                <Menu
+                    anchorEl={actionAnchorEl}
+                    open={Boolean(actionAnchorEl)}
+                    onClose={handleCloseActionMenu}
+                >
+                    <MenuItem
+                        disabled={!can("manage_network_config")}
+                        onClick={handleMenuEdit}
+                    >
+                        <Edit
+                            fontSize="small"
+                            sx={{ mr: 1 }}
+                        />
+                        Edit
+                    </MenuItem>
+
+                    <MenuItem
+                        disabled={!can("manage_network_config")}
+                        onClick={handleMenuDelete}
+                        sx={{
+                            color: "error.main",
+                        }}
+                    >
+                        <Delete
+                            fontSize="small"
+                            sx={{ mr: 1 }}
+                        />
+                        Delete
+                    </MenuItem>
+                </Menu>
 
             </Card>
 

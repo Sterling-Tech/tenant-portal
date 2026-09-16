@@ -2,10 +2,14 @@ import {
   Button,
   Card,
   Chip,
+  Menu,
+  MenuItem,
+  Pagination,
   IconButton,
   InputAdornment,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 
@@ -15,6 +19,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 import {
   useEffect,
@@ -41,6 +46,7 @@ import { toast } from "react-toastify";
 import { getErrorMessage } from "../../../utils/getErrorMessage";
 import ServiceCenterFormModal from "./ServiceCenterFormModal";
 import DeleteServiceCenterDialog from "./DeleteServiceCenterDialog";
+import { usePermission } from "../../../hooks/usePermission";
 
 
 
@@ -57,45 +63,22 @@ export default function ServiceCenterPage() {
   // LOCAL STATE
   // =========================
 
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingServiceCenter, setEditingServiceCenter] = useState<ServiceCenter | null>(null);
+  const [deletingServiceCenter, setDeletingServiceCenter] = useState<ServiceCenter | null>(null);
 
-  const [
-    debouncedSearch,
-    setDebouncedSearch,
-  ] = useState("");
-
-
-  const [page, setPage] =
-    useState(1);
-
-
-  const [modalOpen, setModalOpen] =
-    useState(false);
-
-
-  const [
-    editingServiceCenter,
-    setEditingServiceCenter,
-  ] = useState<ServiceCenter | null>(
-    null
-  );
-
-
-  const [
-    deletingServiceCenter,
-    setDeletingServiceCenter,
-  ] = useState<ServiceCenter | null>(
-    null
-  );
-
+  const [actionAnchorEl, setActionAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedActionServiceCenter, setSelectedActionServiceCenter] = useState<ServiceCenter | null>(null);
+  const actionMenuOpen = Boolean(actionAnchorEl);
 
   // =========================
   // DEBOUNCE SEARCH
   // =========================
 
   useEffect(() => {
-
     const timer =
       setTimeout(() => {
 
@@ -278,10 +261,10 @@ export default function ServiceCenterPage() {
       }: {
 
         payload:
-          ServiceCenterPayload;
+        ServiceCenterPayload;
 
         id:
-          number;
+        number;
 
       }) =>
 
@@ -490,17 +473,45 @@ export default function ServiceCenterPage() {
   // LOADING STATES
   // =========================
 
-  const saving =
+  const saving = createMutation.isPending || updateMutation.isPending;
+  const deleting = deleteMutation.isPending;
 
-    createMutation.isPending ||
+  const handleOpenActionMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    serviceCenter: ServiceCenter
+  ) => {
+    setActionAnchorEl(event.currentTarget);
+    setSelectedActionServiceCenter(serviceCenter);
+  };
 
-    updateMutation.isPending;
+  const handleCloseActionMenu = () => {
+    setActionAnchorEl(null);
+    setSelectedActionServiceCenter(null);
+  };
 
+  const handleEditServiceCenter = () => {
+    if (!selectedActionServiceCenter) return;
 
-  const deleting =
+    setEditingServiceCenter(
+      selectedActionServiceCenter
+    );
 
-    deleteMutation.isPending;
+    setModalOpen(true);
 
+    handleCloseActionMenu();
+  };
+
+  const handleDeleteServiceCenter = () => {
+    if (!selectedActionServiceCenter) return;
+
+    setDeletingServiceCenter(
+      selectedActionServiceCenter
+    );
+
+    handleCloseActionMenu();
+  };
+
+  const { can } = usePermission();
 
   return (
 
@@ -1091,87 +1102,39 @@ export default function ServiceCenterPage() {
 
                       </td>
 
-
-
-                      {/* ================= */}
-                      {/* ACTIONS */}
-                      {/* ================= */}
+                      {/* Actions */}
 
                       <td
                         style={{
-
-                          padding:
-                            14,
-
-                          textAlign:
-                            "center",
-
+                          padding: 14,
+                          textAlign: "center",
+                          width: 80,
                         }}
                       >
-
-
-                        {/* EDIT */}
-
-                        <IconButton
-
-                          size="small"
-
-
-                          onClick={() => {
-
-
-                            setEditingServiceCenter(
-
-                              serviceCenter
-
-                            );
-
-
-                            setModalOpen(
-                              true
-                            );
-
-
-                          }}
-
-                        >
-
-                          <EditIcon
-                            fontSize="small"
-                          />
-
-                        </IconButton>
-
-
-
-                        {/* DELETE */}
-
-                        <IconButton
-
-                          size="small"
-
-                          color="error"
-
-
-                          onClick={() =>
-
-                            setDeletingServiceCenter(
-
-                              serviceCenter
-
-                            )
-
+                        <Tooltip
+                          title={
+                            can("manage_network_config")
+                              ? "Actions"
+                              : "You don't have permission to perform this action."
                           }
-
                         >
-
-                          <DeleteIcon
-                            fontSize="small"
-                          />
-
-                        </IconButton>
-
-
+                          <span>
+                            <IconButton
+                              size="small"
+                              disabled={
+                                !can("manage_network_config")
+                              }
+                              onClick={(event) =>
+                                handleOpenActionMenu(
+                                  event,
+                                  serviceCenter
+                                )
+                              }
+                            >
+                              <MoreVertIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
                       </td>
 
 
@@ -1193,7 +1156,36 @@ export default function ServiceCenterPage() {
 
         </Box>
 
+        <Menu
+          anchorEl={actionAnchorEl}
+          open={actionMenuOpen}
+          onClose={handleCloseActionMenu}
+        >
+          <MenuItem
+            onClick={handleEditServiceCenter}
+          >
+            <EditIcon
+              fontSize="small"
+              sx={{ mr: 1 }}
+            />
 
+            Edit
+          </MenuItem>
+
+          <MenuItem
+            onClick={handleDeleteServiceCenter}
+            sx={{
+              color: "error.main",
+            }}
+          >
+            <DeleteIcon
+              fontSize="small"
+              sx={{ mr: 1 }}
+            />
+
+            Delete
+          </MenuItem>
+        </Menu>
       </Card>
 
 
