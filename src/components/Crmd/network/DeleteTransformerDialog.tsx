@@ -89,17 +89,17 @@ export default function DeleteTransformerDialog({
     >
 
 
-      <DialogTitle>
+      <DialogTitle className='bg-blue-900' color='white'>
 
         Delete Transformer
 
       </DialogTitle>
 
 
-      <DialogContent>
+      <DialogContent >
 
 
-        <DialogContentText>
+        <DialogContentText mt={3}>
 
 
           Are you sure you want to delete{" "}

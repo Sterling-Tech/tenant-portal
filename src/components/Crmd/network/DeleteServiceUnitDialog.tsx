@@ -62,7 +62,7 @@ export default function DeleteServiceUnitDialog({
     >
 
 
-      <DialogTitle>
+      <DialogTitle className="bg-blue-900" color="white">
 
         Delete Service Unit
 
@@ -72,7 +72,7 @@ export default function DeleteServiceUnitDialog({
       <DialogContent>
 
 
-        <Typography>
+        <Typography mt={3}>
 
 
           Are you sure you want to delete{" "}

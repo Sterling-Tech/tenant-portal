@@ -386,10 +386,9 @@ export default function BandTable({
             <MenuItem
               disabled={!can("manage_tariff_config")}
               onClick={handleDelete}
+              sx={{ color: "error.main" }}
             >
-
               Delete
-
             </MenuItem>
           </span>
         </Tooltip>

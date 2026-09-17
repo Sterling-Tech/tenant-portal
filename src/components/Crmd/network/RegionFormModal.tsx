@@ -94,10 +94,11 @@ export default function RegionFormModal({
       fullWidth
       maxWidth="sm"
     >
-      <DialogTitle>
+      <DialogTitle className="bg-blue-900">
         <Typography
           variant="h6"
           fontWeight={700}
+          color={'white'}
         >
           {region
             ? "Edit Region"
@@ -106,7 +107,7 @@ export default function RegionFormModal({
       </DialogTitle>
 
       <DialogContent>
-        <Stack spacing={2.5} mt={1}>
+        <Stack spacing={2.5} mt={3}>
 
           <TextField
             label="Region Name"

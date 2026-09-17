@@ -111,14 +111,14 @@ export default function CategoryFormModal({
       fullWidth
       maxWidth="sm"
     >
-      <DialogTitle>
+      <DialogTitle className='bg-blue-900' color='white'>
         {category
           ? "Edit Tariff Category"
           : "Add Tariff Category"}
       </DialogTitle>
 
       <DialogContent>
-        <Stack spacing={2} mt={1}>
+        <Stack spacing={2} mt={3}>
           {/* CATEGORY NAME */}
 
           <TextField

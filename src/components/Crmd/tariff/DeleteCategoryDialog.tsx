@@ -34,7 +34,7 @@ export default function DeleteCategoryDialog({
       fullWidth
       maxWidth="xs"
     >
-      <DialogTitle>
+      <DialogTitle className='bg-blue-900' color='white'>
         Delete Tariff Category
       </DialogTitle>
 
@@ -48,7 +48,7 @@ export default function DeleteCategoryDialog({
           </Alert>
         )}
 
-        <Typography>
+        <Typography mt={3}>
           Are you sure you want to delete{" "}
           <strong>
             {category?.name}

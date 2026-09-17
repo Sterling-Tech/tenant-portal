@@ -344,7 +344,7 @@ export default function ServiceCenterFormModal({
       {/* TITLE */}
       {/* ===================== */}
 
-      <DialogTitle>
+      <DialogTitle className="bg-blue-900" color="white">
 
         {
 
@@ -371,7 +371,7 @@ export default function ServiceCenterFormModal({
 
           spacing={2}
 
-          mt={1}
+          mt={3}
 
         >
 

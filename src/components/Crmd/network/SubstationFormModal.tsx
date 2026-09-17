@@ -267,9 +267,7 @@ SubstationFormModal({
       {/* TITLE */}
       {/* ========================= */}
 
-      <DialogTitle>
-
-
+      <DialogTitle className="bg-blue-900" color={"white"}>
         {
 
           substation
@@ -279,8 +277,6 @@ SubstationFormModal({
             : "Add Substation"
 
         }
-
-
       </DialogTitle>
 
 
@@ -295,7 +291,7 @@ SubstationFormModal({
 
           spacing={2}
 
-          mt={1}
+          mt={3}
 
         >
 

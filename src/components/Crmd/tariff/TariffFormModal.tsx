@@ -516,7 +516,7 @@ export default function TariffFormModal({
     >
 
 
-      <DialogTitle>
+      <DialogTitle className='bg-blue-900' color='white'>
 
         {
           tariff
@@ -532,7 +532,7 @@ export default function TariffFormModal({
 
         <Stack
           spacing={2}
-          mt={1}
+          mt={3}
         >
 
 

@@ -71,7 +71,7 @@ export default function DeleteMeterMakeDialog({
     >
 
 
-      <DialogTitle>
+      <DialogTitle className='bg-blue-900' color='white'>
 
         Delete Meter Make
 
@@ -81,7 +81,7 @@ export default function DeleteMeterMakeDialog({
       <DialogContent>
 
 
-        <DialogContentText>
+        <DialogContentText mt={3}>
 
 
           Are you sure you want to delete:

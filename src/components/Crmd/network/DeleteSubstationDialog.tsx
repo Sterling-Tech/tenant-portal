@@ -79,7 +79,7 @@ DeleteSubstationDialog({
 
       {/* TITLE */}
 
-      <DialogTitle>
+      <DialogTitle className='bg-blue-900' color='white'>
 
         Delete Substation
 
@@ -91,7 +91,7 @@ DeleteSubstationDialog({
       <DialogContent>
 
 
-        <DialogContentText>
+        <DialogContentText mt={3}>
 
 
           Are you sure you want

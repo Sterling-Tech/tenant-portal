@@ -64,7 +64,7 @@ export default function DeleteBandDialog({
     >
 
 
-      <DialogTitle>
+      <DialogTitle className="bg-blue-900" color="white">
 
         Delete Band
 
@@ -74,7 +74,7 @@ export default function DeleteBandDialog({
       <DialogContent>
 
 
-        <DialogContentText>
+        <DialogContentText mt={3}>
 
 
           Are you sure you want to delete

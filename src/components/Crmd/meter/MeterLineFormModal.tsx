@@ -412,7 +412,7 @@ export default function MeterLineFormModal({
     >
 
 
-      <DialogTitle>
+      <DialogTitle className='bg-blue-900' color='white'>
 
         Record Meter Action
 
@@ -426,7 +426,7 @@ export default function MeterLineFormModal({
 
           spacing={2}
 
-          mt={1}
+          mt={3}
 
         >
 

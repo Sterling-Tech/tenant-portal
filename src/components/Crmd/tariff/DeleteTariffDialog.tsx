@@ -71,7 +71,7 @@ export default function DeleteTariffDialog({
     >
 
 
-      <DialogTitle>
+      <DialogTitle className='bg-blue-900' color='white'>
 
         Delete Tariff
 
@@ -81,7 +81,7 @@ export default function DeleteTariffDialog({
       <DialogContent>
 
 
-        <Typography>
+        <Typography mt={3}>
 
           Are you sure you want to delete
 

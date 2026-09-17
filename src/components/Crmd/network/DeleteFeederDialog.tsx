@@ -68,7 +68,7 @@ export default function DeleteFeederDialog({
     >
 
 
-      <DialogTitle>
+      <DialogTitle className='bg-blue-900' color='white'>
 
         Delete Feeder
 
@@ -79,7 +79,7 @@ export default function DeleteFeederDialog({
       <DialogContent>
 
 
-        <DialogContentText>
+        <DialogContentText mt={3}>
 
 
           Are you sure you want to

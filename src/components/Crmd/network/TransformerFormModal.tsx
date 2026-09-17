@@ -471,7 +471,7 @@ export default function TransformerFormModal({
       {/* TITLE */}
       {/* ===================== */}
 
-      <DialogTitle>
+      <DialogTitle className='bg-blue-900' color='white'>
 
 
         {
@@ -499,7 +499,7 @@ export default function TransformerFormModal({
 
           spacing={2}
 
-          mt={1}
+          mt={3}
 
         >
 

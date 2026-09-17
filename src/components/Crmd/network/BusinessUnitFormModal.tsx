@@ -215,7 +215,7 @@ export default function BusinessUnitFormModal({
       maxWidth="sm"
     >
 
-      <DialogTitle>
+      <DialogTitle className="bg-blue-900" color={"white"}>
 
         <Typography
           variant="h6"
@@ -233,11 +233,9 @@ export default function BusinessUnitFormModal({
 
       <DialogContent>
 
-        <Box mt={1}>
+        <Box mt={3}>
 
           <Stack spacing={2.5}>
-
-
             {/* Name */}
 
             <TextField

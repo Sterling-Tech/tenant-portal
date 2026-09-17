@@ -38,12 +38,12 @@ export default function DeleteRegionDialog({
       maxWidth="xs"
       fullWidth
     >
-      <DialogTitle>
+      <DialogTitle className="bg-blue-900" color="white">
         Delete Region
       </DialogTitle>
 
       <DialogContent>
-        <Typography>
+        <Typography mt={3}>
           Are you sure you want to delete{" "}
           <strong>
             {region?.name}

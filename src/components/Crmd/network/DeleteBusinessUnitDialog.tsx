@@ -50,7 +50,7 @@ export default function DeleteBusinessUnitDialog({
       onClose={onClose}
     >
 
-      <DialogTitle>
+      <DialogTitle className="bg-blue-900" color="white">
 
         Delete Business Unit
 
@@ -59,7 +59,7 @@ export default function DeleteBusinessUnitDialog({
 
       <DialogContent>
 
-        <Typography>
+        <Typography mt={3}>
 
           Are you sure you want to delete{" "}
 

@@ -72,7 +72,7 @@ export default function DeleteServiceCenterDialog({
     >
 
 
-      <DialogTitle>
+      <DialogTitle className="bg-blue-900" color='white'>
 
         Delete Service Center
 
@@ -83,7 +83,7 @@ export default function DeleteServiceCenterDialog({
       <DialogContent>
 
 
-        <DialogContentText>
+        <DialogContentText mt={3}>
 
 
           Are you sure you want to delete

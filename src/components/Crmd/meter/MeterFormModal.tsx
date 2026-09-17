@@ -523,7 +523,7 @@ export default function MeterFormModal({
     >
 
 
-      <DialogTitle>
+      <DialogTitle className='bg-blue-900' color='white'>
 
         {
           meter
@@ -539,7 +539,7 @@ export default function MeterFormModal({
 
         <Stack
           spacing={2}
-          mt={1}
+          mt={3}
         >
 
 

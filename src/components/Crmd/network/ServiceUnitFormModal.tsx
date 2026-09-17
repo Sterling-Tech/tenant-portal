@@ -230,7 +230,7 @@ export default function ServiceUnitFormModal({
       {/* TITLE */}
       {/* ========================= */}
 
-      <DialogTitle>
+      <DialogTitle className="bg-blue-900" color={"white"}>
 
         <Typography
           variant="h6"
@@ -257,12 +257,9 @@ export default function ServiceUnitFormModal({
 
         <Stack
           spacing={3}
-          mt={1}
+          mt={3}
         >
-
-
           {/* Name */}
-
           <TextField
 
             label="Service Unit Name"
