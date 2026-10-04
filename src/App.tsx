@@ -30,6 +30,9 @@ import Ringfencing from './pages/Ringfencing/Ringfencing';
 import NetworkConfig from './pages/Crmd/NetworkConfig';
 import TariffConfig from './pages/Crmd/TariffConfig';
 import MeterConfig from './pages/Crmd/MeterConfig';
+import SecurityGuards from './pages/AccessCode/AccessCodes';
+import AccessCodePage from './components/AccessCode/AccessCodePage';
+import VerifyAccessCode from './components/AccessCode/VerifyAccessCode';
 // Enhanced theme
 const theme = createTheme({
     palette: {
@@ -205,6 +208,28 @@ const App: React.FC = () => {
                                     <ProtectedRoute>
                                         <Layout>
                                             <Ringfencing />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            {/* /security */}
+                            <Route
+                                path="/security"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <SecurityGuards />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/access"
+                                element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <AccessCodePage />
+                                            {/* <VerifyAccessCode /> */}
                                         </Layout>
                                     </ProtectedRoute>
                                 }

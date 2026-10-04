@@ -36,6 +36,7 @@ import {
     AccountBalanceWallet,
     History,
     PersonAdd,
+    Security,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -678,10 +679,37 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 <Settings />
                             </ListItemIcon>
                             {/* <ListItemText primary="Ringfence Mgmt" /> */}
-                            <ListItemText primary="Menu Configuration" />
+                            <ListItemText primary="CUG Configuration" />
                         </ListItemButton>
                     </ListItem>
                 )}
+                {/* Security guards */}
+                {/* {can("manage_security_personnel") && ( */}
+                    <ListItem disablePadding>
+                        <ListItemButton
+                            selected={location.pathname === '/security'}
+                            onClick={() => handleNavigation('/security')}
+                            sx={{
+                                '&.Mui-selected': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                    },
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'white',
+                                    },
+                                },
+                            }}
+                        >
+                            <ListItemIcon>
+                                <Security />
+                            </ListItemIcon>
+                            {/* <ListItemText primary="Ringfence Mgmt" /> */}
+                            <ListItemText primary="Security Guards" />
+                        </ListItemButton>
+                    </ListItem>
+                {/* )} */}
                 {/* Settings */}
                 <ListItem disablePadding>
                     <ListItemButton

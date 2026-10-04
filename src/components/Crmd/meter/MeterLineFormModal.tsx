@@ -423,20 +423,13 @@ export default function MeterLineFormModal({
 
 
         <Stack
-
           spacing={2}
-
           mt={3}
-
         >
-
-
           {/* METER */}
 
           <TextField
-
             select
-
             fullWidth
 
             label="Meter"
