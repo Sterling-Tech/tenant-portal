@@ -298,7 +298,7 @@ const handleNavigation = (path: string) => {
 
                 </Box>
 
-                <Tooltip
+                {/* <Tooltip
                     title={
                         can(
                             "manage_security_personnel"
@@ -319,17 +319,13 @@ const handleNavigation = (path: string) => {
                                     "manage_security_personnel"
                                 )
                             }
-                            // onClick={() =>
-                            //     setModalOpen(true)
-                            // }
-                            // /access
                             onClick={() => handleNavigation('/access')}
                         >
                             Verify Access code
                         </Button>
 
                     </span>
-                </Tooltip>
+                </Tooltip> */}
 
                 <Tooltip
                     title={
