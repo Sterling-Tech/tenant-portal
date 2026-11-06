@@ -1,7 +1,8 @@
 import { getApiKeyCredentials } from '../utils/apiKeyStorage';
 
 // const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://188.166.161.13:8001/api/v1';
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://188.166.161.13:8065/';
+ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://188.166.161.13:8065/';
+//const API_BASE_URL = process.env.REACT_APP_API_SAAS_URL || 'http://188.166.161.13:8074';
 
 export interface ApiResponse<T> {
     data: T;
@@ -9,17 +10,6 @@ export interface ApiResponse<T> {
     status?: number;
 }
 
-// export class ApiErrors extends Error {
-//     status: number;
-//     data: any;
-
-//     constructor(message: string, status: number, data: any) {
-//         super(message);
-//         this.name = "ApiError";
-//         this.status = status;
-//         this.data = data;
-//     }
-// }
 export class ApiErrors extends Error {
     status: number;
     data: any;
@@ -64,11 +54,6 @@ export const getAuthHeaders = (): Record<string, string> => {
     } else if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     }
-
-    // const tenantId = localStorage.getItem('tenantId');
-    // if (tenantId) {
-    //     headers['X-Tenant-ID'] = tenantId;
-    // }
 
     return headers;
 };
