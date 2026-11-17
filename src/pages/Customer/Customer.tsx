@@ -53,7 +53,7 @@ import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import { fetchCustomers, fetchCustomer, fetchCustomerTransactions, fetchCustomerBills, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers, type CustomerForm, EditCustomer, fetchDebt, fetchCustomerDebtAnalytic } from "../../services/vendorService";
+import { fetchCustomers, fetchCustomer, fetchCustomerTransactions, fetchCustomerBills, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers, type CustomerForm, EditCustomer, fetchDebt, fetchCustomerDebtAnalytic, Class, MeteringType, Category } from "../../services/vendorService";
 import {
   issueEngineeringToken,
   getSavedEngineeringTokens,
@@ -79,7 +79,9 @@ const initialCustomerForm: CustomerForm = {
   customer_category: 0,
   customer_class: 0,
   metering_type: 0,
-
+  service_unit: "",
+  postpaid_arrears: "0.00",
+  feeder_33: "",
   district: "",
   feeder: "",
   transformer: "",
@@ -106,9 +108,18 @@ const CustomerManagement = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuRow, setMenuRow] = useState<Customer | null>(null);
   const detailRef = useRef<HTMLDivElement | null>(null);
-  const [meteringTypes, setMeteringTypes] = useState<any[]>([]);
-  const [classes, setClasses] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [meteringTypes, setMeteringTypes] = useState<MeteringType[]>([]);
+
+
+  // const [meteringTypes, setMeteringTypes] = useState<any[]>([]);
+  // const [classes, setClasses] = useState<Class[]>([]);
+  // const [categories, setCategories] = useState<any[]>([]);
+
+
   const [customerForm, setCustomerForm] =
     useState<Partial<CustomerForm>>(initialCustomerForm);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -339,30 +350,58 @@ const CustomerManagement = () => {
     return "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+  // const load = async (params?: any) => {
+  //   setLoading(true);
+  //   try {
+  //     const res = await fetchCustomers({
+  //       ...filters,
+  //       page,
+  //       ...params,
+  //     });
+  //     setCustomers(res.results);
+  //     setCount(res.count);
+  //     setNext(res.next);
+  //     setPrevious(res.previous);
+  //   } catch (err) {
+  //     console.error(err);
+  //     setCustomers([]);
+  //     setCount(0);
+  //     setNext(null);
+  //     setPrevious(null);
+  //     toast.error(getErrorMessage(err));
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const load = async (params?: any) => {
     setLoading(true);
+
     try {
       const res = await fetchCustomers({
         ...filters,
         page,
         ...params,
       });
-      setCustomers(res.results);
-      setCount(res.count);
-      setNext(res.next);
-      setPrevious(res.previous);
+
+      console.log("CUSTOMERS API RESPONSE:", res);
+
+      setCustomers(Array.isArray(res?.results) ? res.results : []);
+      setCount(res?.count ?? 0);
+      setNext(res?.next ?? null);
+      setPrevious(res?.previous ?? null);
     } catch (err) {
-      console.error(err);
+      console.error("FETCH CUSTOMERS ERROR:", err);
+
       setCustomers([]);
       setCount(0);
       setNext(null);
       setPrevious(null);
+
       toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     load();
   }, [filters, page]);
@@ -533,6 +572,37 @@ const CustomerManagement = () => {
     setOpenModal(true);
   };
 
+  const handleOpenCreateModal = () => {
+    setFormMode("create");
+
+    setCustomerForm({
+      name: "",
+      email: "",
+      phone_number: "",
+      address: "",
+      district: "",
+      feeder: "",
+      feeder_33: "",
+      transformer: "",
+      service_center: "",
+      service_unit: "",
+      band: "",
+      tariff: "",
+      postpaid_arrears: "0.00",
+      customer_category: 0,
+      customer_class: 0,
+      metering_type: 0,
+      krn: "",
+      ti: "",
+      sgc: "",
+      kct1: "",
+      kct2: "",
+    });
+
+    // setErrors({});
+    setOpenModal(true);
+  };
+
   const buildCustomerPayload = (): CustomerForm => ({
     name: customerForm.name || "",
     email: customerForm.email || "",
@@ -540,14 +610,17 @@ const CustomerManagement = () => {
     address: customerForm.address || "",
 
     customer_category: Number(customerForm.customer_category),
-    customer_class: Number(customerForm.customer_class),
+    customer_class: customerForm.customer_class
+      ? Number(customerForm.customer_class)
+      : null,
     metering_type: Number(customerForm.metering_type),
-
+    feeder_33: customerForm.feeder_33 || "",
+    postpaid_arrears: customerForm.postpaid_arrears || "0.00",
     district: customerForm.district || "",
     feeder: customerForm.feeder || "",
     transformer: customerForm.transformer || "",
     service_center: customerForm.service_center || "",
-
+    service_unit: customerForm.service_unit || "",
     band: customerForm.band || "",
     tariff: customerForm.tariff || "",
 
@@ -565,7 +638,7 @@ const CustomerManagement = () => {
       phone_number: !customerForm.phone_number,
       address: !customerForm.address,
       customer_category: !customerForm.customer_category,
-      customer_class: !customerForm.customer_class,
+      customer_class: formMode === "edit" && !customerForm.customer_class,
       metering_type: !customerForm.metering_type,
       krn: !customerForm.krn,
       ti: !customerForm.ti,
@@ -590,12 +663,13 @@ const CustomerManagement = () => {
     customer_category: customer.customer_category?.id || 0,
     customer_class: customer.customer_class?.id || 0,
     metering_type: customer.metering_type?.id || 0,
-
+    feeder_33: customer.extra_info?.feeder_33 || "",
+    postpaid_arrears: customer.extra_info?.postpaid_arrears || "0.00",
     district: customer.extra_info?.district || "",
     feeder: customer.extra_info?.feeder || "",
     transformer: customer.extra_info?.transformer || "",
     service_center: customer.extra_info?.service_center || "",
-
+    service_unit: customer.extra_info?.service_unit || "",
     band: customer.extra_info?.band || "",
     tariff: customer.extra_info?.tariff || "",
 
@@ -726,6 +800,18 @@ const CustomerManagement = () => {
         </Box>
 
         <Stack direction="row" spacing={2}>
+          <Button
+            onClick={handleOpenCreateModal}
+            variant="outlined"
+            startIcon={<Refresh />}
+            sx={{
+              height: 36,
+              textTransform: "none",
+              borderRadius: 2,
+            }}
+          >
+            Create Customer
+          </Button>
           <Button onClick={() => load()} variant="outlined" startIcon={<Refresh />} sx={{ height: 36, textTransform: "none", borderRadius: 2 }}>
             Refresh
           </Button>
@@ -818,7 +904,7 @@ const CustomerManagement = () => {
                     onChange={(e) => handleFilterChange("metering_type_id", e.target.value)}
                   >
                     <SelectItem value="all">All Metering</SelectItem>
-                    {meteringTypes.map((m) => (
+                    {(meteringTypes ?? []).map((m) => (
                       <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                     ))}
                   </Select>
@@ -830,7 +916,7 @@ const CustomerManagement = () => {
                     onChange={(e) => handleFilterChange("class_id", e.target.value)}
                   >
                     <SelectItem value="all">All Classes</SelectItem>
-                    {classes.map((c) => (
+                    {(classes ?? []).map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </Select>
@@ -842,7 +928,7 @@ const CustomerManagement = () => {
                     onChange={(e) => handleFilterChange("category_id", e.target.value)}
                   >
                     <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((c) => (
+                    {(categories ?? []).map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </Select>
@@ -880,7 +966,7 @@ const CustomerManagement = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                customers.map((c) => (
+                (customers ?? []).map((c) => (
                   <TableRow key={c.id} hover>
                     <TableCell sx={{ color: "#94A3B8", fontWeight: 600, fontSize: 12 }}>
                       <Stack direction="row" spacing={2} alignItems="center">
@@ -993,7 +1079,7 @@ const CustomerManagement = () => {
         <Divider />
         <Button endIcon={<MoreHorizIcon />} onClick={handleMenuOpen} style={{ marginLeft: "20px" }}>More</Button>
         <Menu anchorEl={anchorE2} open={Boolean(anchorE2)} onClose={handleMenuClose}>
-          {meterActions.map((action) => (
+          {(meterActions ?? []).map((action) => (
             <MenuItem key={action.id} onClick={() => {
               setSelectedAction(action);
               setActionCustomer(menuRow);
@@ -1175,7 +1261,7 @@ const CustomerManagement = () => {
                             </TableCell>
                           </TableRow>
                         ) : (
-                          transactions.map((tx) => (
+                          (transactions ?? []).map((tx) => (
                             <TableRow key={tx.id} hover>
                               <TableCell>{safeValue(tx.id)}</TableCell>
                               <TableCell>
@@ -1320,7 +1406,7 @@ const CustomerManagement = () => {
                               </TableCell>
                             </TableRow>
                           ) : (
-                            bills.map((bill) => (
+                            (bills ?? []).map((bill) => (
                               <TableRow
                                 key={bill.id}
                                 hover
@@ -1418,7 +1504,7 @@ const CustomerManagement = () => {
                             </TableCell>
                           </TableRow>
                         ) : (
-                          engineeringTokens.map((t) => (
+                          (engineeringTokens ?? []).map((t) => (
                             <TableRow key={t.id} hover>
                               <TableCell>
                                 <Chip label={t.vend_type} size="small" sx={{ bgcolor: "#EEF2FF", color: "#3730A3", textTransform: "capitalize" }} />
@@ -1501,27 +1587,64 @@ const CustomerManagement = () => {
                     <Select value={customerForm.customer_category || ""} displayEmpty
                       onChange={(e) => { setCustomerForm({ ...customerForm, customer_category: Number(e.target.value) }); if (errors.customer_category) setErrors({ ...errors, customer_category: false }); }}>
                       <MenuItem value=""><em>Select Category</em></MenuItem>
-                      {categories.map((cat) => (<MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>))}
+                      {(categories ?? []).map((cat) => (<MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>))}
                     </Select>
                     {errors.customer_category && <FormHelperText>Customer category is required</FormHelperText>}
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                {/* <Grid item xs={12} md={4}>
                   <FormControl fullWidth size="small" error={errors.customer_class}>
                     <Select value={customerForm.customer_class || ""} displayEmpty
                       onChange={(e) => { setCustomerForm({ ...customerForm, customer_class: Number(e.target.value) }); if (errors.customer_class) setErrors({ ...errors, customer_class: false }); }}>
-                      <MenuItem value="">Select Class</MenuItem>
-                      {classes.map((cls) => (<MenuItem key={cls.id} value={cls.id}>{cls.name}</MenuItem>))}
+                      <MenuItem value="">Select Class (Optional)</MenuItem>
+                      {(classes ?? []).map((cls) => (<MenuItem key={cls.id} value={cls.id}>{cls.name}</MenuItem>))}
                     </Select>
-                    {errors.customer_class && <FormHelperText>Customer class is required</FormHelperText>}
+                     {errors.customer_class && <FormHelperText>Customer class is required</FormHelperText>}
                   </FormControl>
-                </Grid>
+                </Grid> */}
+                <Grid item xs={12} md={4}>
+  <FormControl fullWidth size="small" error={errors.customer_class}>
+    <Select
+      value={customerForm.customer_class || ""}
+      displayEmpty
+      onChange={(e) => {
+        setCustomerForm({
+          ...customerForm,
+          customer_class: Number(e.target.value),
+        });
+
+        if (errors.customer_class) {
+          setErrors({
+            ...errors,
+            customer_class: false,
+          });
+        }
+      }}
+    >
+      <MenuItem value="">
+        Select Customer Class 
+      </MenuItem>
+
+      {(classes ?? []).map((cls) => (
+        <MenuItem key={cls.id} value={cls.id}>
+          {cls.name}
+        </MenuItem>
+      ))}
+    </Select>
+
+    {errors.customer_class && (
+      <FormHelperText>
+        Customer class is required
+      </FormHelperText>
+    )}
+  </FormControl>
+</Grid>
                 <Grid item xs={12} md={4}>
                   <FormControl fullWidth size="small" error={errors.metering_type}>
                     <Select value={customerForm.metering_type || ""} displayEmpty
                       onChange={(e) => { setCustomerForm({ ...customerForm, metering_type: Number(e.target.value) }); if (errors.metering_type) setErrors({ ...errors, metering_type: false }); }}>
                       <MenuItem value="">Select Metering Type</MenuItem>
-                      {meteringTypes.map((m) => (<MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>))}
+                      {(meteringTypes ?? []).map((m) => (<MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>))}
                     </Select>
                     {errors.metering_type && <FormHelperText>Metering type is required</FormHelperText>}
                   </FormControl>
@@ -1537,6 +1660,14 @@ const CustomerManagement = () => {
                 <Grid item xs={12} md={6}>
                   <TextField fullWidth label="Feeder" size="small" value={customerForm.feeder || ""}
                     onChange={(e) => setCustomerForm({ ...customerForm, feeder: e.target.value })} />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField fullWidth label="Feeder 33" size="small" value={customerForm.feeder_33 || ""}
+                    onChange={(e) => setCustomerForm({ ...customerForm, feeder_33: e.target.value })} />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField fullWidth label="Service Unit" size="small" value={customerForm.service_unit || ""}
+                    onChange={(e) => setCustomerForm({ ...customerForm, service_unit: e.target.value })} />
                 </Grid>
                 <Grid item xs={12} md={6}>
                   <TextField fullWidth label="Transformer" size="small" value={customerForm.transformer || ""}

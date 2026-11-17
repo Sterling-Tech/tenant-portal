@@ -508,9 +508,11 @@ export interface CustomerForm {
   address: string;
 
   customer_category: number;
-  customer_class: number;
+  customer_class: number | null;
   metering_type: number;
-
+  feeder_33: string;
+  service_unit: string;
+  postpaid_arrears: string;
   district: string;
   feeder: string;
   transformer: string;
