@@ -19,8 +19,8 @@ import CustomerAdmin from './pages/Customer/Dashboard';
 import Subaccount from './pages/Customer/Subaccount';
 import CustomerTrans from './pages/Customer/CustomerTrans';
 import OnboardingPage from './pages/Onboarding/Onboarding';
-import { ToastContainer} from 'react-toastify';
-import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer } from 'react-toastify';
+// import "react-toastify/dist/ReactToastify.css";
 import BulkAssign from './pages/ReEngineering/BulkAssign';
 import BulkEngineering from './pages/ReEngineering/BulkEngineering';
 import MapRefund from './pages/Customer/MapRefund';
@@ -33,6 +33,7 @@ import MeterConfig from './pages/Crmd/MeterConfig';
 import SecurityGuards from './pages/AccessCode/AccessCodes';
 import AccessCodePage from './components/AccessCode/AccessCodePage';
 import VerifyAccessCode from './components/AccessCode/VerifyAccessCode';
+import CustomerBulkUploadPage from './pages/Customer/CustomerBulkUploadPage';
 // Enhanced theme
 const theme = createTheme({
     palette: {
@@ -127,6 +128,16 @@ const App: React.FC = () => {
                                     <ProtectedRoute>
                                         <Layout>
                                             <CustomerAdmin />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/customers/bulk-upload"
+                                element={
+                                <ProtectedRoute>
+                                        <Layout>
+                                            <CustomerBulkUploadPage />
                                         </Layout>
                                     </ProtectedRoute>
                                 }
@@ -249,7 +260,7 @@ const App: React.FC = () => {
                                 element={
                                     <ProtectedRoute>
                                         <Layout>
-                                            <CustomerManagement/>
+                                            <CustomerManagement />
                                         </Layout>
                                     </ProtectedRoute>
                                 }
@@ -259,7 +270,7 @@ const App: React.FC = () => {
                                 element={
                                     <ProtectedRoute>
                                         <Layout>
-                                            <CustomerTrans/>
+                                            <CustomerTrans />
                                         </Layout>
                                     </ProtectedRoute>
                                 }
@@ -269,7 +280,7 @@ const App: React.FC = () => {
                                 element={
                                     <ProtectedRoute>
                                         <Layout>
-                                            <MapRefund/>
+                                            <MapRefund />
                                         </Layout>
                                     </ProtectedRoute>
                                 }
@@ -279,7 +290,7 @@ const App: React.FC = () => {
                                 element={
                                     <ProtectedRoute>
                                         <Layout>
-                                            <BulkAssign/>
+                                            <BulkAssign />
                                         </Layout>
                                     </ProtectedRoute>
                                 }
@@ -289,7 +300,7 @@ const App: React.FC = () => {
                                 element={
                                     <ProtectedRoute>
                                         <Layout>
-                                            <BulkEngineering/>
+                                            <BulkEngineering />
                                         </Layout>
                                     </ProtectedRoute>
                                 }
@@ -324,7 +335,7 @@ const App: React.FC = () => {
                                     </ProtectedRoute>
                                 }
                             />
-                            <Route 
+                            <Route
                                 path='/vendors/funding'
                                 element={
                                     <ProtectedRoute>
@@ -333,7 +344,7 @@ const App: React.FC = () => {
                                         </Layout>
                                     </ProtectedRoute>
                                 }
-                            
+
                             />
                             <Route path="/" element={<Navigate to="/tenants/admin" replace />} />
                             <Route path="/dashboard" element={<Navigate to="/tenants/admin" replace />} />

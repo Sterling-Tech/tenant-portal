@@ -1472,3 +1472,46 @@ export const exportVendorHistory = async ({
     })}`
   );
 };
+
+// services/onboardingService.ts
+
+export type ImportKind = "customers" | "debts";
+export type ImportMode = "validate" | "commit";
+
+export interface ImportJob {
+  id: number;
+  kind: ImportKind;
+  mode: ImportMode;
+  status: string;
+  total_rows: number;
+  processed: number;
+  succeeded: number;
+  failed: number;
+  message: string;
+  has_error_report: boolean;
+  created_at: string;
+  finished_at: string | null;
+}
+
+export const uploadImportFile = (
+  file: File,
+  kind: ImportKind,
+  mode: ImportMode = "validate"
+) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return post<ImportJob>(
+    `/onboarding/${kind}/upload/${buildQuery({ mode })}`,
+    formData
+  );
+};
+
+export const getImportJob = (id: number) =>
+  get<ImportJob>(`/onboarding/jobs/${id}/`);
+
+export const downloadImportTemplate = (kind: ImportKind) =>
+  getBlob(`/onboarding/templates/${kind}/`);
+
+export const downloadImportErrors = (id: number) =>
+  getBlob(`/onboarding/jobs/${id}/errors/`);

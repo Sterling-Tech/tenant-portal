@@ -47,12 +47,13 @@ import {
 } from "recharts";
 
 import { useNavigate } from "react-router-dom";
-import { Search, MoreVert, Refresh } from "@mui/icons-material";
+import { Search, MoreVert, Refresh, Create } from "@mui/icons-material";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { fetchCustomers, fetchCustomer, fetchCustomerTransactions, fetchCustomerBills, createCustomer, type Customer, MeteringTypeS, CustomerClass, Customercategory, searchCustomers, type CustomerForm, EditCustomer, fetchDebt, fetchCustomerDebtAnalytic, Class, MeteringType, Category } from "../../services/vendorService";
 import {
   issueEngineeringToken,
@@ -68,6 +69,7 @@ import CustomerHistoryModal from "../Settings/CustomerHistoryModal";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
 import DebtBalanceModal from "./DebtBalanceModal";
+import CustomerBulkUpload from "./CustomerBulkUpload";
 
 
 const initialCustomerForm: CustomerForm = {
@@ -350,29 +352,6 @@ const CustomerManagement = () => {
     return "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  // const load = async (params?: any) => {
-  //   setLoading(true);
-  //   try {
-  //     const res = await fetchCustomers({
-  //       ...filters,
-  //       page,
-  //       ...params,
-  //     });
-  //     setCustomers(res.results);
-  //     setCount(res.count);
-  //     setNext(res.next);
-  //     setPrevious(res.previous);
-  //   } catch (err) {
-  //     console.error(err);
-  //     setCustomers([]);
-  //     setCount(0);
-  //     setNext(null);
-  //     setPrevious(null);
-  //     toast.error(getErrorMessage(err));
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const load = async (params?: any) => {
     setLoading(true);
 
@@ -801,9 +780,21 @@ const CustomerManagement = () => {
 
         <Stack direction="row" spacing={2}>
           <Button
+            variant="outlined"
+            startIcon={<UploadFileIcon />}
+            onClick={() => navigate("/customers/bulk-upload")}
+            sx={{
+              height: 36,
+              textTransform: "none",
+              borderRadius: 2,
+            }}
+          >
+            Bulk Upload
+          </Button>
+          <Button
             onClick={handleOpenCreateModal}
             variant="outlined"
-            startIcon={<Refresh />}
+            startIcon={<Create />}
             sx={{
               height: 36,
               textTransform: "none",
@@ -1603,42 +1594,42 @@ const CustomerManagement = () => {
                   </FormControl>
                 </Grid> */}
                 <Grid item xs={12} md={4}>
-  <FormControl fullWidth size="small" error={errors.customer_class}>
-    <Select
-      value={customerForm.customer_class || ""}
-      displayEmpty
-      onChange={(e) => {
-        setCustomerForm({
-          ...customerForm,
-          customer_class: Number(e.target.value),
-        });
+                  <FormControl fullWidth size="small" error={errors.customer_class}>
+                    <Select
+                      value={customerForm.customer_class || ""}
+                      displayEmpty
+                      onChange={(e) => {
+                        setCustomerForm({
+                          ...customerForm,
+                          customer_class: Number(e.target.value),
+                        });
 
-        if (errors.customer_class) {
-          setErrors({
-            ...errors,
-            customer_class: false,
-          });
-        }
-      }}
-    >
-      <MenuItem value="">
-        Select Customer Class 
-      </MenuItem>
+                        if (errors.customer_class) {
+                          setErrors({
+                            ...errors,
+                            customer_class: false,
+                          });
+                        }
+                      }}
+                    >
+                      <MenuItem value="">
+                        Select Customer Class
+                      </MenuItem>
 
-      {(classes ?? []).map((cls) => (
-        <MenuItem key={cls.id} value={cls.id}>
-          {cls.name}
-        </MenuItem>
-      ))}
-    </Select>
+                      {(classes ?? []).map((cls) => (
+                        <MenuItem key={cls.id} value={cls.id}>
+                          {cls.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
 
-    {errors.customer_class && (
-      <FormHelperText>
-        Customer class is required
-      </FormHelperText>
-    )}
-  </FormControl>
-</Grid>
+                    {errors.customer_class && (
+                      <FormHelperText>
+                        Customer class is required
+                      </FormHelperText>
+                    )}
+                  </FormControl>
+                </Grid>
                 <Grid item xs={12} md={4}>
                   <FormControl fullWidth size="small" error={errors.metering_type}>
                     <Select value={customerForm.metering_type || ""} displayEmpty
